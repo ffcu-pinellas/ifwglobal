@@ -18,6 +18,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
         ]);
         header("Location: form_builder.php?success=1");
         exit;
+    } elseif ($_POST['action'] == 'edit_field') {
+        $stmt = $pdo->prepare("UPDATE IFW_form_fields SET field_name = ?, field_label = ?, field_type = ?, field_options = ?, is_required = ?, display_order = ? WHERE id = ?");
+        $stmt->execute([
+            trim($_POST['field_name']),
+            trim($_POST['field_label']),
+            trim($_POST['field_type']),
+            trim($_POST['field_options']) ?: null,
+            isset($_POST['is_required']) ? 1 : 0,
+            (int)$_POST['display_order'],
+            (int)$_POST['id']
+        ]);
+        header("Location: form_builder.php?success=1");
+        exit;
     } elseif ($_POST['action'] == 'delete_field') {
         $stmt = $pdo->prepare("DELETE FROM IFW_form_fields WHERE id = ?");
         $stmt->execute([(int)$_POST['id']]);
@@ -92,11 +105,65 @@ $success_msg = $pdo->query("SELECT setting_value FROM IFW_form_settings WHERE se
                                         <?php endif; ?>
                                     </td>
                                     <td>
+                                        <button type="button" class="btn btn-sm btn-outline-info" data-toggle="modal" data-target="#editFieldModal<?= $f['id'] ?>"><i class="fas fa-edit"></i> Edit</button>
                                         <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this field?');">
                                             <input type="hidden" name="action" value="delete_field">
                                             <input type="hidden" name="id" value="<?= $f['id'] ?>">
                                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i> Delete</button>
                                         </form>
+
+                                        <!-- Edit Field Modal -->
+                                        <div class="modal fade" id="editFieldModal<?= $f['id'] ?>" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content bg-dark text-white border-info text-left">
+                                                    <div class="modal-header border-secondary">
+                                                        <h5 class="modal-title text-info font-weight-bold"><i class="fas fa-edit mr-2"></i>Edit Form Field</h5>
+                                                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                                    </div>
+                                                    <form method="POST">
+                                                        <div class="modal-body">
+                                                            <input type="hidden" name="action" value="edit_field">
+                                                            <input type="hidden" name="id" value="<?= $f['id'] ?>">
+                                                            
+                                                            <div class="form-group mb-3">
+                                                                <label class="font-weight-bold text-light">Field Label</label>
+                                                                <input type="text" name="field_label" class="form-control bg-secondary text-white border-0" required value="<?= htmlspecialchars($f['field_label']) ?>">
+                                                            </div>
+                                                            <div class="form-group mb-3">
+                                                                <label class="font-weight-bold text-light">Field Identifier (Name)</label>
+                                                                <input type="text" name="field_name" class="form-control bg-secondary text-white border-0" required value="<?= htmlspecialchars($f['field_name']) ?>">
+                                                            </div>
+                                                            <div class="form-group mb-3">
+                                                                <label class="font-weight-bold text-light">Field Type</label>
+                                                                <select name="field_type" class="form-control bg-secondary text-white border-0">
+                                                                    <option value="text" <?= $f['field_type'] == 'text' ? 'selected' : '' ?>>Text Input</option>
+                                                                    <option value="email" <?= $f['field_type'] == 'email' ? 'selected' : '' ?>>Email Address</option>
+                                                                    <option value="tel" <?= $f['field_type'] == 'tel' ? 'selected' : '' ?>>Phone Input</option>
+                                                                    <option value="textarea" <?= $f['field_type'] == 'textarea' ? 'selected' : '' ?>>Textarea (Multiline)</option>
+                                                                    <option value="select" <?= $f['field_type'] == 'select' ? 'selected' : '' ?>>Dropdown Select</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="form-group mb-3">
+                                                                <label class="font-weight-bold text-light">Options (Comma separated for dropdown)</label>
+                                                                <input type="text" name="field_options" class="form-control bg-secondary text-white border-0" value="<?= htmlspecialchars((string)$f['field_options']) ?>">
+                                                            </div>
+                                                            <div class="form-group mb-3">
+                                                                <label class="font-weight-bold text-light">Display Order</label>
+                                                                <input type="number" name="display_order" class="form-control bg-secondary text-white border-0" value="<?= $f['display_order'] ?>">
+                                                            </div>
+                                                            <div class="form-check mb-3">
+                                                                <input class="form-check-input" type="checkbox" name="is_required" value="1" id="reqCheckEdit<?= $f['id'] ?>" <?= $f['is_required'] ? 'checked' : '' ?>>
+                                                                <label class="form-check-label text-light font-weight-bold" for="reqCheckEdit<?= $f['id'] ?>">Mandatory Field</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer border-secondary">
+                                                            <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-info font-weight-bold text-dark px-4">Save Changes</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
