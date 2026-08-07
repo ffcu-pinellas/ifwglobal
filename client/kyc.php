@@ -32,7 +32,7 @@ try {
 } catch (Exception $e) {}
 
 // Process form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_kyc'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $kyc_data = [];
     $upload_dir = '../uploads/kyc/';
     if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);

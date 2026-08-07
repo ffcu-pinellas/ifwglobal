@@ -6,7 +6,7 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-?>
+
 session_start();
 unset($_SESSION['client_logged_in']);
 unset($_SESSION['client_portal_id']);
