@@ -3,102 +3,188 @@
 require_once '../config.php';
 require_once '../includes/functions.php';
 require_admin_login();
-
-// Fetch Tawk.to property ID for popout URL
-$tawkto_raw = get_setting($pdo, 'tawkto_property_id', '6a742dd38875351d455643d1/default');
-$clean_id = $tawkto_raw;
-$clean_id = strip_tags($clean_id);
-$clean_id = preg_replace('/<!--.*?-->/s', '', $clean_id);
-$clean_id = preg_replace('/var\s+Tawk_API[\s\S]*?embed\.tawk\.to\//i', '', $clean_id);
-$clean_id = preg_replace('/[\'"];.*$/s', '', $clean_id);
-$clean_id = trim($clean_id, " \t\n\r;'\"/");
-if (strpos($clean_id, 'embed.tawk.to/') !== false) {
-    $clean_id = preg_replace('/.*embed\.tawk\.to\//', '', $clean_id);
-    $clean_id = trim($clean_id, " \t\n\r;'\"");
-}
-if (empty($clean_id) || !preg_match('/^[a-zA-Z0-9_\/\-]{10,}$/', $clean_id)) {
-    $clean_id = '6a742dd38875351d455643d1/default';
-}
-
-// Tawk.to popout URL format: https://tawk.to/chat/{PROPERTY_ID}
-$tawk_popout_url = 'https://tawk.to/chat/' . $clean_id;
-
 require_once '../includes/admin_header.php';
-require_once '../includes/admin_sidebar.php';
 ?>
+<div class="container-fluid mt-4">
+    <div class="row h-100" style="min-height: 75vh;">
+        <!-- Sidebar: Client List -->
+        <div class="col-md-4 col-lg-3 border-right border-secondary bg-dark d-flex flex-column p-0">
+            <div class="p-3 border-bottom border-secondary bg-black">
+                <h5 class="text-warning m-0"><i class="fas fa-users mr-2"></i> Client Conversations</h5>
+            </div>
+            <div class="flex-grow-1 overflow-auto" id="client-list" style="background: #111;">
+                <!-- Dynamically loaded via AJAX -->
+                <div class="text-center p-4 text-muted"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="col-md-8 col-lg-9 bg-dark d-flex flex-column p-0 position-relative">
+            <div id="chat-header" class="p-3 border-bottom border-secondary bg-black d-none align-items-center justify-content-between">
+                <h5 class="text-light m-0" id="chat-client-name"><i class="fas fa-user-circle mr-2 text-warning"></i> <span>Select a client</span></h5>
+                <a href="#" id="view-client-btn" class="btn btn-sm btn-outline-warning">View Profile</a>
+            </div>
+            <div id="chat-messages" class="flex-grow-1 p-4 overflow-auto d-flex flex-column" style="background: #0d0d0e; gap: 15px;">
+                <div class="text-center text-muted mt-5">
+                    <i class="fas fa-comments fa-3x mb-3 text-secondary"></i>
+                    <h4>Secure Messaging Portal</h4>
+                    <p>Select a client from the list to start messaging.</p>
+                </div>
+            </div>
+            <div id="chat-input-area" class="p-3 border-top border-secondary bg-black d-none">
+                <form id="chat-form" class="d-flex w-100" style="gap: 10px;">
+                    <input type="hidden" id="active-client-id" value="">
+                    <input type="text" id="chat-input" class="form-control bg-dark text-light border-secondary" placeholder="Type a secure message..." autocomplete="off" required>
+                    <button type="submit" class="btn btn-warning px-4 font-weight-bold"><i class="fas fa-paper-plane"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
-    #tawk-chat-frame {
-        width: 100%;
-        height: calc(100vh - 120px);
-        border: none;
-        border-radius: 12px;
-        overflow: hidden;
-        background: #181516;
-        display: block;
-    }
-    .chat-header-bar {
-        background: #181516;
-        border: 1px solid rgba(254,204,86,0.25);
-        border-radius: 12px;
-        padding: 16px 22px;
-        margin-bottom: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 12px;
-    }
-    .live-dot {
-        display: inline-block;
-        width: 9px; height: 9px;
-        background: #28d645;
-        border-radius: 50%;
-        margin-right: 8px;
-        animation: blink 1.4s infinite;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .chat-frame-wrapper {
-        border: 1px solid rgba(254,204,86,0.2);
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
+/* Custom styling for premium chat feel */
+.client-item {
+    padding: 15px 20px;
+    border-bottom: 1px solid #222;
+    cursor: pointer;
+    transition: background 0.2s;
+    color: #ccc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.client-item:hover { background: #1a1a1a; }
+.client-item.active { background: #2a2a2a; color: #fecc56; border-left: 4px solid #fecc56; }
+.unread-badge { background: #fecc56; color: #000; font-weight: bold; border-radius: 12px; padding: 2px 8px; font-size: 0.8rem; }
+
+.msg-bubble {
+    max-width: 70%; padding: 12px 18px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; position: relative;
+}
+.msg-client {
+    background: #222; color: #eee; align-self: flex-start; border-bottom-left-radius: 4px;
+}
+.msg-admin {
+    background: #fecc56; color: #000; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 500;
+}
+.msg-time { font-size: 0.7rem; margin-top: 5px; opacity: 0.7; text-align: right; }
+.msg-client .msg-time { text-align: left; }
 </style>
 
-<div class="chat-header-bar">
-    <div>
-        <h4 class="text-warning font-weight-bold mb-1">
-            <i class="fas fa-comments mr-2"></i>Live Client Communications Desk
-        </h4>
-        <p class="text-muted mb-0" style="font-size: 13px;">
-            <span class="live-dot"></span>
-            All client, agent, and attorney conversations are managed here. Reply, assign, and monitor live.
-        </p>
-    </div>
-    <div class="d-flex align-items-center gap-2" style="gap: 10px;">
-        <a href="<?= htmlspecialchars($tawk_popout_url) ?>" target="_blank" class="btn btn-sm btn-outline-warning font-weight-bold">
-            <i class="fas fa-external-link-alt mr-1"></i> Open in New Tab
-        </a>
-        <a href="settings.php" class="btn btn-sm btn-outline-secondary font-weight-bold">
-            <i class="fas fa-cog mr-1"></i> Chat Settings
-        </a>
-    </div>
-</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let activeClientId = null;
+    let lastMsgId = 0;
+    let pollingInterval = null;
 
-<div class="chat-frame-wrapper">
-    <iframe 
-        id="tawk-chat-frame"
-        src="<?= htmlspecialchars($tawk_popout_url) ?>"
-        allow="microphone; camera; geolocation"
-        loading="eager"
-        title="IFW Global Live Client Chat Dashboard">
-    </iframe>
-</div>
+    // Elements
+    const elClientList = document.getElementById('client-list');
+    const elChatMessages = document.getElementById('chat-messages');
+    const elChatHeader = document.getElementById('chat-header');
+    const elChatInputArea = document.getElementById('chat-input-area');
+    const elClientName = document.querySelector('#chat-client-name span');
+    const elChatForm = document.getElementById('chat-form');
+    const elChatInput = document.getElementById('chat-input');
+    const elActiveClientId = document.getElementById('active-client-id');
+    const elViewClientBtn = document.getElementById('view-client-btn');
 
-<div class="mt-3 d-flex align-items-center justify-content-between" style="font-size: 12px; color: #555;">
-    <span><i class="fas fa-shield-alt text-warning mr-1"></i> All conversations are encrypted and logged for compliance.</span>
-    <span><i class="fas fa-info-circle mr-1"></i> Powered by Tawk.to · <a href="https://dashboard.tawk.to" target="_blank" class="text-warning">Open Full Dashboard</a></span>
-</div>
+    // Fetch Clients List
+    function fetchClients() {
+        fetch('ajax_chat.php?action=fetch_clients')
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                elClientList.innerHTML = '';
+                if (data.clients.length === 0) {
+                    elClientList.innerHTML = '<div class="p-4 text-muted text-center">No clients assigned.</div>';
+                    return;
+                }
+                data.clients.forEach(c => {
+                    let div = document.createElement('div');
+                    div.className = 'client-item' + (activeClientId == c.id ? ' active' : '');
+                    div.innerHTML = `
+                        <div><i class="fas fa-user-circle mr-2"></i> ${c.first_name} ${c.last_name}</div>
+                        ${c.unread > 0 ? `<span class="unread-badge">${c.unread}</span>` : ''}
+                    `;
+                    div.addEventListener('click', () => selectClient(c.id, c.first_name + ' ' + c.last_name));
+                    elClientList.appendChild(div);
+                });
+            }
+        });
+    }
 
+    function selectClient(id, name) {
+        activeClientId = id;
+        lastMsgId = 0;
+        elClientName.innerText = name;
+        elActiveClientId.value = id;
+        elChatHeader.classList.remove('d-none');
+        elChatHeader.classList.add('d-flex');
+        elChatInputArea.classList.remove('d-none');
+        elViewClientBtn.href = `client_view.php?id=${id}`;
+        
+        elChatMessages.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin text-warning"></i></div>';
+        
+        // Update UI selection
+        document.querySelectorAll('.client-item').forEach(el => el.classList.remove('active'));
+        
+        fetchClients(); // refresh list to clear badges
+        fetchMessages(true);
+        
+        if (pollingInterval) clearInterval(pollingInterval);
+        pollingInterval = setInterval(() => fetchMessages(false), 3000);
+    }
+
+    function fetchMessages(scrollDown = false) {
+        if (!activeClientId) return;
+        fetch(`ajax_chat.php?action=fetch_messages&client_id=${activeClientId}&last_id=${lastMsgId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success' && data.messages.length > 0) {
+                if (lastMsgId === 0) elChatMessages.innerHTML = ''; // clear loader
+                
+                let isScrolledToBottom = elChatMessages.scrollHeight - elChatMessages.clientHeight <= elChatMessages.scrollTop + 10;
+                
+                data.messages.forEach(m => {
+                    let div = document.createElement('div');
+                    let time = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    div.className = 'msg-bubble ' + (m.sender_type === 'admin' ? 'msg-admin' : 'msg-client');
+                    div.innerHTML = `<div>${m.message.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div><div class="msg-time">${time}</div>`;
+                    elChatMessages.appendChild(div);
+                    lastMsgId = m.id;
+                });
+                
+                if (scrollDown || isScrolledToBottom) {
+                    elChatMessages.scrollTop = elChatMessages.scrollHeight;
+                }
+            }
+        });
+    }
+
+    elChatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        let msg = elChatInput.value.trim();
+        if (!msg || !activeClientId) return;
+        
+        let formData = new FormData();
+        formData.append('action', 'send');
+        formData.append('client_id', activeClientId);
+        formData.append('message', msg);
+        
+        elChatInput.value = '';
+        
+        fetch('ajax_chat.php', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                fetchMessages(true);
+            }
+        });
+    });
+
+    // Initial load
+    fetchClients();
+    setInterval(fetchClients, 10000); // Polling for new clients / global unread counts
+});
+</script>
 <?php require_once '../includes/admin_footer.php'; ?>

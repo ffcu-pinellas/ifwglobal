@@ -207,6 +207,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     </a>
                 </li>
 
+                <!-- NAV ITEM Secure Messaging -->
+                <li class="nav-item <?php echo ($current_page == 'chat.php') ? 'active' : ''; ?>">
+                    <a href="/<?php echo ($user_role == 'client') ? 'client/chat.php' : 'admin/chat.php'; ?>" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-comments text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Secure Messaging</span>
+                    </a>
+                </li>
+
                 <?php if ($user_role !== 'client'): ?>
                 <!-- NAV ITEM Cases -->
                 <li class="nav-item <?php echo ($current_page == 'cases.php' || $current_page == 'case_view.php') ? 'active' : ''; ?>">
