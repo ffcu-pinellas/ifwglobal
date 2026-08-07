@@ -1,4 +1,12 @@
 <?php
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 // cron_sla_monitor.php
 // Run this file via a cron job daily or hourly.
 require_once __DIR__ . '/config.php';
@@ -55,7 +63,3 @@ foreach ($clients as $client) {
 
 echo "SLA Monitor completed. Flagged $flaggedCount cases.\n";
 ?>
-
-
-
-

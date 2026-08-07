@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Hindi PHPMailer language file: refer to English translation for definitive list
  * @package PHPMailer
@@ -33,7 +40,3 @@ $PHPMAILER_LANG['smtp_connect_failed']  = 'SMTP का connect () फ़ंक�
 $PHPMAILER_LANG['smtp_detail']          = 'विवरण: ';
 $PHPMAILER_LANG['smtp_error']           = 'SMTP सर्वर त्रुटि। ';
 $PHPMAILER_LANG['variable_set']         = 'चर को बना या संशोधित नहीं किया जा सकता। ';
-
-
-
-

@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Norwegian Bokmål PHPMailer language file: refer to English translation for definitive list
  * @package PHPMailer
@@ -35,7 +42,3 @@
  $PHPMAILER_LANG['no_smtputf8']          = 'Serveren støtter ikke SMTPUTF8, som er nødvendig for å sende til Unicode-adresser.';
  $PHPMAILER_LANG['imap_recommended']     = 'Det anbefales ikke å bruke forenklet adresseanalyse. Installer PHP IMAP-utvidelsen for full RFC822-analyse.';
  $PHPMAILER_LANG['deprecated_argument']  = 'Avviklet argument: ';
-
-
-
-

@@ -1,4 +1,12 @@
 <?php
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 require_once '../config.php';
 require_once '../includes/mailer.php';
 
@@ -86,7 +94,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['status' => 'error', 'message' => 'Empty message and no valid attachment']);
     }
 }
-
-
-
-

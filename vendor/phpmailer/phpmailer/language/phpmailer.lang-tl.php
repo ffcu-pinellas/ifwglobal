@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Tagalog PHPMailer language file: refer to English translation for definitive list
  *
@@ -26,7 +33,3 @@ $PHPMAILER_LANG['smtp_connect_failed']  = 'Ang SMTP connect() ay nabigo.';
 $PHPMAILER_LANG['smtp_error']           = 'Ang server ng SMTP ay nabigo: ';
 $PHPMAILER_LANG['variable_set']         = 'Hindi matatakda o ma-reset ang mga variables: ';
 $PHPMAILER_LANG['extension_missing']    = 'Nawawala ang extension: ';
-
-
-
-

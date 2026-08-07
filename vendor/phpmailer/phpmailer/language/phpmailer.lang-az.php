@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Azerbaijani PHPMailer language file: refer to English translation for definitive list
  * @package PHPMailer
@@ -25,7 +32,3 @@ $PHPMAILER_LANG['smtp_connect_failed']  = 'SMTP serverinə qoşulma uğursuz old
 $PHPMAILER_LANG['smtp_error']           = 'SMTP serveri xətası: ';
 $PHPMAILER_LANG['variable_set']         = 'Dəyişənin quraşdırılması uğursuz oldu: ';
 //$PHPMAILER_LANG['extension_missing']    = 'Extension missing: ';
-
-
-
-

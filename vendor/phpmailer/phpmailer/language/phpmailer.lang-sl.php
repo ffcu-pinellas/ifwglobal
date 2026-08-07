@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Slovene PHPMailer language file: refer to English translation for definitive list
  * @package PHPMailer
@@ -34,7 +41,3 @@ $PHPMAILER_LANG['smtp_connect_failed']  = 'Ne morem vzpostaviti povezave s SMTP 
 $PHPMAILER_LANG['smtp_detail']          = 'Podrobnosti: ';
 $PHPMAILER_LANG['smtp_error']           = 'Napaka SMTP strežnika: ';
 $PHPMAILER_LANG['variable_set']         = 'Ne morem nastaviti oz. ponastaviti spremenljivke: ';
-
-
-
-

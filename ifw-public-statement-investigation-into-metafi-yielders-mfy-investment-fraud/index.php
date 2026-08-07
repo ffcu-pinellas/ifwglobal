@@ -528,6 +528,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 				</style></head>
 
 <body class="wp-singular post-template-default single single-post postid-1727 single-format-standard wp-theme-rb-council unselectable">
+<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
+<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
+    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
+</div>
+<?php endif; ?>
+
 <?php require_once $dir . '/includes/announcement.php'; ?>
 	<a class="skip" href="#main">Skip to main content</a>
 
@@ -544,7 +550,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
     <ul class="alert__numbers">
               <li class="alert__numbers-item">
-          <a href="tel:1300439456" class="alert__numbers-link" data-title="1300 439 456">
+          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
             HQ          </a>
         </li>
               <li class="alert__numbers-item">
@@ -746,7 +752,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <p><span style="font-weight: 400">IFW Global has been taking independent steps to corroborate any information provided to us via external sources through our intelligence and investigation networks across the world.&nbsp;</span></p>
 <p><span style="font-weight: 400">Anyone with information regarding this investigation is welcome and encouraged to come forward and provide any information regarding the Metafi Yielders investigation. Information gathered will be independently reviewed and analysed to verify the validity of the information.&nbsp;</span></p>
 <p><span style="font-weight: 400">Our <a href="../scam/serious-and-organised-fraud/index.php">fraud investigation</a> is ongoing, and we plan to interview everyone with links to the MFY scheme.&nbsp; If you have yet to be interviewed, you will be contacted in the coming weeks.&nbsp;</span></p>
-<p><span style="font-weight: 400">Anyone who wishes to participate in an interview or would like to provide information to IFW Global regarding this matter, please get in touch with us via telephone at </span><a href="tel:+61283280402"><b>+612 8328 0402 </b></a><span style="font-weight: 400">or via email at</span> <a href="mailto:info@ifwglobal.com"><span style="font-weight: 400">info@ifwglobal.com</span></a><b>.</b></p>
+<p><span style="font-weight: 400">Anyone who wishes to participate in an interview or would like to provide information to IFW Global regarding this matter, please get in touch with us via telephone at </span><a href="tel:+61283280402"><b>+612 8328 0402 </b></a><span style="font-weight: 400">or via email at</span> <a href="mailto:<?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?>"><span style="font-weight: 400"><?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?></span></a><b>.</b></p>
 <p><b><i>Authorised by:&nbsp;</i></b></p>
 <p><span style="font-weight: 400">Ken Gamble<br>
 </span><span style="font-weight: 400">Executive Director &amp; Chairman<br>
@@ -1067,7 +1073,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           </li>
 
                       <li class="phones__item">
-              <a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
+              <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
                 HQ              </a>
             </li>
                       <li class="phones__item">
@@ -1316,13 +1322,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 					<div class="site-footer__admin">
 						<h5 class="site-footer__subtitle">Get in touch</h5>
 
-                          <a href="tel:1300439456" class="site-footer__phone">
+                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="site-footer__phone">
                 <strong class="site-footer__phone-name">
                   Australia (Global HQ)                </strong>
 
                                   1300 IFW GLO (
                 
-                1300 439 456
+                <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>
                                   )
                               </a>
                           <a href="tel:+6183280402" class="site-footer__phone">
@@ -1460,7 +1466,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 			</li>
 
 							<li class="phones__item">
-					<a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
+					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
 						HQ					</a>
 				</li>
 							<li class="phones__item">

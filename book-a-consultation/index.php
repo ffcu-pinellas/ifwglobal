@@ -1,4 +1,12 @@
 <?php
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 require_once '../config.php';
 require_once '../includes/functions.php';
 
@@ -266,6 +274,12 @@ body .wp-site-blocks .is-style-overlay-dark :is(h1,h2,h3,h4,h5,h6,p,li,blockquot
 				</style></head>
 
 <body class="wp-singular page-template-default page page-id-119 wp-theme-rb-council  numbers-at-top unselectable">
+<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
+<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
+    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
+</div>
+<?php endif; ?>
+
 	<a class="skip" href="#main">Skip to main content</a>
 	<?php require_once '../includes/announcement.php'; ?>
 
@@ -580,7 +594,7 @@ body .wp-site-blocks .is-style-overlay-dark :is(h1,h2,h3,h4,h5,h6,p,li,blockquot
 	<div class="page-alert page-alert--warning">
 		<div class="page-alert__copy copy">
 			<h3>You can also contact us directly on any of our international phone numbers:</h3>
-<p><strong>AUS: <a class="phone-number" href="tel:1300439456">1300 439 456</a></strong> (within Australia)</p>
+<p><strong>AUS: <a class="phone-number" href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>"><?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?></a></strong> (within Australia)</p>
 <p><strong>AUS: <a class="phone-number" href="tel:+63 2 8789 9127">+61 2 8328 0402</a></strong> (outside Australia)</p>
 <p><strong>USA: <a href="tel:+1 (239) 247 5287">+1 (239) 247 5287</a></strong></p>
 		</div>
@@ -961,7 +975,7 @@ Thanks to IFW for their relentless pursuit of the criminals involved. </p>
 						<h5 class="site-footer__subtitle">Get in touch</h5>
 
                           <a
-                href="tel:1300439456"
+                href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>"
                 class="site-footer__phone"
               >
                 <strong class="site-footer__phone-name">
@@ -969,7 +983,7 @@ Thanks to IFW for their relentless pursuit of the criminals involved. </p>
 
                                   1300 IFW GLO (
                 
-                1300 439 456
+                <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>
                                   )
                               </a>
                           <a
@@ -1127,9 +1141,9 @@ Thanks to IFW for their relentless pursuit of the criminals involved. </p>
 
 							<li class="phones__item">
 					<a
-						href="tel:1300439456"
+						href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>"
 						class="phones__link"
-						data-title="1300 439 456"
+						data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>"
 					>
 						HQ					</a>
 				</li>
@@ -1326,4 +1340,3 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-

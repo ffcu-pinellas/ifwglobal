@@ -532,6 +532,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 				</style></head>
 
 <body class="wp-singular post-template-default single single-post postid-2069 single-format-standard wp-theme-rb-council unselectable">
+<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
+<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
+    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
+</div>
+<?php endif; ?>
+
 <?php require_once $dir . '/includes/announcement.php'; ?>
 	<a class="skip" href="#main">Skip to main content</a>
 
@@ -548,7 +554,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
     <ul class="alert__numbers">
               <li class="alert__numbers-item">
-          <a href="tel:1300439456" class="alert__numbers-link" data-title="1300 439 456">
+          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
             HQ          </a>
         </li>
               <li class="alert__numbers-item">
@@ -770,7 +776,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <div class="l-section l-section--medium " id="page-section-2">
 	<div class="copy">
 		<h2>Next Steps</h2>
-<p>IFW Global is currently conducting an <strong>active investigation</strong> into this matter and is seeking to hear from additional victims. If you or someone you know has lost money to GIM Trading, <strong>please contact IFW Global immediately for assistance </strong>on 1300 439 456, +61 2 8880 0786, info@ifwglobal.com or submit an <a href="/contact/">Investment Fraud enquiry</a> to discuss your fraud and what can be done to investigate and recover any stolen money.</p>
+<p>IFW Global is currently conducting an <strong>active investigation</strong> into this matter and is seeking to hear from additional victims. If you or someone you know has lost money to GIM Trading, <strong>please contact IFW Global immediately for assistance </strong>on <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>, +61 2 8880 0786, <?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?> or submit an <a href="/contact/">Investment Fraud enquiry</a> to discuss your fraud and what can be done to investigate and recover any stolen money.</p>
 <p>As a global leader in <a href="/scam/serious-and-organised-fraud/">fraud investigation</a>, our experienced <a href="/investigation/private-investigators/">private investigators</a> utilise exceptional resources and exclusive connections to crack down on criminals around the world – and this illegitimate recovery agent scam is no exception.</p>
 <p>IFW Global Investigations is a private <a href="/intelligence/intelligence-reports/">intelligence and investigations firm</a> that represents investors who believe they have been scammed or duped into fraudulent investment schemes. We are strictly vetted by the NSW Police Force in Australia and the State of Florida in the USA, and you can view and verify our investigator licences at <a href="/about-us/">/about-us/</a></p>
 <p>Your information could help us identify further victims, trace missing funds, and hold those responsible accountable.</p>
@@ -1043,7 +1049,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           </li>
 
                       <li class="phones__item">
-              <a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
+              <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
                 HQ              </a>
             </li>
                       <li class="phones__item">
@@ -1292,13 +1298,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 					<div class="site-footer__admin">
 						<h5 class="site-footer__subtitle">Get in touch</h5>
 
-                          <a href="tel:1300439456" class="site-footer__phone">
+                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="site-footer__phone">
                 <strong class="site-footer__phone-name">
                   Australia (Global HQ)                </strong>
 
                                   1300 IFW GLO (
                 
-                1300 439 456
+                <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>
                                   )
                               </a>
                           <a href="tel:+6183280402" class="site-footer__phone">
@@ -1436,7 +1442,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 			</li>
 
 							<li class="phones__item">
-					<a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
+					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
 						HQ					</a>
 				</li>
 							<li class="phones__item">

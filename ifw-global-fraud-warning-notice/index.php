@@ -530,6 +530,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 				</style></head>
 
 <body class="wp-singular post-template-default single single-post postid-1843 single-format-standard wp-theme-rb-council unselectable">
+<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
+<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
+    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
+</div>
+<?php endif; ?>
+
 <?php require_once $dir . '/includes/announcement.php'; ?>
 	<a class="skip" href="#main">Skip to main content</a>
 
@@ -546,7 +552,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
     <ul class="alert__numbers">
               <li class="alert__numbers-item">
-          <a href="tel:1300439456" class="alert__numbers-link" data-title="1300 439 456">
+          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
             HQ          </a>
         </li>
               <li class="alert__numbers-item">
@@ -854,7 +860,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <p><strong>Please be aware of scammers posing as IFW</strong></p>
 <p><span data-preserver-spaces="true">Before parting with any money, you need to double-check the website’s URL, which can be found in your address bar. If it is not an exact match for&nbsp;</span><a class="editor-rtfLink" href="../index.php" target="_blank" rel="noopener"><span data-preserver-spaces="true">www.ifwglobal.com</span></a><span data-preserver-spaces="true">, then you should exit it immediately. You should always ask for a video call, as IFW has a strict policy in place to meet its clients face to face on a Zoom or Teams call. Most scammers will never meet on a video call.</span></p>
 <p><em>Learn more about <a href="../how-to-protect-yourself-from-scams/index.php">how to protect yourself from scams</a>.</em></p>
-<p><span data-preserver-spaces="true">Have you already fallen victim to this online scam? Please contact IFW’s head office on</span><strong><span data-preserver-spaces="true">&nbsp;1300 439 456,</span></strong><span data-preserver-spaces="true">&nbsp;</span><a class="editor-rtfLink" href="mailto:info@ifwglobal.com" target="_blank" rel="noopener"><strong><span data-preserver-spaces="true">info@ifwglobal.com</span></strong></a><strong><span data-preserver-spaces="true">,&nbsp;</span></strong><span data-preserver-spaces="true">or submit an&nbsp;</span><a class="editor-rtfLink" href="/contact/" target="_blank" rel="noopener"><strong><span data-preserver-spaces="true">Investment Fraud enquiry</span></strong></a><strong><span data-preserver-spaces="true">&nbsp;</span></strong><span data-preserver-spaces="true">now to discuss your fraud and find out what can be done to investigate and recover your stolen money.</span></p>
+<p><span data-preserver-spaces="true">Have you already fallen victim to this online scam? Please contact IFW’s head office on</span><strong><span data-preserver-spaces="true">&nbsp;<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>,</span></strong><span data-preserver-spaces="true">&nbsp;</span><a class="editor-rtfLink" href="mailto:<?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?>" target="_blank" rel="noopener"><strong><span data-preserver-spaces="true"><?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?></span></strong></a><strong><span data-preserver-spaces="true">,&nbsp;</span></strong><span data-preserver-spaces="true">or submit an&nbsp;</span><a class="editor-rtfLink" href="/contact/" target="_blank" rel="noopener"><strong><span data-preserver-spaces="true">Investment Fraud enquiry</span></strong></a><strong><span data-preserver-spaces="true">&nbsp;</span></strong><span data-preserver-spaces="true">now to discuss your fraud and find out what can be done to investigate and recover your stolen money.</span></p>
 <p><span data-preserver-spaces="true">As a global leader in <a href="../scam/serious-and-organised-fraud/index.php">fraud investigation</a>, our experienced <a href="../investigation/private-investigators/index.php">private investigators</a> utilise exceptional resources and exclusive connections to crack down on criminals around the world – and this illegitimate website is no exception.</span></p>
 <p><span data-preserver-spaces="true">IFW Global Investigations is a private <a href="../intelligence/intelligence-reports/index.php">intelligence and investigations firm</a> that represents investors who believe they have been scammed or duped into fraudulent investment schemes. We are strictly vetted by the NSW Police Force in Australia and the State of Florida in the USA, and you can view and verify our investigator licences at&nbsp;</span><a class="editor-rtfLink" href="../about-us/index.php" target="_blank" rel="noopener"><span data-preserver-spaces="true">/about-us/</span></a></p>
 	</div>
@@ -1454,7 +1460,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           </li>
 
                       <li class="phones__item">
-              <a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
+              <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
                 HQ              </a>
             </li>
                       <li class="phones__item">
@@ -1703,13 +1709,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 					<div class="site-footer__admin">
 						<h5 class="site-footer__subtitle">Get in touch</h5>
 
-                          <a href="tel:1300439456" class="site-footer__phone">
+                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="site-footer__phone">
                 <strong class="site-footer__phone-name">
                   Australia (Global HQ)                </strong>
 
                                   1300 IFW GLO (
                 
-                1300 439 456
+                <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>
                                   )
                               </a>
                           <a href="tel:+6183280402" class="site-footer__phone">
@@ -1847,7 +1853,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 			</li>
 
 							<li class="phones__item">
-					<a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
+					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
 						HQ					</a>
 				</li>
 							<li class="phones__item">

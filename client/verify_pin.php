@@ -1,4 +1,12 @@
 <?php
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 // client/verify_pin.php
 require_once '../config.php';
 require_once '../includes/functions.php';
@@ -59,6 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </style>
 </head>
 <body>
+<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
+<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
+    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
+</div>
+<?php endif; ?>
+
 
 <div class="login-box text-center">
     <h3 class="mb-4"><i class="bi bi-shield-lock-fill text-warning"></i> Enter Security PIN</h3>
@@ -81,8 +95,3 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 </body>
 </html>
-
-
-
-
-

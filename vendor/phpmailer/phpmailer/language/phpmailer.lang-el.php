@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Greek PHPMailer language file: refer to English translation for definitive list
  * @package PHPMailer
@@ -31,7 +38,3 @@ $PHPMAILER_LANG['smtp_connect_failed']  = 'Αποτυχία σύνδεσης SMT
 $PHPMAILER_LANG['smtp_detail']          = 'Λεπτομέρεια: ';
 $PHPMAILER_LANG['smtp_error']           = 'Σφάλμα με τον διακομιστή SMTP: ';
 $PHPMAILER_LANG['variable_set']         = 'Αδυναμία ορισμού ή επαναφοράς μεταβλητής: ';
-
-
-
-

@@ -532,6 +532,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 				</style></head>
 
 <body class="wp-singular post-template-default single single-post postid-290 single-format-standard wp-theme-rb-council unselectable">
+<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
+<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
+    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
+</div>
+<?php endif; ?>
+
 <?php require_once $dir . '/includes/announcement.php'; ?>
 	<a class="skip" href="#main">Skip to main content</a>
 
@@ -548,7 +554,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
     <ul class="alert__numbers">
               <li class="alert__numbers-item">
-          <a href="tel:1300439456" class="alert__numbers-link" data-title="1300 439 456">
+          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
             HQ          </a>
         </li>
               <li class="alert__numbers-item">
@@ -785,7 +791,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <p>Mr Gamble said he had made extensive enquiries through researching Theo’s digital footprint and interviewing several people from the Byron Bay area.</p>
 <p>“There is no doubt in my mind that there is much more to this case than originally thought and Theo’s family deserves to know the truth. Only a thorough investigation is going to solve this mystery,” Mr Gamble said.</p>
 <p>“I’m hoping that by raising awareness of Theo’s case it will inspire someone to come forward, who may know exactly what happened or at the very least get police to re-examine the case. Theo’s family have suffered immense pain and suffering not knowing what happened and they need to know the truth about what happened. I am doing everything I can to help them get a clear picture of what unfolded that night in 2019.”</p>
-<p><strong>If you can help with information about Theo’s disappearance, <a href="tel:1800333000">please contact Police through Crime Stoppers on 1800 333 000</a> or <a href="tel:1300439456">IFW Global through 1300 439 456</a>.</strong></p>
+<p><strong>If you can help with information about Theo’s disappearance, <a href="tel:1800333000">please contact Police through Crime Stoppers on 1800 333 000</a> or <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>">IFW Global through <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?></a>.</strong></p>
 	</div>
 </div>
 <div class="l-section l-section--medium " id="page-section-6">
@@ -1093,7 +1099,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           </li>
 
                       <li class="phones__item">
-              <a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
+              <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
                 HQ              </a>
             </li>
                       <li class="phones__item">
@@ -1342,13 +1348,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 					<div class="site-footer__admin">
 						<h5 class="site-footer__subtitle">Get in touch</h5>
 
-                          <a href="tel:1300439456" class="site-footer__phone">
+                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="site-footer__phone">
                 <strong class="site-footer__phone-name">
                   Australia (Global HQ)                </strong>
 
                                   1300 IFW GLO (
                 
-                1300 439 456
+                <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>
                                   )
                               </a>
                           <a href="tel:+6183280402" class="site-footer__phone">
@@ -1486,7 +1492,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 			</li>
 
 							<li class="phones__item">
-					<a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
+					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
 						HQ					</a>
 				</li>
 							<li class="phones__item">

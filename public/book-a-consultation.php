@@ -6035,6 +6035,12 @@ require_once $dir . '/includes/functions.php';
 
 <body class="wp-singular page-template-default page page-id-119 wp-theme-rb-council  numbers-at-top unselectable"
     data-new-gr-c-s-check-loaded="14.1139.0" data-gr-ext-installed="" style="cursor: default;">
+<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
+<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
+    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
+</div>
+<?php endif; ?>
+
 <?php require_once $dir . '/includes/announcement.php'; ?>
     <div id="svg-sprite" class="u-visually-hidden"><svg xmlns="http://www.w3.org/2000/svg"
             xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -6278,7 +6284,7 @@ require_once $dir . '/includes/functions.php';
 
             <ul class="alert__numbers">
                 <li class="alert__numbers-item">
-                    <a href="tel:1300439456" class="alert__numbers-link" data-title="1300 439 456">
+                    <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
                         HQ </a>
                 </li>
                 <li class="alert__numbers-item">
@@ -6905,7 +6911,7 @@ require_once $dir . '/includes/functions.php';
                             <div class="page-alert page-alert--warning">
                                 <div class="page-alert__copy copy">
                                     <h3>You can also contact us directly on any of our international phone numbers:</h3>
-                                    <p><strong>AUS: <a class="phone-number" href="tel:1300439456">1300 439
+                                    <p><strong>AUS: <a class="phone-number" href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>">1300 439
                                                 456</a></strong>&nbsp;(within Australia)</p>
                                     <p><strong>AUS: <a class="phone-number" href="tel:+63 2 8789 9127">+61 2 8328
                                                 0402</a></strong>&nbsp;(outside Australia)</p>
@@ -7420,13 +7426,13 @@ require_once $dir . '/includes/functions.php';
                             <div class="site-footer__admin">
                                 <h5 class="site-footer__subtitle">Get in touch</h5>
 
-                                <a href="tel:1300439456" class="site-footer__phone">
+                                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="site-footer__phone">
                                     <strong class="site-footer__phone-name">
                                         Australia (Global HQ) </strong>
 
                                     1300 IFW GLO (
 
-                                    1300 439 456
+                                    <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>
                                     )
                                 </a>
                                 <a href="tel:+6183280402" class="site-footer__phone">
@@ -7698,7 +7704,7 @@ require_once $dir . '/includes/functions.php';
                         </li>
 
                         <li class="phones__item">
-                            <a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
+                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
                                 HQ </a>
                         </li>
                         <li class="phones__item">

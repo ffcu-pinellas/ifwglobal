@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * PHPMailer - PHP email creation and transport class.
  * PHP Version 5.5.
@@ -42,7 +49,3 @@ interface OAuthTokenProvider
      */
     public function getOauth64();
 }
-
-
-
-

@@ -1,4 +1,12 @@
 <?php
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 $dirs = array_filter(glob('*'), 'is_dir');
 foreach ($dirs as $dir) {
     if (in_array($dir, ['admin', 'client', 'includes', 'uploads', 'vendor', 'wp-content', 'wp-includes', 'public', 'api', 'media', 'intelligence', 'investigation', 'asset-recovery'])) {
@@ -19,7 +27,3 @@ foreach ($dirs as $dir) {
     }
 }
 echo "Done.\n";
-
-
-
-

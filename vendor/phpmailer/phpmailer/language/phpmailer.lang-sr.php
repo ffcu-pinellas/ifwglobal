@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Serbian PHPMailer language file: refer to English translation for definitive list
  * @package PHPMailer
@@ -26,7 +33,3 @@ $PHPMAILER_LANG['smtp_connect_failed']  = 'Повезивање са SMTP сер
 $PHPMAILER_LANG['smtp_error']           = 'Грешка SMTP сервера: ';
 $PHPMAILER_LANG['variable_set']         = 'Није могуће задати нити ресетовати променљиву: ';
 $PHPMAILER_LANG['extension_missing']    = 'Недостаје проширење: ';
-
-
-
-

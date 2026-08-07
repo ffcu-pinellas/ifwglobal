@@ -528,6 +528,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 				</style></head>
 
 <body class="wp-singular post-template-default single single-post postid-2080 single-format-standard wp-theme-rb-council unselectable">
+<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
+<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
+    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
+</div>
+<?php endif; ?>
+
 <?php require_once $dir . '/includes/announcement.php'; ?>
 	<a class="skip" href="#main">Skip to main content</a>
 
@@ -544,7 +550,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
     <ul class="alert__numbers">
               <li class="alert__numbers-item">
-          <a href="tel:1300439456" class="alert__numbers-link" data-title="1300 439 456">
+          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
             HQ          </a>
         </li>
               <li class="alert__numbers-item">
@@ -772,8 +778,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <p>IFW Global is seeking to speak with <strong>any individuals who have lost money</strong> as a result of this investment scheme. If you have been affected, please contact IFW Global immediately.</p>
 <p>We remain committed to uncovering fraudulent investment schemes and assisting victims in their pursuit of justice.</p>
 <p><strong>Contact IFW Global:</strong><br>
-Email: info@ifwglobal.com<br>
-Phone: 1300 439 456<br>
+Email: <?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?><br>
+Phone: <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?><br>
 Website: www.ifwglobal.com</p>
 <p><em>IFW Global is actively investigating this matter and urges all affected investors to come forward.</em></p>
 <div style="text-align: center"><img decoding="async" class="aligncenter" src="../wp-content/uploads/2025/03/Picture2.png" alt="TWK Global Limited Website 1"></div>
@@ -1048,7 +1054,7 @@ Website: www.ifwglobal.com</p>
           </li>
 
                       <li class="phones__item">
-              <a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
+              <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
                 HQ              </a>
             </li>
                       <li class="phones__item">
@@ -1297,13 +1303,13 @@ Website: www.ifwglobal.com</p>
 					<div class="site-footer__admin">
 						<h5 class="site-footer__subtitle">Get in touch</h5>
 
-                          <a href="tel:1300439456" class="site-footer__phone">
+                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="site-footer__phone">
                 <strong class="site-footer__phone-name">
                   Australia (Global HQ)                </strong>
 
                                   1300 IFW GLO (
                 
-                1300 439 456
+                <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>
                                   )
                               </a>
                           <a href="tel:+6183280402" class="site-footer__phone">
@@ -1441,7 +1447,7 @@ Website: www.ifwglobal.com</p>
 			</li>
 
 							<li class="phones__item">
-					<a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
+					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
 						HQ					</a>
 				</li>
 							<li class="phones__item">

@@ -48,6 +48,12 @@ require_once $dir . '/includes/functions.php';
 </head>
 
 <body>
+<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
+<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
+    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
+</div>
+<?php endif; ?>
+
 <?php require_once $dir . '/includes/announcement.php'; ?>
   <div class="coming-soon-container">
     <img src="../wp-content/uploads/2026/05/Screenshot-2026-05-13-141848.png/index.html" alt="Gamble Investigates Logo" class="logo">

@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Dutch PHPMailer language file: refer to PHPMailer.php for definitive list.
  * @package PHPMailer
@@ -36,7 +43,3 @@ $PHPMAILER_LANG['variable_set']         = 'Kan de volgende variabele niet instel
 $PHPMAILER_LANG['no_smtputf8']          = 'De server ondersteunt geen SMTPUTF8 dat nodig is om naar Unicode-adressen te sturen.';
 $PHPMAILER_LANG['imap_recommended']     = 'Het gebruik van de vereenvoudigde adresparser is niet aanbevolen. Installeer de IMAP-extensie voor PHP voor volledige RFC822-ondersteuning.';
 $PHPMAILER_LANG['deprecated_argument']  = 'Verouderd argument: ';
-
-
-
-

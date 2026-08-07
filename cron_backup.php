@@ -1,4 +1,12 @@
 <?php
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 // cron_backup.php
 // This script should be run via a cron job on the server (e.g., weekly)
 // 0 0 * * 0 php /path/to/public_html/cron_backup.php
@@ -70,7 +78,3 @@ if (count($files) > 4) {
 
 echo "Backup generated successfully: $backup_name\n";
 ?>
-
-
-
-

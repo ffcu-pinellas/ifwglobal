@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Esperanto PHPMailer language file: refer to English translation for definitive list
  * @package PHPMailer
@@ -35,7 +42,3 @@ $PHPMAILER_LANG['variable_set']         = 'Ne eblas agordi aŭ reagordi la varia
 $PHPMAILER_LANG['no_smtputf8']          = 'La servilo ne subtenas SMTPUTF8, kiu estas bezonata por sendi al Unicode-adresoj.';
 $PHPMAILER_LANG['imap_recommended']     = 'Uzado de la simpligita adresanalizilo ne estas rekomendita. Instalu la IMAP-kromprogramon por PHP por plena RFC822-analizado.';
 $PHPMAILER_LANG['deprecated_argument']  = 'Malrekomendita argumento: ';
-
-
-
-

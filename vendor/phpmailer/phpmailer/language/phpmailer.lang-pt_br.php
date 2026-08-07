@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Brazilian Portuguese PHPMailer language file: refer to English translation for definitive list
  * @package PHPMailer
@@ -36,7 +43,3 @@ $PHPMAILER_LANG['smtp_error']           = 'Erro de servidor SMTP: ';
 $PHPMAILER_LANG['smtp_code_ex']         = 'Informações adicionais do servidor SMTP: ';
 $PHPMAILER_LANG['smtp_detail']          = 'Detalhes do servidor SMTP: ';
 $PHPMAILER_LANG['variable_set']         = 'Não foi possível definir ou redefinir a variável: ';
-
-
-
-

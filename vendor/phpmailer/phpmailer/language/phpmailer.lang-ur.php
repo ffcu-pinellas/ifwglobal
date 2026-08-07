@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Urdu PHPMailer language file: refer to English translation for definitive list
  * @package PHPMailer
@@ -28,7 +35,3 @@ $PHPMAILER_LANG['extension_missing']    = 'ایکٹینشن موجود نہیں 
 $PHPMAILER_LANG['smtp_code']            = 'SMTP سرور کوڈ: ';
 $PHPMAILER_LANG['smtp_code_ex']         = 'اضافی SMTP سرور کی معلومات:';
 $PHPMAILER_LANG['invalid_header']       = 'غلط ہیڈر کا نام یا قدر';
-
-
-
-

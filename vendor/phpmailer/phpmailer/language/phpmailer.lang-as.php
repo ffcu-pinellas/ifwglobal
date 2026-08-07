@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Assamese PHPMailer language file: refer to English translation for definitive list
  * @package PHPMailer
@@ -33,7 +40,3 @@ $PHPMAILER_LANG['smtp_connect_failed']  = 'SMTP সংযোগ() ব্যৰ�
 $PHPMAILER_LANG['smtp_error']           = 'SMTP চাৰ্ভাৰৰ ত্ৰুটি: ';
 $PHPMAILER_LANG['variable_set']         = 'চলক নিৰ্ধাৰণ কৰিব পৰা নগল: ';
 $PHPMAILER_LANG['extension_missing']    = 'অনুপস্থিত সম্প্ৰসাৰণ: ';
-
-
-
-

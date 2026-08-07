@@ -1,5 +1,12 @@
 <?php
-
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 /**
  * Spanish PHPMailer language file: refer to English translation for definitive list
  * @package PHPMailer
@@ -36,7 +43,3 @@ $PHPMAILER_LANG['smtp_error']           = 'Error del servidor SMTP: ';
 $PHPMAILER_LANG['variable_set']         = 'No se pudo configurar la variable: ';
 $PHPMAILER_LANG['imap_recommended']     = 'No se recomienda usar el analizador de direcciones simplificado. Instala la extensión IMAP de PHP para un análisis RFC822 más completo.';
 $PHPMAILER_LANG['deprecated_argument']  = 'Argumento obsoleto: ';
-
-
-
-
