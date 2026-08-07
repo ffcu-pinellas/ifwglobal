@@ -686,7 +686,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- /end HFCM by 99 Robots -->
 
 
-      <a href="/book-a-consultation.php" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
+      <a href="/contact/" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
 
       <button class="site-header__toggle  js-site-offcanvas-trigger" aria-controls="main-nav" aria-expanded="false">
         <span class="site-header__lines"></span>
@@ -772,7 +772,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <p><span style="font-weight: 400">Additionally, a ‘Kate Peterson’ has been getting in touch with people pretending to work for IFW Global.&nbsp;</span></p>
 <p>A ‘Thomas Miller’ using the address&nbsp;<a href="mailto:support@ifwglobal.io" target="_blank" rel="noopener">support@ifwglobal.io</a> has made contact with people claiming they can recover funds and is asking for a security deposit.</p>
 <p><span style="font-weight: 400">However, IFW Global can confirm that </span><b>we do not employ any of these individuals. </b><span style="font-weight: 400">They are cyber criminals impersonating IFW to steal money from victims.</span></p>
-<p><span style="font-weight: 400">If you are approached by one of the above contacts, do not reply. Instead, please </span><a href="/book-a-consultation/"><span style="font-weight: 400">let us know</span></a><span style="font-weight: 400"> if you are being targeted as soon as possible so that we can take action against the fraudsters.</span></p>
+<p><span style="font-weight: 400">If you are approached by one of the above contacts, do not reply. Instead, please </span><a href="/contact/"><span style="font-weight: 400">let us know</span></a><span style="font-weight: 400"> if you are being targeted as soon as possible so that we can take action against the fraudsters.</span></p>
 <h2><b>Always compare the URL</b></h2>
 <p><span style="font-weight: 400">Before parting with any money, you need to double check the website’s URL, which can be found in your address bar. If it is not an exact match for </span><a href="/"><span style="font-weight: 400">www.ifwglobal.com</span></a><span style="font-weight: 400">, then you should exit it immediately. You should always ask for a video call, as IFW has a strict policy in place to meet its clients face to face on a Zoom or Teams call.&nbsp; Most scammers will never meet on a video call.</span></p>
 <p><span style="font-weight: 400">Have you already fallen victim to this online scam? Please contact IFW’s head office on 1300 439 456 or </span><a href="mailto:info@ifwglobal.com"><span style="font-weight: 400">info@ifwglobal.com</span></a><span style="font-weight: 400"> now.&nbsp;</span></p>
@@ -1059,7 +1059,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             </li>
                   </ul>
 
-        <a href="/book-a-consultation/" class="cta__btn btn btn--dark">
+        <a href="/contact/" class="cta__btn btn btn--dark">
           Submit an enquiry
         </a>
       </div>
@@ -1271,7 +1271,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <li id="menu-item-358" class="footer-menu__item footer-menu__item--358"><a href="/intelligence/" class="footer-menu__link"><span class="footer-menu__label">Intelligence</span></a></li>
 <li id="menu-item-359" class="footer-menu__item footer-menu__item--359"><a href="/investigation/" class="footer-menu__link"><span class="footer-menu__label">Investigation</span></a></li>
 <li id="menu-item-360" class="footer-menu__item footer-menu__item--360"><a href="/asset-recovery/" class="footer-menu__link"><span class="footer-menu__label">Asset Recovery</span></a></li>
-<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/book-a-consultation/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
+<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/contact/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
 </ul>					</nav>
 
 					            <div class="site-footer__legals site-footer__legals--mobile">
@@ -1391,7 +1391,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 		</div>
 	</div>
 
-		  <a href="/book-a-consultation/" class="floating-book btn">
+		  <a href="/contact/" class="floating-book btn">
 	    Submit an enquiry
 	  </a>
 	
@@ -1453,7 +1453,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 					</ul>
 	</div>
 
-  <a href="/book-a-consultation/" class="offcanvas__btn btn">
+  <a href="/contact/" class="offcanvas__btn btn">
     Submit an enquiry
   </a>
 </div>
@@ -2051,6 +2051,7 @@ var gdpr_cookies_obj = {"gdpr_cookies_list":"[{\"id_gdpr_cookie_category\":\"3\"
 </b></b>
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
 </body></html>
+
 
 
 

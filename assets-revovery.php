@@ -6600,7 +6600,7 @@ require_once $dir . '/includes/functions.php';
             <!-- /end HFCM by 99 Robots -->
 
 
-            <a href="/book-a-consultation.php" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
+            <a href="/contact/" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
 
             <button class="site-header__toggle  js-site-offcanvas-trigger" aria-controls="main-nav"
                 aria-expanded="false">
@@ -7414,7 +7414,7 @@ require_once $dir . '/includes/functions.php';
                         </li>
                     </ul>
 
-                    <a href="/book-a-consultation/" class="cta__btn btn btn--dark">
+                    <a href="/contact/" class="cta__btn btn btn--dark">
                         Submit an enquiry
                     </a>
                 </div>
@@ -7672,7 +7672,7 @@ require_once $dir . '/includes/functions.php';
                                             href="/asset-recovery/" class="footer-menu__link"><span
                                                 class="footer-menu__label">Asset Recovery</span></a></li>
                                     <li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a
-                                            href="/book-a-consultation/"
+                                            href="/contact/"
                                             class="footer-menu__link"><span class="footer-menu__label">Submit an
                                                 Enquiry</span></a></li>
                                 </ul>
@@ -7809,7 +7809,7 @@ require_once $dir . '/includes/functions.php';
                 </div>
             </div>
 
-            <a href="/book-a-consultation/" class="floating-book btn">
+            <a href="/contact/" class="floating-book btn">
                 Submit an enquiry
             </a>
 
@@ -7995,7 +7995,7 @@ require_once $dir . '/includes/functions.php';
                     </ul>
                 </div>
 
-                <a href="/book-a-consultation/" class="offcanvas__btn btn">
+                <a href="/contact/" class="offcanvas__btn btn">
                     Submit an enquiry
                 </a>
             </div>
@@ -8906,6 +8906,7 @@ require_once $dir . '/includes/functions.php';
     style="visibility: visible !important;"></grammarly-desktop-integration>
 
 </html>
+
 
 
 

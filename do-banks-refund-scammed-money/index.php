@@ -684,7 +684,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- /end HFCM by 99 Robots -->
 
 
-      <a href="/book-a-consultation.php" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
+      <a href="/contact/" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
 
       <button class="site-header__toggle  js-site-offcanvas-trigger" aria-controls="main-nav" aria-expanded="false">
         <span class="site-header__lines"></span>
@@ -805,7 +805,7 @@ As members of the Code of Banking Practice, banks must act fairly and reasonably
 <p>Timing is critical, as evidence fades quickly. Moreover, banks and law enforcement are swamped with reports, often dragging out investigations for up to 12 months. By then, crucial leads can run cold.</p>
 <p>As a premier fraud investigations firm, IFW Global can bring the truth to light sooner than most banks or law enforcement agencies. We have also been <a href="/about-us/">strictly vetted</a> by the NSW Police Force in Australia and the State of Florida in the USA.</p>
 <p>Our skilled private investigators will gather and analyse actionable evidence so that you can escalate your case to financial institutions to recover your losses faster.</p>
-<p>Don’t wait. <a href="/book-a-consultation/">Book a consultation</a> to begin your fraud investigation today.</p>
+<p>Don’t wait. <a href="/contact/">Book a consultation</a> to begin your fraud investigation today.</p>
 	</div>
 </div>
 
@@ -1088,7 +1088,7 @@ As members of the Code of Banking Practice, banks must act fairly and reasonably
             </li>
                   </ul>
 
-        <a href="/book-a-consultation/" class="cta__btn btn btn--dark">
+        <a href="/contact/" class="cta__btn btn btn--dark">
           Submit an enquiry
         </a>
       </div>
@@ -1300,7 +1300,7 @@ As members of the Code of Banking Practice, banks must act fairly and reasonably
 <li id="menu-item-358" class="footer-menu__item footer-menu__item--358"><a href="/intelligence/" class="footer-menu__link"><span class="footer-menu__label">Intelligence</span></a></li>
 <li id="menu-item-359" class="footer-menu__item footer-menu__item--359"><a href="/investigation/" class="footer-menu__link"><span class="footer-menu__label">Investigation</span></a></li>
 <li id="menu-item-360" class="footer-menu__item footer-menu__item--360"><a href="/asset-recovery/" class="footer-menu__link"><span class="footer-menu__label">Asset Recovery</span></a></li>
-<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/book-a-consultation/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
+<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/contact/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
 </ul>					</nav>
 
 					            <div class="site-footer__legals site-footer__legals--mobile">
@@ -1420,7 +1420,7 @@ As members of the Code of Banking Practice, banks must act fairly and reasonably
 		</div>
 	</div>
 
-		  <a href="/book-a-consultation/" class="floating-book btn">
+		  <a href="/contact/" class="floating-book btn">
 	    Submit an enquiry
 	  </a>
 	
@@ -1482,7 +1482,7 @@ As members of the Code of Banking Practice, banks must act fairly and reasonably
 					</ul>
 	</div>
 
-  <a href="/book-a-consultation/" class="offcanvas__btn btn">
+  <a href="/contact/" class="offcanvas__btn btn">
     Submit an enquiry
   </a>
 </div>
@@ -2080,6 +2080,7 @@ var gdpr_cookies_obj = {"gdpr_cookies_list":"[{\"id_gdpr_cookie_category\":\"3\"
 </b></b>
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
 </body></html>
+
 
 
 

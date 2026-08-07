@@ -682,7 +682,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- /end HFCM by 99 Robots -->
 
 
-      <a href="/book-a-consultation.php" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
+      <a href="/contact/" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
 
       <button class="site-header__toggle  js-site-offcanvas-trigger" aria-controls="main-nav" aria-expanded="false">
         <span class="site-header__lines"></span>
@@ -865,7 +865,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 		<p>Gain the actionable insights you need to make crucial decisions and minimise risk. IFW works with an extensive array of well-placed contacts and sources around the world to produce tailored intelligence reports on adversaries, competitors, criminals, political activists and radical groups.</p>
 <p>Our experienced investigators couple cutting-edge technology with global connections to equip you with invaluable public and non-public information. We use a combination of physical and electronic resources, databases, tracking technology and advanced cyber intelligence to produce up-to-date, accurate and timely reports on suspects and targets. Receive a customised intelligence report regardless of the subject’s location, nationality or social status.</p>
 <p>As one of the world’s leading intelligence firms, IFW can deliver a rigorous and actionable intelligence report in practically any country. Contact us now to bring the truth to light.</p>
-<p><a href="../../book-a-consultation.php">Enquire Now</a></p>
+<p><a href="/contact/">Enquire Now</a></p>
 	</div>
 </div>
 <div class="l-section l-section--medium " id="page-section-2">
@@ -1284,7 +1284,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             </li>
                   </ul>
 
-        <a href="../../book-a-consultation.php" class="cta__btn btn btn--dark">
+        <a href="/contact/" class="cta__btn btn btn--dark">
           Submit an enquiry
         </a>
       </div>
@@ -1496,7 +1496,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <li id="menu-item-358" class="footer-menu__item footer-menu__item--358"><a href="../index.php" class="footer-menu__link"><span class="footer-menu__label">Intelligence</span></a></li>
 <li id="menu-item-359" class="footer-menu__item footer-menu__item--359"><a href="../../investigation/index.php" class="footer-menu__link"><span class="footer-menu__label">Investigation</span></a></li>
 <li id="menu-item-360" class="footer-menu__item footer-menu__item--360"><a href="../../asset-recovery/index.php" class="footer-menu__link"><span class="footer-menu__label">Asset Recovery</span></a></li>
-<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="../../book-a-consultation.php" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
+<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/contact/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
 </ul>					</nav>
 
 					            <div class="site-footer__legals site-footer__legals--mobile">
@@ -1616,7 +1616,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 		</div>
 	</div>
 
-		  <a href="../../book-a-consultation.php" class="floating-book btn">
+		  <a href="/contact/" class="floating-book btn">
 	    Submit an enquiry
 	  </a>
 	
@@ -1678,7 +1678,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 					</ul>
 	</div>
 
-  <a href="../../book-a-consultation.php" class="offcanvas__btn btn">
+  <a href="/contact/" class="offcanvas__btn btn">
     Submit an enquiry
   </a>
 </div>
@@ -2312,6 +2312,7 @@ var gdpr_cookies_obj = {"gdpr_cookies_list":"[{\"id_gdpr_cookie_category\":\"3\"
 </b></b></b></b>
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
 </body></html>
+
 
 
 

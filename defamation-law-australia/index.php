@@ -686,7 +686,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- /end HFCM by 99 Robots -->
 
 
-      <a href="/book-a-consultation.php" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
+      <a href="/contact/" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
 
       <button class="site-header__toggle  js-site-offcanvas-trigger" aria-controls="main-nav" aria-expanded="false">
         <span class="site-header__lines"></span>
@@ -832,7 +832,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 		<h2>Can you sue for defamation if the statement was factually correct?</h2>
 <p>If you have been a target of defamation, know that practically any negative statement could be deemed defamation – even if it is technically true.</p>
 <p>However, the court may be less inclined to support your case if the statement is harmful but factually correct. Moreover, the court may decide that you were defamed but refrain from awarding you damages or order any other type of corrective action.</p>
-<p>Therefore, it’s important to gather as much evidential support for your side before taking the next step. At IFW Global, we perform world-leading private and cyber investigations to arm our clients with admissible intelligence. <a href="/book-a-consultation/">Book a consultation</a> today.</p>
+<p>Therefore, it’s important to gather as much evidential support for your side before taking the next step. At IFW Global, we perform world-leading private and cyber investigations to arm our clients with admissible intelligence. <a href="/contact/">Book a consultation</a> today.</p>
 	</div>
 </div>
 <div class="l-section l-section--medium " id="page-section-9">
@@ -866,7 +866,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 	<div class="copy">
 		<h2>Book a private investigation for your defamation case</h2>
 <p>Don’t let defamation damage your reputation beyond repair. If you believe you have been the victim of defamation, it’s important to take urgent action to gather evidence of the crime and recover your losses.</p>
-<p>Our world-renowned <a href="/investigation/">private investigation agency</a> brings together unrivalled expertise, exclusive resources and dynamic strategies to equip clients with actionable insights before it’s too late. <a href="/book-a-consultation/">Book a consultation</a> to get started.</p>
+<p>Our world-renowned <a href="/investigation/">private investigation agency</a> brings together unrivalled expertise, exclusive resources and dynamic strategies to equip clients with actionable insights before it’s too late. <a href="/contact/">Book a consultation</a> to get started.</p>
 	</div>
 </div>
 
@@ -1149,7 +1149,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             </li>
                   </ul>
 
-        <a href="/book-a-consultation/" class="cta__btn btn btn--dark">
+        <a href="/contact/" class="cta__btn btn btn--dark">
           Submit an enquiry
         </a>
       </div>
@@ -1361,7 +1361,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <li id="menu-item-358" class="footer-menu__item footer-menu__item--358"><a href="/intelligence/" class="footer-menu__link"><span class="footer-menu__label">Intelligence</span></a></li>
 <li id="menu-item-359" class="footer-menu__item footer-menu__item--359"><a href="/investigation/" class="footer-menu__link"><span class="footer-menu__label">Investigation</span></a></li>
 <li id="menu-item-360" class="footer-menu__item footer-menu__item--360"><a href="/asset-recovery/" class="footer-menu__link"><span class="footer-menu__label">Asset Recovery</span></a></li>
-<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/book-a-consultation/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
+<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/contact/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
 </ul>					</nav>
 
 					            <div class="site-footer__legals site-footer__legals--mobile">
@@ -1481,7 +1481,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 		</div>
 	</div>
 
-		  <a href="/book-a-consultation/" class="floating-book btn">
+		  <a href="/contact/" class="floating-book btn">
 	    Submit an enquiry
 	  </a>
 	
@@ -1543,7 +1543,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 					</ul>
 	</div>
 
-  <a href="/book-a-consultation/" class="offcanvas__btn btn">
+  <a href="/contact/" class="offcanvas__btn btn">
     Submit an enquiry
   </a>
 </div>
@@ -2141,6 +2141,7 @@ var gdpr_cookies_obj = {"gdpr_cookies_list":"[{\"id_gdpr_cookie_category\":\"3\"
 </b></b>
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
 </body></html>
+
 
 
 

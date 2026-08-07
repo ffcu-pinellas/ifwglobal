@@ -686,7 +686,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- /end HFCM by 99 Robots -->
 
 
-      <a href="/book-a-consultation.php" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
+      <a href="/contact/" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
 
       <button class="site-header__toggle  js-site-offcanvas-trigger" aria-controls="main-nav" aria-expanded="false">
         <span class="site-header__lines"></span>
@@ -770,7 +770,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <div class="l-section l-section--medium " id="page-section-2">
 	<div class="copy">
 		<h2>Next Steps</h2>
-<p>IFW Global is currently conducting an <strong>active investigation</strong> into this matter and is seeking to hear from additional victims. If you or someone you know has lost money to GIM Trading, <strong>please contact IFW Global immediately for assistance </strong>on 1300 439 456, +61 2 8880 0786, info@ifwglobal.com or submit an <a href="/book-a-consultation/">Investment Fraud enquiry</a> to discuss your fraud and what can be done to investigate and recover any stolen money.</p>
+<p>IFW Global is currently conducting an <strong>active investigation</strong> into this matter and is seeking to hear from additional victims. If you or someone you know has lost money to GIM Trading, <strong>please contact IFW Global immediately for assistance </strong>on 1300 439 456, +61 2 8880 0786, info@ifwglobal.com or submit an <a href="/contact/">Investment Fraud enquiry</a> to discuss your fraud and what can be done to investigate and recover any stolen money.</p>
 <p>As a global leader in <a href="/scam/serious-and-organised-fraud/">fraud investigation</a>, our experienced <a href="/investigation/private-investigators/">private investigators</a> utilise exceptional resources and exclusive connections to crack down on criminals around the world – and this illegitimate recovery agent scam is no exception.</p>
 <p>IFW Global Investigations is a private <a href="/intelligence/intelligence-reports/">intelligence and investigations firm</a> that represents investors who believe they have been scammed or duped into fraudulent investment schemes. We are strictly vetted by the NSW Police Force in Australia and the State of Florida in the USA, and you can view and verify our investigator licences at <a href="/about-us/">/about-us/</a></p>
 <p>Your information could help us identify further victims, trace missing funds, and hold those responsible accountable.</p>
@@ -1056,7 +1056,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             </li>
                   </ul>
 
-        <a href="/book-a-consultation/" class="cta__btn btn btn--dark">
+        <a href="/contact/" class="cta__btn btn btn--dark">
           Submit an enquiry
         </a>
       </div>
@@ -1268,7 +1268,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <li id="menu-item-358" class="footer-menu__item footer-menu__item--358"><a href="/intelligence/" class="footer-menu__link"><span class="footer-menu__label">Intelligence</span></a></li>
 <li id="menu-item-359" class="footer-menu__item footer-menu__item--359"><a href="/investigation/" class="footer-menu__link"><span class="footer-menu__label">Investigation</span></a></li>
 <li id="menu-item-360" class="footer-menu__item footer-menu__item--360"><a href="/asset-recovery/" class="footer-menu__link"><span class="footer-menu__label">Asset Recovery</span></a></li>
-<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/book-a-consultation/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
+<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/contact/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
 </ul>					</nav>
 
 					            <div class="site-footer__legals site-footer__legals--mobile">
@@ -1388,7 +1388,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 		</div>
 	</div>
 
-		  <a href="/book-a-consultation/" class="floating-book btn">
+		  <a href="/contact/" class="floating-book btn">
 	    Submit an enquiry
 	  </a>
 	
@@ -1450,7 +1450,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 					</ul>
 	</div>
 
-  <a href="/book-a-consultation/" class="offcanvas__btn btn">
+  <a href="/contact/" class="offcanvas__btn btn">
     Submit an enquiry
   </a>
 </div>
@@ -2048,6 +2048,7 @@ var gdpr_cookies_obj = {"gdpr_cookies_list":"[{\"id_gdpr_cookie_category\":\"3\"
 </b></b>
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
 </body></html>
+
 
 
 

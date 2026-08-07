@@ -686,7 +686,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- /end HFCM by 99 Robots -->
 
 
-      <a href="/book-a-consultation.php" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
+      <a href="/contact/" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
 
       <button class="site-header__toggle  js-site-offcanvas-trigger" aria-controls="main-nav" aria-expanded="false">
         <span class="site-header__lines"></span>
@@ -939,7 +939,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 		<h2>Have you been involved in a crypto scam in Australia?</h2>
 <p>Just like many types of investment fraud, <a href="/scam/cryptocurrency-scams/">cryptocurrency scams</a> are often carried out internationally – sometimes across many jurisdictions. The purpose of this is to restrict and impede law enforcement in their efforts to trace fraudsters and to create obstacles for investors attempting to recover their funds.</p>
 <p>If you suspect that you have f<a href="/first-steps-for-potential-scam-victims/">allen victim to a crypto scam</a>, take immediate action and seek expert assistance from a private investigation agency. Learn more about our <a href="/asset-recovery/cryptocurrency-tracing/">crypto scam recovery</a> services.</p>
-<p><a href="/book-a-consultation/">Book a consultation</a> now or learn more about our c<a href="/scam/cryptocurrency-scams/">ryptocurrency scam investigation</a> services.</p>
+<p><a href="/contact/">Book a consultation</a> now or learn more about our c<a href="/scam/cryptocurrency-scams/">ryptocurrency scam investigation</a> services.</p>
 <p><a href="https://pages.ifwglobal.com/online-investment-fraud-ebook?hsCtaTracking=5d8129ae-4b44-4804-afae-322fb05ffa5f%7Cac15721b-7f75-4b57-9627-578bd556a10a"><img decoding="async" src="../wp-content/uploads/2022/03/09f89348-e35d-4084-ba24-5d37582c.jpg"></a></p>
 	</div>
 </div>
@@ -1223,7 +1223,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             </li>
                   </ul>
 
-        <a href="/book-a-consultation/" class="cta__btn btn btn--dark">
+        <a href="/contact/" class="cta__btn btn btn--dark">
           Submit an enquiry
         </a>
       </div>
@@ -1435,7 +1435,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <li id="menu-item-358" class="footer-menu__item footer-menu__item--358"><a href="/intelligence/" class="footer-menu__link"><span class="footer-menu__label">Intelligence</span></a></li>
 <li id="menu-item-359" class="footer-menu__item footer-menu__item--359"><a href="/investigation/" class="footer-menu__link"><span class="footer-menu__label">Investigation</span></a></li>
 <li id="menu-item-360" class="footer-menu__item footer-menu__item--360"><a href="/asset-recovery/" class="footer-menu__link"><span class="footer-menu__label">Asset Recovery</span></a></li>
-<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/book-a-consultation/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
+<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/contact/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
 </ul>					</nav>
 
 					            <div class="site-footer__legals site-footer__legals--mobile">
@@ -1555,7 +1555,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 		</div>
 	</div>
 
-		  <a href="/book-a-consultation/" class="floating-book btn">
+		  <a href="/contact/" class="floating-book btn">
 	    Submit an enquiry
 	  </a>
 	
@@ -1617,7 +1617,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 					</ul>
 	</div>
 
-  <a href="/book-a-consultation/" class="offcanvas__btn btn">
+  <a href="/contact/" class="offcanvas__btn btn">
     Submit an enquiry
   </a>
 </div>
@@ -2215,6 +2215,7 @@ var gdpr_cookies_obj = {"gdpr_cookies_list":"[{\"id_gdpr_cookie_category\":\"3\"
 </b></b>
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
 </body></html>
+
 
 
 

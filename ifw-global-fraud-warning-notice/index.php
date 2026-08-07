@@ -684,7 +684,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- /end HFCM by 99 Robots -->
 
 
-      <a href="/book-a-consultation.php" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
+      <a href="/contact/" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
 
       <button class="site-header__toggle  js-site-offcanvas-trigger" aria-controls="main-nav" aria-expanded="false">
         <span class="site-header__lines"></span>
@@ -854,7 +854,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <p><strong>Please be aware of scammers posing as IFW</strong></p>
 <p><span data-preserver-spaces="true">Before parting with any money, you need to double-check the website’s URL, which can be found in your address bar. If it is not an exact match for&nbsp;</span><a class="editor-rtfLink" href="../index.php" target="_blank" rel="noopener"><span data-preserver-spaces="true">www.ifwglobal.com</span></a><span data-preserver-spaces="true">, then you should exit it immediately. You should always ask for a video call, as IFW has a strict policy in place to meet its clients face to face on a Zoom or Teams call. Most scammers will never meet on a video call.</span></p>
 <p><em>Learn more about <a href="../how-to-protect-yourself-from-scams/index.php">how to protect yourself from scams</a>.</em></p>
-<p><span data-preserver-spaces="true">Have you already fallen victim to this online scam? Please contact IFW’s head office on</span><strong><span data-preserver-spaces="true">&nbsp;1300 439 456,</span></strong><span data-preserver-spaces="true">&nbsp;</span><a class="editor-rtfLink" href="mailto:info@ifwglobal.com" target="_blank" rel="noopener"><strong><span data-preserver-spaces="true">info@ifwglobal.com</span></strong></a><strong><span data-preserver-spaces="true">,&nbsp;</span></strong><span data-preserver-spaces="true">or submit an&nbsp;</span><a class="editor-rtfLink" href="../book-a-consultation.php" target="_blank" rel="noopener"><strong><span data-preserver-spaces="true">Investment Fraud enquiry</span></strong></a><strong><span data-preserver-spaces="true">&nbsp;</span></strong><span data-preserver-spaces="true">now to discuss your fraud and find out what can be done to investigate and recover your stolen money.</span></p>
+<p><span data-preserver-spaces="true">Have you already fallen victim to this online scam? Please contact IFW’s head office on</span><strong><span data-preserver-spaces="true">&nbsp;1300 439 456,</span></strong><span data-preserver-spaces="true">&nbsp;</span><a class="editor-rtfLink" href="mailto:info@ifwglobal.com" target="_blank" rel="noopener"><strong><span data-preserver-spaces="true">info@ifwglobal.com</span></strong></a><strong><span data-preserver-spaces="true">,&nbsp;</span></strong><span data-preserver-spaces="true">or submit an&nbsp;</span><a class="editor-rtfLink" href="/contact/" target="_blank" rel="noopener"><strong><span data-preserver-spaces="true">Investment Fraud enquiry</span></strong></a><strong><span data-preserver-spaces="true">&nbsp;</span></strong><span data-preserver-spaces="true">now to discuss your fraud and find out what can be done to investigate and recover your stolen money.</span></p>
 <p><span data-preserver-spaces="true">As a global leader in <a href="../scam/serious-and-organised-fraud/index.php">fraud investigation</a>, our experienced <a href="../investigation/private-investigators/index.php">private investigators</a> utilise exceptional resources and exclusive connections to crack down on criminals around the world – and this illegitimate website is no exception.</span></p>
 <p><span data-preserver-spaces="true">IFW Global Investigations is a private <a href="../intelligence/intelligence-reports/index.php">intelligence and investigations firm</a> that represents investors who believe they have been scammed or duped into fraudulent investment schemes. We are strictly vetted by the NSW Police Force in Australia and the State of Florida in the USA, and you can view and verify our investigator licences at&nbsp;</span><a class="editor-rtfLink" href="../about-us/index.php" target="_blank" rel="noopener"><span data-preserver-spaces="true">/about-us/</span></a></p>
 	</div>
@@ -1467,7 +1467,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             </li>
                   </ul>
 
-        <a href="../book-a-consultation.php" class="cta__btn btn btn--dark">
+        <a href="/contact/" class="cta__btn btn btn--dark">
           Submit an enquiry
         </a>
       </div>
@@ -1679,7 +1679,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <li id="menu-item-358" class="footer-menu__item footer-menu__item--358"><a href="../intelligence/index.php" class="footer-menu__link"><span class="footer-menu__label">Intelligence</span></a></li>
 <li id="menu-item-359" class="footer-menu__item footer-menu__item--359"><a href="../investigation/index.php" class="footer-menu__link"><span class="footer-menu__label">Investigation</span></a></li>
 <li id="menu-item-360" class="footer-menu__item footer-menu__item--360"><a href="../asset-recovery/index.php" class="footer-menu__link"><span class="footer-menu__label">Asset Recovery</span></a></li>
-<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="../book-a-consultation.php" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
+<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/contact/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
 </ul>					</nav>
 
 					            <div class="site-footer__legals site-footer__legals--mobile">
@@ -1799,7 +1799,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 		</div>
 	</div>
 
-		  <a href="../book-a-consultation.php" class="floating-book btn">
+		  <a href="/contact/" class="floating-book btn">
 	    Submit an enquiry
 	  </a>
 	
@@ -1861,7 +1861,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 					</ul>
 	</div>
 
-  <a href="../book-a-consultation.php" class="offcanvas__btn btn">
+  <a href="/contact/" class="offcanvas__btn btn">
     Submit an enquiry
   </a>
 </div>
@@ -2459,6 +2459,7 @@ var gdpr_cookies_obj = {"gdpr_cookies_list":"[{\"id_gdpr_cookie_category\":\"3\"
 </b></b>
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
 </body></html>
+
 
 
 

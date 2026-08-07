@@ -157,7 +157,7 @@ require_once $dir . '/includes/functions.php';
     <meta name="description"
         content="Submit an enquiry with Ken Gamble and IFW Global. International specialists at cybercrime investigations">
     <meta name="robots" content="follow, index, max-snippet:-1, max-video-preview:-1, max-image-preview:large">
-    <link rel="canonical" href="/book-a-consultation/">
+    <link rel="canonical" href="/contact/">
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="article">
     <meta property="og:title" content="Submit an Enquiry: IFW Global">
@@ -2560,9 +2560,9 @@ require_once $dir . '/includes/functions.php';
         }
     </style>
     <link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed"
-        href="/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fifwglobal.com%2Fbook-a-consultation%2F">
+        href="/contact/">
     <link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed"
-        href="/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fifwglobal.com%2Fbook-a-consultation%2F&amp;format=xml">
+        href="/contact/">
     <style id="wp-img-auto-sizes-contain-inline-css" type="text/css">
         img:is([sizes=auto i], [sizes^="auto," i]) {
             contain-intrinsic-size: 3000px 1500px
@@ -6641,7 +6641,7 @@ require_once $dir . '/includes/functions.php';
             <!-- /end HFCM by 99 Robots -->
 
 
-            <a href="/book-a-consultation.php" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
+            <a href="/contact/" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
 
             <button class="site-header__toggle  js-site-offcanvas-trigger" aria-controls="main-nav"
                 aria-expanded="false">
@@ -7391,7 +7391,7 @@ require_once $dir . '/includes/functions.php';
                                                 class="footer-menu__label">Asset Recovery</span></a></li>
                                     <li id="menu-item-465"
                                         class="footer-menu__item footer-menu__item--465 is-current page_item page-item-119 current_page_item">
-                                        <a href="/book-a-consultation/"
+                                        <a href="/contact/"
                                             class="footer-menu__link"><span class="footer-menu__label">Submit an
                                                 Enquiry</span></a>
                                     </li>
@@ -7712,7 +7712,7 @@ require_once $dir . '/includes/functions.php';
                     </ul>
                 </div>
 
-                <a href="/book-a-consultation/" class="offcanvas__btn btn">
+                <a href="/contact/" class="offcanvas__btn btn">
                     Submit an enquiry
                 </a>
             </div>
@@ -8610,6 +8610,7 @@ require_once $dir . '/includes/functions.php';
     style="visibility: visible !important;"></grammarly-desktop-integration>
 
 </html>
+
 
 
 

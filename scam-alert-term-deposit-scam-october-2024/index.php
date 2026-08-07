@@ -686,7 +686,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- /end HFCM by 99 Robots -->
 
 
-      <a href="/book-a-consultation.php" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
+      <a href="/contact/" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
 
       <button class="site-header__toggle  js-site-offcanvas-trigger" aria-controls="main-nav" aria-expanded="false">
         <span class="site-header__lines"></span>
@@ -747,7 +747,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 	<div class="copy">
 		<h1><strong>TERM DEPOSIT SCAM WARNING</strong></h1>
 <p class="x_MsoNormal"><span data-olk-copy-source="MessageBody">British fraudsters from overseas are contacting Australian investors offering term deposits and bank bonds whilst impersonating genuine Australian financial institutions, banks, and support services. The fraudsters are cloning real and authorised Australian companies using fake websites created by the scam syndicate. The fraudsters will offer to set up Term Deposits at an attractive interest rate and induce the victim into sending money to a bank account controlled by a money launderer (known as a money mule). Once the victim transfers their funds, the money is immediately withdrawn from the nominated money mule account and transferred overseas or cashed out into cryptocurrency. </span></p>
-<p>If you believe you may have already fallen victim to this scam, contact IFW’s Head Office immediately on 1300 439 456, info@ifwglobal.com or submit an <a href="/book-a-consultation/">Investment Fraud enquiry</a> to discuss your fraud and what can be done to investigate and recover any stolen money.</p>
+<p>If you believe you may have already fallen victim to this scam, contact IFW’s Head Office immediately on 1300 439 456, info@ifwglobal.com or submit an <a href="/contact/">Investment Fraud enquiry</a> to discuss your fraud and what can be done to investigate and recover any stolen money.</p>
 <p>As a global leader in <a href="/scam/serious-and-organised-fraud/">fraud investigation</a>, our experienced <a href="/investigation/private-investigators/">private investigators</a> utilise exceptional resources and exclusive connections to crack down on criminals around the world.</p>
 <p>IFW Global Investigations is a private <a href="/intelligence/intelligence-reports/">intelligence and investigations firm</a> that represents investors who believe they have been scammed or duped into fraudulent investment schemes. We are strictly vetted by the NSW Police Force in Australia and the State of Florida in the USA, and you can view and verify our investigator licences at <a href="/about-us/">/about-us/</a></p>
 	</div>
@@ -1121,7 +1121,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             </li>
                   </ul>
 
-        <a href="/book-a-consultation/" class="cta__btn btn btn--dark">
+        <a href="/contact/" class="cta__btn btn btn--dark">
           Submit an enquiry
         </a>
       </div>
@@ -1333,7 +1333,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <li id="menu-item-358" class="footer-menu__item footer-menu__item--358"><a href="/intelligence/" class="footer-menu__link"><span class="footer-menu__label">Intelligence</span></a></li>
 <li id="menu-item-359" class="footer-menu__item footer-menu__item--359"><a href="/investigation/" class="footer-menu__link"><span class="footer-menu__label">Investigation</span></a></li>
 <li id="menu-item-360" class="footer-menu__item footer-menu__item--360"><a href="/asset-recovery/" class="footer-menu__link"><span class="footer-menu__label">Asset Recovery</span></a></li>
-<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/book-a-consultation/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
+<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/contact/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
 </ul>					</nav>
 
 					            <div class="site-footer__legals site-footer__legals--mobile">
@@ -1453,7 +1453,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 		</div>
 	</div>
 
-		  <a href="/book-a-consultation/" class="floating-book btn">
+		  <a href="/contact/" class="floating-book btn">
 	    Submit an enquiry
 	  </a>
 	
@@ -1515,7 +1515,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 					</ul>
 	</div>
 
-  <a href="/book-a-consultation/" class="offcanvas__btn btn">
+  <a href="/contact/" class="offcanvas__btn btn">
     Submit an enquiry
   </a>
 </div>
@@ -2113,6 +2113,7 @@ var gdpr_cookies_obj = {"gdpr_cookies_list":"[{\"id_gdpr_cookie_category\":\"3\"
 </b></b>
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
 </body></html>
+
 
 
 

@@ -682,7 +682,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- /end HFCM by 99 Robots -->
 
 
-      <a href="/book-a-consultation.php" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
+      <a href="/contact/" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
 
       <button class="site-header__toggle  js-site-offcanvas-trigger" aria-controls="main-nav" aria-expanded="false">
         <span class="site-header__lines"></span>
@@ -865,7 +865,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 		<p>Leave no stone unturned with expert cyber investigation services. IFW investigators gather vital information through a combination of technical and physical resources, including the use of covert surveillance, and strategic cyber intelligence.</p>
 <p>Our success is also due to its extensive network of cyber intelligence professionals and local law enforcement agencies, giving us unparalleled access without the red tape of traditional operations.</p>
 <p>Trusted by law firms, multinational corporations, businesses, high-net-worth individuals, major media and government agencies worldwide, IFW cybercrime investigators gather actionable evidence that can be used to expose and prosecute the perpetrators behind the offence. If you have fallen victim to cybercrime, contact our renowned team now.</p>
-<p><a href="../../book-a-consultation.php">Enquire Now</a></p>
+<p><a href="/contact/">Enquire Now</a></p>
 	</div>
 </div>
 <div class="l-section l-section--medium " id="page-section-2">
@@ -920,7 +920,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 And much more</li>
 </ul>
 <p>In recent years, we have helped to recover millions of dollars in global asset recovery for our clients. From cryptocurrency and email phishing investigations, crypto scams and malware investigations through to superannuation scams, online romance scams, ponzi schemes and identity theft investigations, we are experts in combatting every form of cybercrime.</p>
-<p><a href="../../book-a-consultation.php" target="_blank" rel="noopener">Enquire now</a></p>
+<p><a href="/contact/" target="_blank" rel="noopener">Enquire now</a></p>
 	</div>
 </div>
 <div class="l-section l-section--medium " id="page-section-4">
@@ -1352,7 +1352,7 @@ And much more</li>
             </li>
                   </ul>
 
-        <a href="../../book-a-consultation.php" class="cta__btn btn btn--dark">
+        <a href="/contact/" class="cta__btn btn btn--dark">
           Submit an enquiry
         </a>
       </div>
@@ -1564,7 +1564,7 @@ And much more</li>
 <li id="menu-item-358" class="footer-menu__item footer-menu__item--358"><a href="../../intelligence/index.php" class="footer-menu__link"><span class="footer-menu__label">Intelligence</span></a></li>
 <li id="menu-item-359" class="footer-menu__item footer-menu__item--359"><a href="../index.php" class="footer-menu__link"><span class="footer-menu__label">Investigation</span></a></li>
 <li id="menu-item-360" class="footer-menu__item footer-menu__item--360"><a href="../../asset-recovery/index.php" class="footer-menu__link"><span class="footer-menu__label">Asset Recovery</span></a></li>
-<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="../../book-a-consultation.php" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
+<li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a href="/contact/" class="footer-menu__link"><span class="footer-menu__label">Submit an Enquiry</span></a></li>
 </ul>					</nav>
 
 					            <div class="site-footer__legals site-footer__legals--mobile">
@@ -1684,7 +1684,7 @@ And much more</li>
 		</div>
 	</div>
 
-		  <a href="../../book-a-consultation.php" class="floating-book btn">
+		  <a href="/contact/" class="floating-book btn">
 	    Submit an enquiry
 	  </a>
 	
@@ -1746,7 +1746,7 @@ And much more</li>
 					</ul>
 	</div>
 
-  <a href="../../book-a-consultation.php" class="offcanvas__btn btn">
+  <a href="/contact/" class="offcanvas__btn btn">
     Submit an enquiry
   </a>
 </div>
@@ -2380,6 +2380,7 @@ var gdpr_cookies_obj = {"gdpr_cookies_list":"[{\"id_gdpr_cookie_category\":\"3\"
 </b></b>
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
 </body></html>
+
 
 
 

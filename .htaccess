@@ -19,5 +19,5 @@ RewriteRule ^([^/]+)/?$ $1.php [L]
 Options -Indexes
 </IfModule>
 
-RewriteRule ^book-a-consultation\.php$ /book-a-consultation/ [R=301,L]
+RewriteRule ^book-a-consultation(?:/.*|\.php)?$ /contact/ [R=301,L]
 
