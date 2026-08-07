@@ -6,21 +6,25 @@ $current_page = basename($_SERVER['PHP_SELF']);
 // Global Unread Chat Count Logic
 $global_unread_chat = 0;
 if (isset($pdo)) {
-    if ($user_role === 'client') {
-        $client_id = $_SESSION['client_portal_id'] ?? 0;
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM IFW_chat_messages WHERE client_id = ? AND sender_type = 'admin' AND is_read = 0");
-        $stmt->execute([$client_id]);
-        $global_unread_chat = $stmt->fetchColumn();
-    } else {
-        $admin_id = $_SESSION['admin_id'] ?? 0;
-        if ($user_role === 'super_admin' || $user_role === 'admin' || $user_role === 'superadmin') {
-            $stmt = $pdo->query("SELECT COUNT(*) FROM IFW_chat_messages WHERE sender_type = 'client' AND is_read = 0");
+    try {
+        if ($user_role === 'client') {
+            $client_id = $_SESSION['client_portal_id'] ?? 0;
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM IFW_chat_messages WHERE client_id = ? AND sender_type = 'admin' AND is_read = 0");
+            $stmt->execute([$client_id]);
             $global_unread_chat = $stmt->fetchColumn();
         } else {
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM IFW_chat_messages m JOIN IFW_clients c ON m.client_id = c.id WHERE c.assigned_agent_id = ? AND m.sender_type = 'client' AND m.is_read = 0");
-            $stmt->execute([$admin_id]);
-            $global_unread_chat = $stmt->fetchColumn();
+            $admin_id = $_SESSION['admin_id'] ?? 0;
+            if ($user_role === 'super_admin' || $user_role === 'admin' || $user_role === 'superadmin') {
+                $stmt = $pdo->query("SELECT COUNT(*) FROM IFW_chat_messages WHERE sender_type = 'client' AND is_read = 0");
+                $global_unread_chat = $stmt->fetchColumn();
+            } else {
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM IFW_chat_messages m JOIN IFW_clients c ON m.client_id = c.id WHERE c.assigned_agent_id = ? AND m.sender_type = 'client' AND m.is_read = 0");
+                $stmt->execute([$admin_id]);
+                $global_unread_chat = $stmt->fetchColumn();
+            }
         }
+    } catch (Exception $e) {
+        $global_unread_chat = 0;
     }
 }
 ?>
