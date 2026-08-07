@@ -55,16 +55,22 @@ function render_dynamic_form($pdo) {
         switch ($field['field_type']) {
             case 'text':
             case 'email':
-                $html .= '<input type="' . htmlspecialchars($field['field_type']) . '" class="large" id="' . $name . '" name="' . $name . '" ' . $required . '>';
+            case 'tel':
+                $html .= '<input type="' . htmlspecialchars($field['field_type']) . '" class="large" id="' . $name . '" name="' . $name . '" placeholder="' . $label . '" ' . $required . '>';
                 break;
             case 'textarea':
-                $html .= '<textarea class="textarea large" id="' . $name . '" name="' . $name . '" rows="4" ' . $required . '></textarea>';
+                $html .= '<textarea class="textarea large" id="' . $name . '" name="' . $name . '" rows="4" placeholder="' . $label . '" ' . $required . '></textarea>';
                 break;
             case 'select':
                 $html .= '<select class="large gfield_select" id="' . $name . '" name="' . $name . '" ' . $required . '>';
+                $html .= '<option value="">Select ' . $label . '</option>';
                 $options = json_decode($field['field_options'], true);
+                if (!is_array($options) && !empty($field['field_options'])) {
+                    $options = explode(',', $field['field_options']);
+                }
                 if (is_array($options)) {
                     foreach ($options as $opt) {
+                        $opt = trim($opt);
                         $html .= '<option value="' . htmlspecialchars($opt) . '">' . htmlspecialchars($opt) . '</option>';
                     }
                 }
