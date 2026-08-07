@@ -47,11 +47,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     
     $tax_rate = (float)($_POST['tax_rate'] ?? 0);
     $tax_amount = ($subtotal * $tax_rate) / 100;
-    $total_amount = $subtotal + $tax_amount;
+    
+    $discount_amount = (float)($_POST['discount_amount'] ?? 0);
+    $currency = $_POST['currency'] ?? 'USD';
+    
+    $total_amount = ($subtotal + $tax_amount) - $discount_amount;
+    if ($total_amount < 0) $total_amount = 0;
     
     // Insert Invoice
-    $stmt = $pdo->prepare("INSERT INTO IFW_invoices (invoice_number, client_id, case_id, status, issue_date, due_date, subtotal, tax_rate, tax_amount, total_amount, notes) VALUES (?, ?, ?, 'Unpaid', ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$inv_number, $client_id, $case_id, $issue_date, $due_date, $subtotal, $tax_rate, $tax_amount, $total_amount, trim($_POST['notes'] ?? '')]);
+    $stmt = $pdo->prepare("INSERT INTO IFW_invoices (invoice_number, client_id, case_id, status, issue_date, due_date, subtotal, tax_rate, tax_amount, discount_amount, total_amount, currency, notes) VALUES (?, ?, ?, 'Unpaid', ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$inv_number, $client_id, $case_id, $issue_date, $due_date, $subtotal, $tax_rate, $tax_amount, $discount_amount, $total_amount, $currency, trim($_POST['notes'] ?? '')]);
     $invoice_id = $pdo->lastInsertId();
     
     // Insert Items
@@ -89,13 +94,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                </tr>";
             }
             
-            $html_body .= "<tr><td colspan='3' style='padding: 10px; text-align: right; border: 1px solid #ddd; font-weight: bold;'>Subtotal</td><td style='padding: 10px; text-align: right; border: 1px solid #ddd;'>$" . number_format($subtotal, 2) . "</td></tr>";
+            $html_body .= "<tr><td colspan='3' style='padding: 10px; text-align: right; border: 1px solid #ddd; font-weight: bold;'>Subtotal</td><td style='padding: 10px; text-align: right; border: 1px solid #ddd;'>{$currency} " . number_format($subtotal, 2) . "</td></tr>";
             
             if ($tax_rate > 0) {
-                $html_body .= "<tr><td colspan='3' style='padding: 10px; text-align: right; border: 1px solid #ddd; font-weight: bold;'>Tax ({$tax_rate}%)</td><td style='padding: 10px; text-align: right; border: 1px solid #ddd;'>$" . number_format($tax_amount, 2) . "</td></tr>";
+                $html_body .= "<tr><td colspan='3' style='padding: 10px; text-align: right; border: 1px solid #ddd; font-weight: bold;'>Tax ({$tax_rate}%)</td><td style='padding: 10px; text-align: right; border: 1px solid #ddd;'>{$currency} " . number_format($tax_amount, 2) . "</td></tr>";
+            }
+            if ($discount_amount > 0) {
+                $html_body .= "<tr><td colspan='3' style='padding: 10px; text-align: right; border: 1px solid #ddd; font-weight: bold;'>Discount</td><td style='padding: 10px; text-align: right; border: 1px solid #ddd; color: #d9534f;'>- {$currency} " . number_format($discount_amount, 2) . "</td></tr>";
             }
             
-            $html_body .= "<tr><td colspan='3' style='padding: 10px; text-align: right; border: 1px solid #ddd; font-weight: bold; font-size: 1.2em;'>Total Due</td><td style='padding: 10px; text-align: right; border: 1px solid #ddd; font-weight: bold; font-size: 1.2em; color: #b58d3c;'>$" . number_format($total_amount, 2) . "</td></tr>";
+            $html_body .= "<tr><td colspan='3' style='padding: 10px; text-align: right; border: 1px solid #ddd; font-weight: bold; font-size: 1.2em;'>Total Due</td><td style='padding: 10px; text-align: right; border: 1px solid #ddd; font-weight: bold; font-size: 1.2em; color: #b58d3c;'>{$currency} " . number_format($total_amount, 2) . "</td></tr>";
             $html_body .= "</table>
                            <p style='margin-top: 20px;'><strong>Due Date:</strong> " . date('M j, Y', strtotime($due_date)) . "</p>
                            <p>You can securely pay this invoice by logging into your <a href='" . BASE_URL . "/client/login.php'>Client Portal</a>.</p>";
@@ -194,7 +202,7 @@ require_once '../includes/admin_sidebar.php';
                                 <td><strong class="text-white"><?= htmlspecialchars($inv['invoice_number']) ?></strong></td>
                                 <td><?= htmlspecialchars($inv['first_name'] . ' ' . $inv['last_name']) ?></td>
                                 <td><?= date('M j, Y', strtotime($inv['issue_date'])) ?></td>
-                                <td><strong class="text-success">$<?= number_format($inv['total_amount'], 2) ?></strong></td>
+                                <td><strong class="text-success"><?= htmlspecialchars($inv['currency'] ?? 'USD') ?> <?= number_format($inv['total_amount'], 2) ?></strong></td>
                                 <td>
                                     <form method="POST">
                                         <input type="hidden" name="action" value="update_status">
@@ -208,6 +216,7 @@ require_once '../includes/admin_sidebar.php';
                                     </form>
                                 </td>
                                 <td>
+                                    <a href="invoice_print.php?id=<?= $inv['id'] ?>" target="_blank" class="btn btn-sm btn-info mr-1" title="Print / PDF"><i class="fas fa-print"></i></a>
                                     <?php if (!$is_agent): ?>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Delete this invoice?');">
                                             <input type="hidden" name="action" value="delete_invoice">
@@ -247,7 +256,7 @@ require_once '../includes/admin_sidebar.php';
             </div>
 
             <div class="row mb-3">
-                <div class="col-md-6">
+                <div class="col-md-5">
                     <label class="text-white font-weight-bold">Target Client Recipient <span class="text-warning">*</span></label>
                     <select name="client_id" class="form-control bg-dark text-white border-secondary" required>
                         <option value="">Select Client...</option>
@@ -256,13 +265,23 @@ require_once '../includes/admin_sidebar.php';
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-5">
                     <label class="text-white font-weight-bold">Linked Case</label>
                     <select name="case_id" class="form-control bg-dark text-white border-secondary">
                         <option value="">No Case Linked</option>
                         <?php foreach($cases as $case): ?>
                             <option value="<?= $case['id'] ?>"><?= htmlspecialchars($case['case_number']) ?> - <?= htmlspecialchars($case['title']) ?></option>
                         <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="text-white font-weight-bold">Currency</label>
+                    <select name="currency" id="currencySelector" class="form-control bg-dark text-white border-secondary">
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="AUD">AUD ($)</option>
+                        <option value="CAD">CAD ($)</option>
                     </select>
                 </div>
             </div>
@@ -319,7 +338,11 @@ require_once '../includes/admin_sidebar.php';
                                 <td colspan="2"><input type="number" name="tax_rate" id="taxRate" class="form-control bg-dark text-white border-secondary" value="0" min="0" max="100" step="0.1"></td>
                             </tr>
                             <tr>
-                                <td colspan="3" class="text-right align-middle font-weight-bold text-warning" style="font-size: 1.2rem;">Total Amount ($)</td>
+                                <td colspan="3" class="text-right align-middle text-muted">Discount Amount</td>
+                                <td colspan="2"><input type="number" name="discount_amount" id="discountAmount" class="form-control bg-dark text-white border-secondary text-danger" value="0" min="0" step="0.01"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-right align-middle font-weight-bold text-warning" style="font-size: 1.2rem;">Total Amount <span id="displayCurrency">USD</span></td>
                                 <td colspan="2"><input type="text" id="calcTotal" class="form-control bg-black text-warning border-secondary font-weight-bold" style="font-size: 1.2rem;" value="0.00" readonly></td>
                             </tr>
                         </tfoot>
@@ -367,8 +390,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('calcSubtotal').value = formatCurrency(subtotal);
         const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+        const discountAmount = parseFloat(document.getElementById('discountAmount').value) || 0;
+        
         const taxAmount = subtotal * (taxRate / 100);
-        document.getElementById('calcTotal').value = formatCurrency(subtotal + taxAmount);
+        let total = (subtotal + taxAmount) - discountAmount;
+        if(total < 0) total = 0;
+        
+        document.getElementById('calcTotal').value = formatCurrency(total);
     }
     
     function attachListeners(row) {
@@ -385,6 +413,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Attach to initial row
     attachListeners(tbody.querySelector('.item-row'));
     document.getElementById('taxRate').addEventListener('input', calculateTotals);
+    document.getElementById('discountAmount').addEventListener('input', calculateTotals);
+    
+    // Currency display
+    document.getElementById('currencySelector').addEventListener('change', function() {
+        document.getElementById('displayCurrency').innerText = this.value;
+    });
     
     // Add new row
     document.getElementById('addRowBtn').addEventListener('click', function() {
