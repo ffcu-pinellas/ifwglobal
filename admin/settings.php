@@ -7,7 +7,7 @@ require_admin_login();
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $keys = [
-        'phone_australia', 'phone_usa', 'display_phone_numbers',
+        'phone_australia', 'phone_australia_secondary', 'phone_uk', 'phone_usa', 'display_phone_numbers',
         'contact_email', 'contact_phone', 'office_address',
         'bank_name', 'bank_account_name', 'bank_account_number', 'bank_swift_iban',
         'crypto_wallet_address', 'crypto_wallet_type', 'payment_instructions',
@@ -114,7 +114,17 @@ while ($row = $stmt->fetch()) {
 
                     <div class="form-group mb-3">
                         <label class="font-weight-bold text-light">Australia Phone Number</label>
-                        <input type="text" name="phone_australia" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['phone_australia'] ?? '+61 (02) 8328 0402'); ?>" placeholder="+61 (02) 8328 0402">
+                        <input type="text" name="phone_australia" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['phone_australia'] ?? '+61 (02) 8328 0402'); ?>" placeholder="HQ Number">
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-light">Australia Phone Number (Secondary)</label>
+                        <input type="text" name="phone_australia_secondary" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['phone_australia_secondary'] ?? '+61 (02) 8328 0402'); ?>" placeholder="Secondary Number">
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-light">UK Phone Number</label>
+                        <input type="text" name="phone_uk" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['phone_uk'] ?? ''); ?>" placeholder="UK Number">
                     </div>
 
                     <div class="form-group mb-3">

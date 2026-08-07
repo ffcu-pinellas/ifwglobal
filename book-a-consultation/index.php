@@ -25,6 +25,11 @@ $fields = $pdo->query("SELECT * FROM IFW_form_fields ORDER BY display_order ASC"
 
 <html lang="en-AU" prefix="og: https://ogp.me/ns#" class="no-js ">
 <head>
+<?php if (get_setting($pdo, 'display_phone_numbers', '1') == '0'): ?>
+<style>
+.alert__numbers, .phones__link, .phone-number, a[href^="tel:"] { display: none !important; visibility: hidden !important; }
+</style>
+<?php endif; ?>
 	
 
 	<meta charset="UTF-8">
@@ -987,7 +992,7 @@ Thanks to IFW for their relentless pursuit of the criminals involved. </p>
                                   )
                               </a>
                           <a
-                href="tel:+6183280402"
+                href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>"
                 class="site-footer__phone"
               >
                 <strong class="site-footer__phone-name">
@@ -1149,7 +1154,7 @@ Thanks to IFW for their relentless pursuit of the criminals involved. </p>
 				</li>
 							<li class="phones__item">
 					<a
-						href="tel:+6183280402"
+						href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>"
 						class="phones__link"
 						data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>"
 					>

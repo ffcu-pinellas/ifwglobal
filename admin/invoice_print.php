@@ -26,6 +26,11 @@ $currency = $invoice['currency'] ?? 'USD';
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<?php if (get_setting($pdo, 'display_phone_numbers', '1') == '0'): ?>
+<style>
+.alert__numbers, .phones__link, .phone-number, a[href^="tel:"] { display: none !important; visibility: hidden !important; }
+</style>
+<?php endif; ?>
     <meta charset="UTF-8">
     <title>Invoice <?= htmlspecialchars($invoice['invoice_number']) ?></title>
     <style>
@@ -111,8 +116,7 @@ $currency = $invoice['currency'] ?? 'USD';
                     <tr>
                         <td>
                             <strong>IFW Global Headquarters</strong><br>
-                            <?= htmlspecialchars(get_setting($pdo, 'office_address', 'Level 5, 20 Bond Street')) ?><br>
-                            Sydney NSW 2000, Australia<br>
+                            <?= nl2br(htmlspecialchars(get_setting($pdo, 'office_address', "Level 5, 20 Bond Street\nSydney NSW 2000, Australia"))) ?><br>
                             <?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?>
                         </td>
                         
@@ -167,9 +171,30 @@ $currency = $invoice['currency'] ?? 'USD';
         </tr>
     </table>
     
+    <div class="mt-4">
+        <strong>Payment Information:</strong>
+        <p style="margin-bottom: 5px;">
+            <strong>Bank Name:</strong> <?= htmlspecialchars(get_setting($pdo, 'bank_name')) ?><br>
+            <strong>Account Name:</strong> <?= htmlspecialchars(get_setting($pdo, 'bank_account_name')) ?><br>
+            <strong>Account Number:</strong> <?= htmlspecialchars(get_setting($pdo, 'bank_account_number')) ?><br>
+            <strong>SWIFT / IBAN:</strong> <?= htmlspecialchars(get_setting($pdo, 'bank_swift_iban')) ?>
+        </p>
+        <?php if ($crypto_wallet = get_setting($pdo, 'crypto_wallet_address')): ?>
+        <p style="margin-bottom: 5px;">
+            <strong>Crypto Wallet (<?= htmlspecialchars(get_setting($pdo, 'crypto_wallet_type', 'USDT TRC20')) ?>):</strong> <?= htmlspecialchars($crypto_wallet) ?>
+        </p>
+        <?php endif; ?>
+        <?php if ($payment_inst = get_setting($pdo, 'payment_instructions')): ?>
+        <p style="margin-bottom: 5px;">
+            <strong>Instructions:</strong><br>
+            <?= nl2br(htmlspecialchars($payment_inst)) ?>
+        </p>
+        <?php endif; ?>
+    </div>
+    
     <?php if(!empty($invoice['notes'])): ?>
     <div class="mt-4">
-        <strong>Notes & Payment Terms:</strong>
+        <strong>Notes:</strong>
         <p><?= nl2br(htmlspecialchars($invoice['notes'])) ?></p>
     </div>
     <?php endif; ?>

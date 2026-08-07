@@ -8,6 +8,11 @@ require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
 ?>
 <!DOCTYPE html><html lang="en-AU" prefix="og: https://ogp.me/ns#" class="no-js "><head>
+<?php if (get_setting($pdo, 'display_phone_numbers', '1') == '0'): ?>
+<style>
+.alert__numbers, .phones__link, .phone-number, a[href^="tel:"] { display: none !important; visibility: hidden !important; }
+</style>
+<?php endif; ?>
 <style id='gdpr-global-suppress'>#gdpr-cookie-consent-bar, #gdpr-cookie-consent-show-again, #cookie_action_settings, .gdpr_action_button, .gdpr-modal, .cli-modal, #cliModal, [id*='gdpr'], [class*='gdpr-cookie'], [class*='cli-'] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important; }</style>
 	<script>(function(H){H.className=H.className.replace(/\bno-js\b/,'js')})(document.documentElement)</script>
 
@@ -525,7 +530,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             HQ          </a>
         </li>
               <li class="alert__numbers-item">
-          <a href="tel:+6183280402" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
             AUS          </a>
         </li>
               <li class="alert__numbers-item">
@@ -929,10 +934,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 						<div class="accordion__body  js-accordion-body" id="accordion-item-1">
 							<div class="accordion__copy copy">
-								<p>Level 26, 44 Market Street,<br>
-Sydney NSW 2000<br>
+								<p><?= nl2br(htmlspecialchars(get_setting($pdo, 'office_address', "Level 26, 44 Market Street\nSydney NSW 2000"))) ?><br>
 P:&nbsp;<a class="phone-number" href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>"><?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?></a>&nbsp;(within Australia)<br>
-P:&nbsp;<a class="phone-number" href="tel:+61 2 8328 0402"><?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></a>&nbsp;(outside Australia)</p>
+P:&nbsp;<a class="phone-number" href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>"><?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></a>&nbsp;(outside Australia)</p>
 							</div>
 						</div>
 					</section>
@@ -1229,7 +1233,7 @@ P:&nbsp;<a class="phone-number" href="tel:+61 2 8328 0402"><?= htmlspecialchars(
                 <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>
                                   )
                               </a>
-                          <a href="tel:+6183280402" class="site-footer__phone">
+                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>" class="site-footer__phone">
                 <strong class="site-footer__phone-name">
                   Australia                </strong>
 
@@ -1368,7 +1372,7 @@ P:&nbsp;<a class="phone-number" href="tel:+61 2 8328 0402"><?= htmlspecialchars(
 						HQ					</a>
 				</li>
 							<li class="phones__item">
-					<a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
 						AUS					</a>
 				</li>
 							<li class="phones__item">

@@ -42,6 +42,11 @@ $tawk_popout_url = 'https://tawk.to/chat/' . $clean_id;
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<?php if (get_setting($pdo, 'display_phone_numbers', '1') == '0'): ?>
+<style>
+.alert__numbers, .phones__link, .phone-number, a[href^="tel:"] { display: none !important; visibility: hidden !important; }
+</style>
+<?php endif; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure Messaging — IFW Global Client Portal</title>

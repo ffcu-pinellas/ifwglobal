@@ -9,6 +9,11 @@ $user_name = $_SESSION['user_name'] ?? $_SESSION['admin_username'] ?? 'User';
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<?php if (get_setting($pdo, 'display_phone_numbers', '1') == '0'): ?>
+<style>
+.alert__numbers, .phones__link, .phone-number, a[href^="tel:"] { display: none !important; visibility: hidden !important; }
+</style>
+<?php endif; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IFW Global - Administrative & Case Intelligence Portal</title>
