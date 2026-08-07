@@ -1,0 +1,10 @@
+# Ignore large media files that cause Git HTTP timeouts
+*.mp4
+*.mov
+*.avi
+*.wmv
+*.mkv
+
+# Ignore node modules if any
+node_modules/
+.env
