@@ -1,0 +1,34 @@
+<?php
+// includes/announcement.php
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/functions.php';
+
+$announcement_active = function_exists('get_setting') ? get_setting($pdo, 'announcement_bar_active', '1') : '1';
+$announcement_text = function_exists('get_setting') ? get_setting($pdo, 'announcement_bar_text', 'IFW GLOBAL NOTICE: Protect yourself from scam impersonators. Only interact with our official team.') : 'IFW GLOBAL NOTICE: Protect yourself from scam impersonators. Only interact with our official team.';
+
+if ($announcement_active == '1' && !empty($announcement_text)): ?>
+<style>
+    .ifw-global-announcement-bar {
+        background-color: #fecc56 !important;
+        color: #1f1b1c !important;
+        font-weight: 700 !important;
+        font-size: 14px !important;
+        padding: 10px 20px !important;
+        text-align: center !important;
+        position: relative !important;
+        z-index: 9999 !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.15) !important;
+        border-bottom: 2px solid #231f20 !important;
+    }
+    .ifw-global-announcement-bar a {
+        color: #1f1b1c !important;
+        text-decoration: underline !important;
+    }
+</style>
+<div class="ifw-global-announcement-bar">
+    <span class="mr-2"><i class="fas fa-exclamation-triangle text-dark"></i></span>
+    <span><?= htmlspecialchars($announcement_text) ?></span>
+</div>
+<?php endif; ?>
+
+
