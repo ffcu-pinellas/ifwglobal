@@ -3,27 +3,33 @@ require_once 'config.php';
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-try {
-    // Alter IFW_invoices table
-    $pdo->exec("ALTER TABLE IFW_invoices 
-        ADD COLUMN invoice_number VARCHAR(50) NULL AFTER id,
-        ADD COLUMN case_id INT NULL AFTER client_id,
-        ADD COLUMN issue_date DATE NULL AFTER status,
-        ADD COLUMN due_date DATE NULL AFTER issue_date,
-        ADD COLUMN subtotal DECIMAL(10,2) DEFAULT 0.00 AFTER due_date,
-        ADD COLUMN tax_rate DECIMAL(5,2) DEFAULT 0.00 AFTER subtotal,
-        ADD COLUMN tax_amount DECIMAL(10,2) DEFAULT 0.00 AFTER tax_rate,
-        ADD COLUMN discount_amount DECIMAL(10,2) DEFAULT 0.00 AFTER tax_amount,
-        ADD COLUMN total_amount DECIMAL(10,2) DEFAULT 0.00 AFTER discount_amount,
-        ADD COLUMN currency VARCHAR(10) DEFAULT 'USD' AFTER total_amount,
-        ADD COLUMN notes TEXT NULL AFTER currency;");
-    echo "Altered IFW_invoices table.<br>";
-} catch (Exception $e) {
-    echo "Warning altering IFW_invoices: " . $e->getMessage() . "<br>";
+$columns_to_add = [
+    "invoice_number VARCHAR(50) NULL AFTER id",
+    "case_id INT NULL AFTER client_id",
+    "issue_date DATE NULL AFTER status",
+    "due_date DATE NULL AFTER issue_date",
+    "subtotal DECIMAL(10,2) DEFAULT 0.00 AFTER due_date",
+    "tax_rate DECIMAL(5,2) DEFAULT 0.00 AFTER subtotal",
+    "tax_amount DECIMAL(10,2) DEFAULT 0.00 AFTER tax_rate",
+    "discount_amount DECIMAL(10,2) DEFAULT 0.00 AFTER tax_amount",
+    "total_amount DECIMAL(10,2) DEFAULT 0.00 AFTER discount_amount",
+    "currency VARCHAR(10) DEFAULT 'USD' AFTER total_amount",
+    "notes TEXT NULL AFTER currency"
+];
+
+foreach ($columns_to_add as $colDef) {
+    try {
+        $pdo->exec("ALTER TABLE IFW_invoices ADD COLUMN $colDef;");
+        echo "Added column: $colDef <br>";
+    } catch (Exception $e) {
+        // Ignore duplicate column errors
+        if (strpos($e->getMessage(), 'Duplicate column') === false && strpos($e->getMessage(), 'already exists') === false) {
+            echo "Error adding $colDef: " . $e->getMessage() . "<br>";
+        }
+    }
 }
 
 try {
-    // Create IFW_invoice_items table
     $pdo->exec("CREATE TABLE IFW_invoice_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
         invoice_id INT NOT NULL,
@@ -38,5 +44,5 @@ try {
     echo "Warning creating IFW_invoice_items: " . $e->getMessage() . "<br>";
 }
 
-echo "Done.";
+echo "DB Upgrade Complete.";
 ?>
