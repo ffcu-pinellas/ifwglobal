@@ -1,0 +1,1 @@
+<?php require 'config.php'; $stmt = $pdo->query('SHOW CREATE TABLE IFW_site_settings'); print_r($stmt->fetch()); $stmt2 = $pdo->query('SELECT * FROM IFW_site_settings WHERE setting_key = \'phone_australia\''); print_r($stmt2->fetchAll()); ?>
