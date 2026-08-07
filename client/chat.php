@@ -6,7 +6,6 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-?>
 // client/chat.php
 require_once '../config.php';
 require_once '../includes/functions.php';
