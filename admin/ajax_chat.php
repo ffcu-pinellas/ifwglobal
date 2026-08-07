@@ -2,9 +2,13 @@
 // admin/ajax_chat.php
 require_once '../config.php';
 require_once '../includes/functions.php';
-require_admin_login();
 
 header('Content-Type: application/json');
+
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
+    exit;
+}
 
 $admin_id = $_SESSION['admin_id'] ?? 0;
 $admin_role = $_SESSION['admin_role'] ?? 'viewer';

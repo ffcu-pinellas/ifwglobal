@@ -2,6 +2,27 @@
 $user_role = $_SESSION['role'] ?? $_SESSION['admin_role'] ?? 'admin';
 $user_name = $_SESSION['user_name'] ?? $_SESSION['admin_username'] ?? 'User';
 $current_page = basename($_SERVER['PHP_SELF']);
+
+// Global Unread Chat Count Logic
+$global_unread_chat = 0;
+if (isset($pdo)) {
+    if ($user_role === 'client') {
+        $client_id = $_SESSION['client_portal_id'] ?? 0;
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM IFW_chat_messages WHERE client_id = ? AND sender_type = 'admin' AND is_read = 0");
+        $stmt->execute([$client_id]);
+        $global_unread_chat = $stmt->fetchColumn();
+    } else {
+        $admin_id = $_SESSION['admin_id'] ?? 0;
+        if ($user_role === 'super_admin' || $user_role === 'admin' || $user_role === 'superadmin') {
+            $stmt = $pdo->query("SELECT COUNT(*) FROM IFW_chat_messages WHERE sender_type = 'client' AND is_read = 0");
+            $global_unread_chat = $stmt->fetchColumn();
+        } else {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM IFW_chat_messages m JOIN IFW_clients c ON m.client_id = c.id WHERE c.assigned_agent_id = ? AND m.sender_type = 'client' AND m.is_read = 0");
+            $stmt->execute([$admin_id]);
+            $global_unread_chat = $stmt->fetchColumn();
+        }
+    }
+}
 ?>
 <style>
     /* ============================================================
@@ -212,6 +233,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <a href="/<?php echo ($user_role == 'client') ? 'client/chat.php' : 'admin/chat.php'; ?>" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-comments text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Secure Messaging</span>
+                        <?php if ($global_unread_chat > 0): ?>
+                            <span class="badge badge-danger ml-auto" style="border-radius: 50%; padding: 4px 6px; font-size: 10px;"><?php echo $global_unread_chat; ?></span>
+                        <?php endif; ?>
                     </a>
                 </li>
 

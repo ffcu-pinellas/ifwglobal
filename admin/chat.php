@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
         elChatHeader.classList.remove('d-none');
         elChatHeader.classList.add('d-flex');
         elChatInputArea.classList.remove('d-none');
-        elViewClientBtn.href = `client_view.php?id=${id}`;
+        elViewClientBtn.href = `client_manager.php`;
         
         elChatMessages.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin text-warning"></i></div>';
         
