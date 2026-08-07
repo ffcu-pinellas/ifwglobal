@@ -63,7 +63,8 @@ function render_dynamic_form($pdo) {
                 break;
             case 'select':
                 $html .= '<select class="large gfield_select" id="' . $name . '" name="' . $name . '" ' . $required . '>';
-                $html .= '<option value="">Select ' . $label . '</option>';
+                $article = in_array(strtolower($label[0] ?? ''), ['a', 'e', 'i', 'o', 'u']) ? 'an' : 'a';
+                $html .= '<option value="">Select ' . $article . ' ' . $label . '</option>';
                 $options = json_decode($field['field_options'], true);
                 if (!is_array($options) && !empty($field['field_options'])) {
                     $options = explode(',', $field['field_options']);
