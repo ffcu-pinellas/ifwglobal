@@ -841,63 +841,67 @@ Thanks to IFW for their relentless pursuit of the criminals involved. </p>
 
 						<div id="subscribe-for-updates" class="site-footer__newsletter newsletter">
 							
-                <div class='gform_wrapper gravity-theme gform-theme--no-framework' id='gform_wrapper_1' >
-                        <div class='gform_heading'>
-							<p class='gform_required_legend'>&quot;<span class="gfield_required gfield_required_asterisk">*</span>&quot; indicates required fields</p>
-                        </div>
-                        <form method='post' id='gform_1' action='/process_form.php'>
-                        <input type="hidden" name="form_source" value="consultation">
-                        <div class='gform-body gform_body'>
-                            <div id='gform_fields_1' class='gform_fields top_label form_sublabel_below description_below validation_below'>
-                                
-                                <div class="gfield gfield_contains_required field_sublabel_below gfield_visibility_visible">
-                                    <label class='gfield_label gform-field-label'>Name<span class="gfield_required"><span class="gfield_required gfield_required_asterisk">*</span></span></label>
-                                    <div class='ginput_container'>
-                                        <input name='name' type='text' class='large' placeholder='Full Name' required />
-                                    </div>
-                                </div>
-
-                                <div class="gfield gfield_contains_required field_sublabel_below gfield_visibility_visible">
-                                    <label class='gfield_label gform-field-label'>Email Address<span class="gfield_required"><span class="gfield_required gfield_required_asterisk">*</span></span></label>
-                                    <div class='ginput_container ginput_container_email'>
-                                        <input name='email' type='email' class='large' placeholder='Email Address' required />
-                                    </div>
-                                </div>
-
-                                <div class="gfield field_sublabel_below gfield_visibility_visible">
-                                    <label class='gfield_label gform-field-label'>Phone Number</label>
-                                    <div class='ginput_container ginput_container_phone'>
-                                        <input name='phone' type='tel' class='large' placeholder='Phone Number' />
-                                    </div>
-                                </div>
-
-                                <div class="gfield field_sublabel_below gfield_visibility_visible">
-                                    <label class='gfield_label gform-field-label'>Service</label>
-                                    <div class='ginput_container'>
-                                        <select name='service' class='large'>
-                                            <option value=''>Select a Service</option>
-                                            <option value='Asset Recovery'>Asset Recovery</option>
-                                            <option value='Cybercrime Investigation'>Cybercrime Investigation</option>
-                                            <option value='Fraud Investigation'>Fraud Investigation</option>
-                                            <option value='Other'>Other</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="gfield gfield_contains_required field_sublabel_below gfield_visibility_visible">
-                                    <label class='gfield_label gform-field-label'>Message<span class="gfield_required"><span class="gfield_required gfield_required_asterisk">*</span></span></label>
-                                    <div class='ginput_container ginput_container_textarea'>
-                                        <textarea name='message' class='textarea large' rows='5' placeholder='How can we help you?' required></textarea>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                        <div class='gform-footer gform_footer top_label'> 
-                            <input type='submit' class='gform_button button' value='Submit Enquiry' />
-                        </div>
-                        </form>
-				</div>
+                <div class="custom-dynamic-form" style="background:#fff; padding:30px; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.05);">
+            <form class="dynamicContactForm" method="POST">
+                <input type="hidden" name="form_source" value="consultation_footer">
+                <?php echo render_dynamic_form($pdo); ?>
+                <button type="submit" class="btn btn-warning mt-3 w-100" style="background-color:#fecc56; color:#000; font-weight:bold; border:none; padding:12px;">Submit Details</button>
+            </form>
+            <div class="formResponse mt-3"></div>
+        </div>
+        <script>
+        (function() {
+            var currentScript = document.currentScript;
+            document.addEventListener('DOMContentLoaded', function() {
+                var container = currentScript.previousElementSibling;
+                if (container && container.classList.contains('custom-dynamic-form')) {
+                    var form = container.querySelector('form');
+                    if (form) {
+                        form.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            var formData = new FormData(form);
+                            
+                            // Determine path to process_form.php based on depth
+                            var pathPrefix = window.location.pathname.split('/').length > 2 ? '../'.repeat(window.location.pathname.split('/').filter(Boolean).length - 1) : '';
+                            if (pathPrefix === '') pathPrefix = './';
+                            
+                            var submitBtn = form.querySelector('button[type="submit"]');
+                            if(submitBtn) {
+                                submitBtn.disabled = true;
+                                submitBtn.innerHTML = 'Sending...';
+                            }
+                            
+                            fetch('/process_form.php', {
+                                method: 'POST',
+                                body: formData
+                            })
+                            .then(r => r.json())
+                            .then(data => {
+                                var respDiv = container.querySelector('.formResponse');
+                                if(data.status === 'success') {
+                                    respDiv.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
+                                    form.reset();
+                                } else {
+                                    var errs = data.errors ? data.errors.join('<br>') : data.message;
+                                    respDiv.innerHTML = '<div class="alert alert-danger">' + errs + '</div>';
+                                }
+                            })
+                            .catch(e => {
+                                var respDiv = container.querySelector('.formResponse');
+                                respDiv.innerHTML = '<div class="alert alert-danger">An error occurred. Please try again.</div>';
+                            })
+                            .finally(() => {
+                                if(submitBtn) {
+                                    submitBtn.disabled = false;
+                                    submitBtn.innerHTML = 'Submit Details';
+                                }
+                            });
+                        });
+                    }
+                }
+            });
+        })();
+        </script>
 					</div>
 
           <div class="site-footer__logos">
