@@ -106,12 +106,14 @@ require_once '../includes/client_sidebar.php';
                 <p class="text-light mb-0">Your account identity has been fully verified and approved by the compliance team.</p>
             </div>
         <?php elseif ($submission && $submission['status'] === 'Pending' && !isset($_GET['success'])): ?>
-            <div class="alert bg-dark border-warning text-center py-5 shadow-lg rounded">
-                <i class="fas fa-clock text-warning fa-4x mb-3 d-block"></i>
-                <h3 class="text-warning font-weight-bold">Verification Pending</h3>
-                <p class="text-light mb-0">Your documents are currently under review by our compliance team.</p>
+            <div class="alert bg-dark border-warning text-center py-4 shadow-lg rounded mb-4">
+                <i class="fas fa-clock text-warning fa-2x mb-2 d-block"></i>
+                <h4 class="text-warning font-weight-bold">Verification Pending</h4>
+                <p class="text-light mb-0">Your documents are currently under review. You can update your submission below before it is approved.</p>
             </div>
-        <?php elseif (!isset($_GET['success'])): ?>
+        <?php endif; ?>
+        
+        <?php if ($submission && $submission['status'] !== 'Approved' && !isset($_GET['success']) || !$submission && !isset($_GET['success'])): ?>
             <?php if ($submission && $submission['status'] === 'Rejected'): ?>
                 <div class="alert bg-dark border-danger p-4 mb-4 shadow-lg rounded">
                     <h5 class="text-danger font-weight-bold"><i class="fas fa-exclamation-triangle mr-2"></i>Previous Submission Rejected</h5>

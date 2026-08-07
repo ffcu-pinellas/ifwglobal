@@ -25,9 +25,10 @@ $fields = $pdo->query("SELECT * FROM IFW_form_fields ORDER BY display_order ASC"
 
 <html lang="en-AU" prefix="og: https://ogp.me/ns#" class="no-js ">
 <head>
-<?php if (get_setting($pdo, 'display_phone_numbers', '1') == '0'): ?>
+<?php if (get_setting($pdo, 'display_phone_numbers', 'show') === 'hide'): ?>
 <style>
 .alert__numbers, .phones__link, .phone-number, a[href^="tel:"] { display: none !important; visibility: hidden !important; }
+.footer__address, .footer__details, address, .contact-details { display: none !important; visibility: hidden !important; }
 </style>
 <?php endif; ?>
 	

@@ -117,6 +117,23 @@ $invoices = $inv_stmt->fetchAll();
 
     <!-- MAIN AREA -->
     <div class="col-lg-8">
+        
+        <!-- Case Status Panel -->
+        <div class="card shadow-sm border-0 mb-4 bg-dark text-white">
+            <div class="card-body">
+                <h5 class="fw-bold mb-3 text-warning"><i class="fas fa-briefcase mr-2"></i> Current Case Status</h5>
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h4 class="mb-1 text-light"><?php echo htmlspecialchars($client['status']); ?></h4>
+                        <p class="text-muted small mb-0">Your case is currently in the <strong><?php echo htmlspecialchars($client['status']); ?></strong> phase.</p>
+                    </div>
+                    <div>
+                        <i class="fas fa-tasks text-warning fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- KYC Verification Panel -->
         <?php if ($kyc_status !== 'approved'): ?>
             <div class="card shadow-sm border-0 mb-4" style="border-left: 4px solid <?php echo $kyc_status == 'pending' ? '#ffc107' : '#fecc56'; ?> !important;">
@@ -207,6 +224,7 @@ $invoices = $inv_stmt->fetchAll();
         </div>
         
         <!-- Bank Details -->
+        <?php if ($s['display_phone_numbers'] !== 'hide' && get_setting($pdo, 'display_phone_numbers', 'show') !== 'hide'): ?>
         <div class="card shadow-sm border-0">
             <div class="card-body">
                 <h5 class="fw-bold mb-3"><i class="material-icons text-success" style="vertical-align: text-bottom;">account_balance</i> Payment Details</h5>
@@ -220,6 +238,7 @@ $invoices = $inv_stmt->fetchAll();
                 </div>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 </div>
 

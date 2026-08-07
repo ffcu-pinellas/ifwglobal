@@ -128,18 +128,29 @@ require_once '../includes/admin_sidebar.php';
                                           <?php foreach($data as $key => $val): ?>
                                               <div class="col-md-6 mb-3">
                                                   <label class="text-muted small text-uppercase mb-1"><?= htmlspecialchars(str_replace('_', ' ', $key)) ?></label>
-                                                  <?php if (preg_match('/\.(jpg|jpeg|png|gif|pdf)$/i', $val)): ?>
-                                                      <div class="border border-secondary rounded p-2 text-center bg-black">
-                                                          <?php if (preg_match('/\.pdf$/i', $val)): ?>
-                                                              <i class="fas fa-file-pdf text-danger fa-3x mb-2 d-block mt-2"></i>
-                                                              <a href="../<?= htmlspecialchars($val) ?>" target="_blank" class="btn btn-sm btn-warning text-dark">Download PDF</a>
-                                                          <?php else: ?>
-                                                              <a href="../<?= htmlspecialchars($val) ?>" target="_blank">
-                                                                <img src="../<?= htmlspecialchars($val) ?>" style="max-height: 150px; max-width: 100%; border-radius: 4px;" alt="Document">
-                                                              </a>
-                                                              <br><a href="../<?= htmlspecialchars($val) ?>" download class="btn btn-sm btn-outline-warning mt-2"><i class="fas fa-download mr-1"></i> Download File</a>
-                                                          <?php endif; ?>
-                                                      </div>
+                                                  <?php 
+                                                    // Handle multiple files if comma-separated
+                                                    $files = explode(', ', $val);
+                                                    $isFileField = false;
+                                                    foreach($files as $f) {
+                                                        if (preg_match('/\.(jpg|jpeg|png|gif|pdf)$/i', $f)) $isFileField = true;
+                                                    }
+                                                  ?>
+                                                  
+                                                  <?php if ($isFileField): ?>
+                                                      <?php foreach($files as $f): ?>
+                                                          <div class="border border-secondary rounded p-2 text-center bg-black mb-2">
+                                                              <?php if (preg_match('/\.pdf$/i', $f)): ?>
+                                                                  <i class="fas fa-file-pdf text-danger fa-3x mb-2 d-block mt-2"></i>
+                                                                  <a href="../<?= htmlspecialchars($f) ?>" target="_blank" class="btn btn-sm btn-warning text-dark">Download PDF</a>
+                                                              <?php else: ?>
+                                                                  <a href="../<?= htmlspecialchars($f) ?>" target="_blank">
+                                                                    <img src="../<?= htmlspecialchars($f) ?>" style="max-height: 150px; max-width: 100%; border-radius: 4px;" alt="Document">
+                                                                  </a>
+                                                                  <br><a href="../<?= htmlspecialchars($f) ?>" download class="btn btn-sm btn-outline-warning mt-2"><i class="fas fa-download mr-1"></i> Download File</a>
+                                                              <?php endif; ?>
+                                                          </div>
+                                                      <?php endforeach; ?>
                                                   <?php else: ?>
                                                       <div class="font-weight-bold text-light" style="font-size: 1.1rem;"><?= htmlspecialchars($val) ?></div>
                                                   <?php endif; ?>
