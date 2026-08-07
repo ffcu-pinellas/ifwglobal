@@ -558,11 +558,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             HQ          </a>
         </li>
               <li class="alert__numbers-item">
-          <a href="tel:+6183280402" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+          <a href="tel:+6183280402" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
             AUS          </a>
         </li>
               <li class="alert__numbers-item">
-          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
+          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
             USA          </a>
         </li>
           </ul>
@@ -672,21 +672,21 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 </style>
 
 <div class="phone-headers">
-  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>">
+  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>">
     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
     </svg>
     <strong class="country-full">Australia: </strong>
     <strong class="country-short">Aus</strong>
-    <span class="phone-number"><?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></span>
+    <span class="phone-number"><?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></span>
   </a>
-  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>">
+  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>">
     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
     </svg>
     <strong class="country-full">USA: </strong>
     <strong class="country-short">US</strong>
-    <span class="phone-number"><?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?></span>
+    <span class="phone-number"><?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?></span>
   </a>
 </div>
 <!-- /end HFCM by 99 Robots -->
@@ -1095,11 +1095,11 @@ Bank name: AMP Bank Limited</p>
                 HQ              </a>
             </li>
                       <li class="phones__item">
-              <a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+              <a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
                 AUS              </a>
             </li>
                       <li class="phones__item">
-              <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
+              <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
                 USA              </a>
             </li>
                   </ul>
@@ -1354,14 +1354,14 @@ Bank name: AMP Bank Limited</p>
                   Australia                </strong>
 
                 
-                <?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
+                <?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
                               </a>
-                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="site-footer__phone">
+                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="site-footer__phone">
                 <strong class="site-footer__phone-name">
                   USA                </strong>
 
                 
-                <?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>
+                <?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>
                               </a>
             					</div>
 
@@ -1488,11 +1488,11 @@ Bank name: AMP Bank Limited</p>
 						HQ					</a>
 				</li>
 							<li class="phones__item">
-					<a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+					<a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
 						AUS					</a>
 				</li>
 							<li class="phones__item">
-					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
+					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
 						USA					</a>
 				</li>
 					</ul>
@@ -2094,6 +2094,7 @@ var gdpr_cookies_obj = {"gdpr_cookies_list":"[{\"id_gdpr_cookie_category\":\"3\"
 		<script id="wd-asp-instances-fc78abe2">window.ASP_INSTANCES = [];window.ASP_INSTANCES[1] = {"homeurl":"https:\/\/ifwglobal.com\/","is_results_page":0,"resultstype":"vertical","resultsposition":"hover","resultsSnapTo":"left","results":{"width":"auto","width_tablet":"auto","width_phone":"auto"},"itemscount":4,"charcount":0,"highlight":0,"highlightWholewords":1,"singleHighlight":0,"scrollToResults":{"enabled":0,"offset":0},"autocomplete":{"enabled":1,"trigger_charcount":0,"googleOnly":1,"lang":"en","mobile":1},"trigger":{"delay":300,"autocomplete_delay":310,"update_href":0,"facet":1,"type":1,"click":"results_page","click_location":"same","return":"results_page","return_location":"same","redirect_url":"?s={phrase}","elementor_url":"https:\/\/ifwglobal.com\/?asp_ls={phrase}"},"overridewpdefault":0,"override_method":"get","settings":{"unselectChildren":1,"hideChildren":0},"settingsimagepos":"right","settingsVisible":0,"settingsHideOnRes":0,"prescontainerheight":"400px","closeOnDocClick":1,"focusOnPageload":0,"isotopic":{"itemWidth":"200px","itemWidthTablet":"200px","itemWidthPhone":"200px","itemHeight":"200px","itemHeightTablet":"200px","itemHeightPhone":"200px","pagination":1,"rows":2,"gutter":5,"showOverlay":1,"blurOverlay":1,"hideContent":1},"loaderLocation":"auto","show_more":{"enabled":0,"url":"?s={phrase}","elementor_url":"https:\/\/ifwglobal.com\/?asp_ls={phrase}","action":"ajax","location":"same","infinite":1},"mobile":{"trigger_on_type":1,"click_action":"results_page","return_action":"results_page","click_action_location":"same","return_action_location":"same","redirect_url":"?s={phrase}","elementor_url":"https:\/\/ifwglobal.com\/?asp_ls={phrase}","menu_selector":"#menu-toggle","hide_keyboard":0,"force_res_hover":0,"force_sett_hover":0,"force_sett_state":"none"},"compact":{"enabled":0,"focus":1,"width":"100%","width_tablet":"480px","width_phone":"320px","closeOnMagnifier":1,"closeOnDocument":0,"position":"static","overlay":0},"sb":{"redirect_action":"ajax_search","redirect_location":"same","redirect_url":"?s={phrase}","elementor_url":"https:\/\/ifwglobal.com\/?asp_ls={phrase}"},"rb":{"action":"nothing"},"animations":{"pc":{"settings":{"anim":"fadedrop","dur":300},"results":{"anim":"fadedrop","dur":300},"items":"fadeInDown"},"mob":{"settings":{"anim":"fadedrop","dur":300},"results":{"anim":"fadedrop","dur":300},"items":"voidanim"}},"select2":{"nores":"No results match"},"detectVisibility":0,"autop":{"state":"disabled","phrase":"","count":10},"wooShop":{"useAjax":0,"selector":"#main","url":""},"taxArchive":{"useAjax":0,"selector":"#main","url":""},"cptArchive":{"useAjax":0,"selector":"#main","url":""},"resPage":{"useAjax":0,"selector":"#main","trigger_type":1,"trigger_facet":1,"trigger_magnifier":0,"trigger_return":0},"fss_layout":"flex","scrollBar":{"horizontal":{"enabled":1}},"divi":{"bodycommerce":0},"preventBodyScroll":0,"statistics":0,"preventEvents":0};</script><script type="text/javascript" id="wd-asp-ajaxsearchpro-js-before">if ( typeof window.ASP == 'undefined') { window.ASP = {wp_rocket_exception: "DOMContentLoaded", ajaxurl: "https:\/\/ifwglobal.com\/wp-admin\/admin-ajax.php", backend_ajaxurl: "https:\/\/ifwglobal.com\/wp-admin\/admin-ajax.php", asp_url: "https:\/\/ifwglobal.com\/wp-content\/plugins\/ajax-search-pro\/", upload_url: "https:\/\/ifwglobal.com\/wp-content\/uploads\/asp_upload\/", detect_ajax: 0, media_query: "szIEj5", version: 5069, pageHTML: "", additional_scripts: [{"handle":"wd-asp-ajaxsearchpro","path":"\/dom751644\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-prereq.js","src":"https:\/\/ifwglobal.com\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-prereq.js","prereq":[]},{"handle":"wd-asp-ajaxsearchpro-core","path":"\/dom751644\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-core.js","src":"https:\/\/ifwglobal.com\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-core.js","prereq":[]},{"handle":"wd-asp-ajaxsearchpro-settings","path":"\/dom751644\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-settings.js","src":"https:\/\/ifwglobal.com\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-settings.js","prereq":["wd-asp-ajaxsearchpro"]},{"handle":"wd-asp-ajaxsearchpro-vertical","path":"\/dom751644\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-results-vertical.js","src":"https:\/\/ifwglobal.com\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-results-vertical.js","prereq":["wd-asp-ajaxsearchpro"]},{"handle":"wd-asp-ajaxsearchpro-ga","path":"\/dom751644\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-ga.js","src":"https:\/\/ifwglobal.com\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-ga.js","prereq":["wd-asp-ajaxsearchpro"]},{"handle":"wd-asp-ajaxsearchpro-live","path":"\/dom751644\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-live.js","src":"https:\/\/ifwglobal.com\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-live.js","prereq":["wd-asp-ajaxsearchpro"]},{"handle":"wd-asp-ajaxsearchpro-autocomplete","path":"\/dom751644\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-autocomplete.js","src":"https:\/\/ifwglobal.com\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-autocomplete.js","prereq":["wd-asp-ajaxsearchpro"]},{"handle":"wd-asp-ajaxsearchpro-load","path":"\/dom751644\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-load.js","src":"https:\/\/ifwglobal.com\/wp-content\/plugins\/ajax-search-pro\/js\/min\/plugin\/optimized\/asp-load.js","prereq":["wd-asp-ajaxsearchpro-autocomplete"]}], script_async_load: false, font_url: "https:\/\/ifwglobal.com\/wp-content\/plugins\/ajax-search-pro\/css\/fonts\/icons\/icons2.woff2", init_only_in_viewport: true, highlight: {"enabled":false,"data":[]}, debug: false, instances: {}, analytics: {"method":"event","tracking_id":"","event":{"focus":{"active":1,"action":"focus","category":"ASP {search_id} | {search_name}","label":"Input focus","value":"1"},"search_start":{"active":0,"action":"search_start","category":"ASP {search_id} | {search_name}","label":"Phrase: {phrase}","value":"1"},"search_end":{"active":1,"action":"search_end","category":"ASP {search_id} | {search_name}","label":"{phrase} | {results_count}","value":"1"},"magnifier":{"active":1,"action":"magnifier","category":"ASP {search_id} | {search_name}","label":"Magnifier clicked","value":"1"},"return":{"active":1,"action":"return","category":"ASP {search_id} | {search_name}","label":"Return button pressed","value":"1"},"try_this":{"active":1,"action":"try_this","category":"ASP {search_id} | {search_name}","label":"Try this click | {phrase}","value":"1"},"facet_change":{"active":0,"action":"facet_change","category":"ASP {search_id} | {search_name}","label":"{option_label} | {option_value}","value":"1"},"result_click":{"active":1,"action":"result_click","category":"ASP {search_id} | {search_name}","label":"{result_title} | {result_url}","value":"1"}}}}};</script><script type="text/javascript" src="../wp-content/plugins/ajax-search-pro/js/min/plugin/optimized/asp-prereq.js" id="wd-asp-ajaxsearchpro-js"></script><script type="text/javascript" src="../wp-content/plugins/ajax-search-pro/js/min/plugin/optimized/asp-core.js" id="wd-asp-ajaxsearchpro-core-js"></script><script type="text/javascript" src="../wp-content/plugins/ajax-search-pro/js/min/plugin/optimized/asp-settings.js" id="wd-asp-ajaxsearchpro-settings-js"></script><script type="text/javascript" src="../wp-content/plugins/ajax-search-pro/js/min/plugin/optimized/asp-results-vertical.js" id="wd-asp-ajaxsearchpro-vertical-js"></script><script type="text/javascript" src="../wp-content/plugins/ajax-search-pro/js/min/plugin/optimized/asp-ga.js" id="wd-asp-ajaxsearchpro-ga-js"></script><script type="text/javascript" src="../wp-content/plugins/ajax-search-pro/js/min/plugin/optimized/asp-live.js" id="wd-asp-ajaxsearchpro-live-js"></script><script type="text/javascript" src="../wp-content/plugins/ajax-search-pro/js/min/plugin/optimized/asp-autocomplete.js" id="wd-asp-ajaxsearchpro-autocomplete-js"></script><script type="text/javascript" src="../wp-content/plugins/ajax-search-pro/js/min/plugin/optimized/asp-load.js" id="wd-asp-ajaxsearchpro-load-js"></script><script type="text/javascript" src="../wp-content/plugins/ajax-search-pro/js/min/plugin/optimized/asp-wrapper.js" id="wd-asp-ajaxsearchpro-wrapper-js"></script>
 
 </b></b></body></html>
+
 
 
 

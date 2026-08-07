@@ -596,7 +596,7 @@ body .wp-site-blocks .is-style-overlay-dark :is(h1,h2,h3,h4,h5,h6,p,li,blockquot
 			<h3>You can also contact us directly on any of our international phone numbers:</h3>
 <p><strong>AUS: <a class="phone-number" href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>"><?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?></a></strong> (within Australia)</p>
 <p><strong>AUS: <a class="phone-number" href="tel:+63 2 8789 9127">+61 2 8328 0402</a></strong> (outside Australia)</p>
-<p><strong>USA: <a href="tel:<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>"><?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?></a></strong></p>
+<p><strong>USA: <a href="tel:<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>"><?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?></a></strong></p>
 		</div>
 	</div>
 </div>
@@ -994,17 +994,17 @@ Thanks to IFW for their relentless pursuit of the criminals involved. </p>
                   Australia                </strong>
 
                 
-                <?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
+                <?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
                               </a>
                           <a
-                href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>"
+                href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>"
                 class="site-footer__phone"
               >
                 <strong class="site-footer__phone-name">
                   USA                </strong>
 
                 
-                <?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>
+                <?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>
                               </a>
             					</div>
 
@@ -1151,15 +1151,15 @@ Thanks to IFW for their relentless pursuit of the criminals involved. </p>
 					<a
 						href="tel:+6183280402"
 						class="phones__link"
-						data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>"
+						data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>"
 					>
 						AUS					</a>
 				</li>
 							<li class="phones__item">
 					<a
-						href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>"
+						href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>"
 						class="phones__link"
-						data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>"
+						data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>"
 					>
 						USA					</a>
 				</li>

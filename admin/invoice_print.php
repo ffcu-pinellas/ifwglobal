@@ -111,9 +111,9 @@ $currency = $invoice['currency'] ?? 'USD';
                     <tr>
                         <td>
                             <strong>IFW Global Headquarters</strong><br>
-                            <?= htmlspecialchars(get_setting(\, 'office_address', 'Level 5, 20 Bond Street')) ?><br>
+                            <?= htmlspecialchars(get_setting($pdo, 'office_address', 'Level 5, 20 Bond Street')) ?><br>
                             Sydney NSW 2000, Australia<br>
-                            <?= htmlspecialchars(get_setting(\, 'contact_email', 'info@ifwglobal.com')) ?>
+                            <?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?>
                         </td>
                         
                         <td>
@@ -177,3 +177,4 @@ $currency = $invoice['currency'] ?? 'USD';
 
 </body>
 </html>
+

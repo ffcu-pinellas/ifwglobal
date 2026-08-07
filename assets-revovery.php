@@ -6244,11 +6244,11 @@ require_once $dir . '/includes/functions.php';
                         HQ </a>
                 </li>
                 <li class="alert__numbers-item">
-                    <a href="tel:+6183280402" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+                    <a href="tel:+6183280402" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
                         AUS </a>
                 </li>
                 <li class="alert__numbers-item">
-                    <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
+                    <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
                         USA </a>
                 </li>
             </ul>
@@ -6580,7 +6580,7 @@ require_once $dir . '/includes/functions.php';
             </style>
 
             <div class="phone-headers">
-                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>">
+                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>">
                     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path
@@ -6589,9 +6589,9 @@ require_once $dir . '/includes/functions.php';
                     </svg>
                     <strong class="country-full">Australia: </strong>
                     <strong class="country-short">Aus</strong>
-                    <span class="phone-number"><?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></span>
+                    <span class="phone-number"><?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></span>
                 </a>
-                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>">
+                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>">
                     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path
@@ -6600,7 +6600,7 @@ require_once $dir . '/includes/functions.php';
                     </svg>
                     <strong class="country-full">USA: </strong>
                     <strong class="country-short">US</strong>
-                    <span class="phone-number"><?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?></span>
+                    <span class="phone-number"><?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?></span>
                 </a>
             </div>
             <!-- /end HFCM by 99 Robots -->
@@ -7411,11 +7411,11 @@ require_once $dir . '/includes/functions.php';
                                 HQ </a>
                         </li>
                         <li class="phones__item">
-                            <a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+                            <a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
                                 AUS </a>
                         </li>
                         <li class="phones__item">
-                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
+                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
                                 USA </a>
                         </li>
                     </ul>
@@ -7720,14 +7720,14 @@ require_once $dir . '/includes/functions.php';
                                         Australia </strong>
 
 
-                                    <?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
+                                    <?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
                                 </a>
-                                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="site-footer__phone">
+                                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="site-footer__phone">
                                     <strong class="site-footer__phone-name">
                                         USA </strong>
 
 
-                                    <?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>
+                                    <?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>
                                 </a>
                             </div>
 
@@ -7991,11 +7991,11 @@ require_once $dir . '/includes/functions.php';
                                 HQ </a>
                         </li>
                         <li class="phones__item">
-                            <a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+                            <a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
                                 AUS </a>
                         </li>
                         <li class="phones__item">
-                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
+                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
                                 USA </a>
                         </li>
                     </ul>
@@ -8912,6 +8912,7 @@ require_once $dir . '/includes/functions.php';
     style="visibility: visible !important;"></grammarly-desktop-integration>
 
 </html>
+
 
 
 

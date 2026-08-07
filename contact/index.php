@@ -525,11 +525,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             HQ          </a>
         </li>
               <li class="alert__numbers-item">
-          <a href="tel:+6183280402" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+          <a href="tel:+6183280402" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
             AUS          </a>
         </li>
               <li class="alert__numbers-item">
-          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
+          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
             USA          </a>
         </li>
           </ul>
@@ -639,21 +639,21 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 </style>
 
 <div class="phone-headers">
-  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>">
+  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>">
     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
     </svg>
     <strong class="country-full">Australia: </strong>
     <strong class="country-short">Aus</strong>
-    <span class="phone-number"><?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></span>
+    <span class="phone-number"><?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></span>
   </a>
-  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>">
+  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>">
     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
     </svg>
     <strong class="country-full">USA: </strong>
     <strong class="country-short">US</strong>
-    <span class="phone-number"><?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?></span>
+    <span class="phone-number"><?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?></span>
   </a>
 </div>
 <!-- /end HFCM by 99 Robots -->
@@ -932,7 +932,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 								<p>Level 26, 44 Market Street,<br>
 Sydney NSW 2000<br>
 P:&nbsp;<a class="phone-number" href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>"><?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?></a>&nbsp;(within Australia)<br>
-P:&nbsp;<a class="phone-number" href="tel:+61 2 8328 0402"><?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></a>&nbsp;(outside Australia)</p>
+P:&nbsp;<a class="phone-number" href="tel:+61 2 8328 0402"><?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></a>&nbsp;(outside Australia)</p>
 							</div>
 						</div>
 					</section>
@@ -948,7 +948,7 @@ P:&nbsp;<a class="phone-number" href="tel:+61 2 8328 0402"><?= htmlspecialchars(
 
 						<div class="accordion__body  js-accordion-body" id="accordion-item-2">
 							<div class="accordion__copy copy">
-								<p>P: <a href="tel:<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>"><?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?></a></p>
+								<p>P: <a href="tel:<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>"><?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?></a></p>
 							</div>
 						</div>
 					</section>
@@ -1234,14 +1234,14 @@ P:&nbsp;<a class="phone-number" href="tel:+61 2 8328 0402"><?= htmlspecialchars(
                   Australia                </strong>
 
                 
-                <?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
+                <?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
                               </a>
-                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="site-footer__phone">
+                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="site-footer__phone">
                 <strong class="site-footer__phone-name">
                   USA                </strong>
 
                 
-                <?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>
+                <?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>
                               </a>
             					</div>
 
@@ -1368,11 +1368,11 @@ P:&nbsp;<a class="phone-number" href="tel:+61 2 8328 0402"><?= htmlspecialchars(
 						HQ					</a>
 				</li>
 							<li class="phones__item">
-					<a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+					<a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
 						AUS					</a>
 				</li>
 							<li class="phones__item">
-					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
+					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
 						USA					</a>
 				</li>
 					</ul>
@@ -1993,6 +1993,7 @@ var log_obj = {"ajax_url":"/wp-admin/admin-ajax.php","consent_logging_nonce":"bf
 </b></b>
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
 </body></html>
+
 
 
 

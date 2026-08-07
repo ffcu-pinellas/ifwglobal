@@ -556,11 +556,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             HQ          </a>
         </li>
               <li class="alert__numbers-item">
-          <a href="tel:+6183280402" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+          <a href="tel:+6183280402" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
             AUS          </a>
         </li>
               <li class="alert__numbers-item">
-          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
+          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
             USA          </a>
         </li>
           </ul>
@@ -670,21 +670,21 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 </style>
 
 <div class="phone-headers">
-  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>">
+  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>">
     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
     </svg>
     <strong class="country-full">Australia: </strong>
     <strong class="country-short">Aus</strong>
-    <span class="phone-number"><?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></span>
+    <span class="phone-number"><?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></span>
   </a>
-  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>">
+  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>">
     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
     </svg>
     <strong class="country-full">USA: </strong>
     <strong class="country-short">US</strong>
-    <span class="phone-number"><?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?></span>
+    <span class="phone-number"><?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?></span>
   </a>
 </div>
 <!-- /end HFCM by 99 Robots -->
@@ -860,7 +860,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <p><strong>Please be aware of scammers posing as IFW</strong></p>
 <p><span data-preserver-spaces="true">Before parting with any money, you need to double-check the website’s URL, which can be found in your address bar. If it is not an exact match for&nbsp;</span><a class="editor-rtfLink" href="../index.php" target="_blank" rel="noopener"><span data-preserver-spaces="true">www.ifwglobal.com</span></a><span data-preserver-spaces="true">, then you should exit it immediately. You should always ask for a video call, as IFW has a strict policy in place to meet its clients face to face on a Zoom or Teams call. Most scammers will never meet on a video call.</span></p>
 <p><em>Learn more about <a href="../how-to-protect-yourself-from-scams/index.php">how to protect yourself from scams</a>.</em></p>
-<p><span data-preserver-spaces="true">Have you already fallen victim to this online scam? Please contact IFW’s head office on</span><strong><span data-preserver-spaces="true">&nbsp;<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>,</span></strong><span data-preserver-spaces="true">&nbsp;</span><a class="editor-rtfLink" href="mailto:<?= htmlspecialchars(get_setting($pdo, 'contact_email', '<?= htmlspecialchars(get_setting(\, 'contact_email', 'info@ifwglobal.com')) ?>')) ?>" target="_blank" rel="noopener"><strong><span data-preserver-spaces="true"><?= htmlspecialchars(get_setting($pdo, 'contact_email', '<?= htmlspecialchars(get_setting(\, 'contact_email', 'info@ifwglobal.com')) ?>')) ?></span></strong></a><strong><span data-preserver-spaces="true">,&nbsp;</span></strong><span data-preserver-spaces="true">or submit an&nbsp;</span><a class="editor-rtfLink" href="/contact/" target="_blank" rel="noopener"><strong><span data-preserver-spaces="true">Investment Fraud enquiry</span></strong></a><strong><span data-preserver-spaces="true">&nbsp;</span></strong><span data-preserver-spaces="true">now to discuss your fraud and find out what can be done to investigate and recover your stolen money.</span></p>
+<p><span data-preserver-spaces="true">Have you already fallen victim to this online scam? Please contact IFW’s head office on</span><strong><span data-preserver-spaces="true">&nbsp;<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>,</span></strong><span data-preserver-spaces="true">&nbsp;</span><a class="editor-rtfLink" href="mailto:<?= htmlspecialchars(get_setting($pdo, 'contact_email', '<?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?>')) ?>" target="_blank" rel="noopener"><strong><span data-preserver-spaces="true"><?= htmlspecialchars(get_setting($pdo, 'contact_email', '<?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?>')) ?></span></strong></a><strong><span data-preserver-spaces="true">,&nbsp;</span></strong><span data-preserver-spaces="true">or submit an&nbsp;</span><a class="editor-rtfLink" href="/contact/" target="_blank" rel="noopener"><strong><span data-preserver-spaces="true">Investment Fraud enquiry</span></strong></a><strong><span data-preserver-spaces="true">&nbsp;</span></strong><span data-preserver-spaces="true">now to discuss your fraud and find out what can be done to investigate and recover your stolen money.</span></p>
 <p><span data-preserver-spaces="true">As a global leader in <a href="../scam/serious-and-organised-fraud/index.php">fraud investigation</a>, our experienced <a href="../investigation/private-investigators/index.php">private investigators</a> utilise exceptional resources and exclusive connections to crack down on criminals around the world – and this illegitimate website is no exception.</span></p>
 <p><span data-preserver-spaces="true">IFW Global Investigations is a private <a href="../intelligence/intelligence-reports/index.php">intelligence and investigations firm</a> that represents investors who believe they have been scammed or duped into fraudulent investment schemes. We are strictly vetted by the NSW Police Force in Australia and the State of Florida in the USA, and you can view and verify our investigator licences at&nbsp;</span><a class="editor-rtfLink" href="../about-us/index.php" target="_blank" rel="noopener"><span data-preserver-spaces="true">/about-us/</span></a></p>
 	</div>
@@ -1464,11 +1464,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 HQ              </a>
             </li>
                       <li class="phones__item">
-              <a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+              <a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
                 AUS              </a>
             </li>
                       <li class="phones__item">
-              <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
+              <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
                 USA              </a>
             </li>
                   </ul>
@@ -1723,14 +1723,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                   Australia                </strong>
 
                 
-                <?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
+                <?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
                               </a>
-                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="site-footer__phone">
+                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="site-footer__phone">
                 <strong class="site-footer__phone-name">
                   USA                </strong>
 
                 
-                <?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>
+                <?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>
                               </a>
             					</div>
 
@@ -1857,11 +1857,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 						HQ					</a>
 				</li>
 							<li class="phones__item">
-					<a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+					<a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
 						AUS					</a>
 				</li>
 							<li class="phones__item">
-					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
+					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
 						USA					</a>
 				</li>
 					</ul>
@@ -2465,6 +2465,7 @@ var gdpr_cookies_obj = {"gdpr_cookies_list":"[{\"id_gdpr_cookie_category\":\"3\"
 </b></b>
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
 </body></html>
+
 
 
 
