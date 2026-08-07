@@ -40,13 +40,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($fields as $field) {
         $name = $field['field_name'];
         if ($field['field_type'] === 'file') {
-            if (isset($_FILES[$name]) && $_FILES[$name]['error'] == 0) {
-                // Generate secure filename
-                $ext = pathinfo($_FILES[$name]['name'], PATHINFO_EXTENSION);
-                $filename = 'kyc_' . $client_id . '_' . $name . '_' . time() . '.' . $ext;
-                $filepath = $upload_dir . $filename;
-                move_uploaded_file($_FILES[$name]['tmp_name'], $filepath);
-                $kyc_data[$name] = 'uploads/kyc/' . $filename;
+            if (isset($_FILES[$name])) {
+                if (is_array($_FILES[$name]['name'])) {
+                    $uploaded_paths = [];
+                    foreach ($_FILES[$name]['name'] as $key => $filename) {
+                        if ($_FILES[$name]['error'][$key] == 0) {
+                            $ext = pathinfo($filename, PATHINFO_EXTENSION);
+                            $new_filename = 'kyc_' . $client_id . '_' . $name . '_' . time() . '_' . $key . '.' . $ext;
+                            $filepath = $upload_dir . $new_filename;
+                            move_uploaded_file($_FILES[$name]['tmp_name'][$key], $filepath);
+                            $uploaded_paths[] = 'uploads/kyc/' . $new_filename;
+                        }
+                    }
+                    if (!empty($uploaded_paths)) {
+                        $kyc_data[$name] = implode(', ', $uploaded_paths);
+                    }
+                } else {
+                    if ($_FILES[$name]['error'] == 0) {
+                        $ext = pathinfo($_FILES[$name]['name'], PATHINFO_EXTENSION);
+                        $filename = 'kyc_' . $client_id . '_' . $name . '_' . time() . '.' . $ext;
+                        $filepath = $upload_dir . $filename;
+                        move_uploaded_file($_FILES[$name]['tmp_name'], $filepath);
+                        $kyc_data[$name] = 'uploads/kyc/' . $filename;
+                    }
+                }
             }
         } else {
             $kyc_data[$name] = $_POST[$name] ?? '';
@@ -115,8 +132,8 @@ require_once '../includes/client_sidebar.php';
                                     
                                     <?php if ($field['field_type'] === 'file'): ?>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="<?= htmlspecialchars($field['field_name']) ?>" id="<?= htmlspecialchars($field['field_name']) ?>" <?= $field['is_required'] ? 'required' : '' ?> accept=".jpg,.jpeg,.png,.pdf">
-                                            <label class="custom-file-label border-secondary bg-dark text-muted" for="<?= htmlspecialchars($field['field_name']) ?>">Choose file (JPG, PNG, PDF)...</label>
+                                            <input type="file" class="custom-file-input" name="<?= htmlspecialchars($field['field_name']) ?>[]" id="<?= htmlspecialchars($field['field_name']) ?>" <?= $field['is_required'] ? 'required' : '' ?> accept=".jpg,.jpeg,.png,.pdf" multiple>
+                                            <label class="custom-file-label border-secondary bg-dark text-muted" for="<?= htmlspecialchars($field['field_name']) ?>">Choose files (JPG, PNG, PDF)...</label>
                                         </div>
                                     <?php else: ?>
                                         <input type="<?= $field['field_type'] === 'date' ? 'date' : 'text' ?>" name="<?= htmlspecialchars($field['field_name']) ?>" class="form-control bg-dark text-white border-secondary" <?= $field['is_required'] ? 'required' : '' ?>>
@@ -135,9 +152,15 @@ require_once '../includes/client_sidebar.php';
             // Update custom file label on select
             document.querySelectorAll('.custom-file-input').forEach(function(input) {
                 input.addEventListener('change', function(e) {
-                    var fileName = e.target.files[0].name;
+                    var fileCount = e.target.files.length;
                     var label = e.target.nextElementSibling;
-                    label.innerText = fileName;
+                    if (fileCount > 1) {
+                        label.innerText = fileCount + ' files selected';
+                    } else if (fileCount === 1) {
+                        label.innerText = e.target.files[0].name;
+                    } else {
+                        label.innerText = 'Choose files (JPG, PNG, PDF)...';
+                    }
                 });
             });
             </script>
