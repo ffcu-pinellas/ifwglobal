@@ -4,21 +4,51 @@ require_once '../config.php';
 require_once '../includes/functions.php';
 require_admin_login();
 
+$is_agent = isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'agent';
+$admin_id = $_SESSION['admin_id'];
+
+// Handle assignment
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'assign_lead' && !$is_agent) {
+    $agent_id = !empty($_POST['agent_id']) ? (int)$_POST['agent_id'] : null;
+    $sub_id = (int)$_POST['submission_id'];
+    $stmt = $pdo->prepare("UPDATE IFW_contact_submissions SET assigned_agent_id = ? WHERE id = ?");
+    $stmt->execute([$agent_id, $sub_id]);
+    header("Location: submissions.php");
+    exit;
+}
+
 // Pagination setup
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
 $per_page = 20;
 $offset = ($page - 1) * $per_page;
 
-$total_submissions = $pdo->query("SELECT COUNT(*) FROM IFW_contact_submissions")->fetchColumn();
-$total_pages = ceil($total_submissions / $per_page);
+$has_all_access = has_permission('view_all_leads');
 
-// Fetch submissions
-$stmt = $pdo->prepare("SELECT id, submission_data, created_at FROM IFW_contact_submissions ORDER BY created_at DESC LIMIT :limit OFFSET :offset");
+if (!$has_all_access && $is_agent) {
+    $stmt_count = $pdo->prepare("SELECT COUNT(*) FROM IFW_contact_submissions WHERE assigned_agent_id = :aid");
+    $stmt_count->execute([':aid' => $admin_id]);
+    $total_submissions = $stmt_count->fetchColumn();
+    
+    $stmt = $pdo->prepare("SELECT c.*, u.username as agent_name FROM IFW_contact_submissions c LEFT JOIN IFW_users u ON c.assigned_agent_id = u.id WHERE c.assigned_agent_id = :aid ORDER BY c.created_at DESC LIMIT :limit OFFSET :offset");
+    $stmt->bindValue(':aid', $admin_id, PDO::PARAM_INT);
+} else {
+    $total_submissions = $pdo->query("SELECT COUNT(*) FROM IFW_contact_submissions")->fetchColumn();
+    $stmt = $pdo->prepare("SELECT c.*, u.username as agent_name FROM IFW_contact_submissions c LEFT JOIN IFW_users u ON c.assigned_agent_id = u.id ORDER BY c.created_at DESC LIMIT :limit OFFSET :offset");
+}
+
+$total_pages = ceil($total_submissions / $per_page);
 $stmt->bindValue(':limit', $per_page, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $submissions = $stmt->fetchAll();
+
+$agents = [];
+if (!$is_agent || $has_all_access) {
+    try {
+        $agents = $pdo->query("SELECT id, username, role FROM IFW_users ORDER BY username ASC")->fetchAll();
+    } catch (Exception $e) {}
+}
 ?>
 
 <?php require_once '../includes/admin_header.php'; ?>
@@ -51,6 +81,7 @@ $submissions = $stmt->fetchAll();
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Location</th>
+                            <th>Assigned</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -69,6 +100,23 @@ $submissions = $stmt->fetchAll();
                                         <i class="fas fa-map-marker-alt text-danger mr-1"></i> <?= htmlspecialchars($data['location']) ?>
                                     <?php else: ?>
                                         <span class="text-muted">Unknown</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($is_agent && !$has_all_access): ?>
+                                        <span class="badge badge-secondary"><?= htmlspecialchars($sub['agent_name'] ?? 'Unassigned') ?></span>
+                                    <?php else: ?>
+                                        <form method="POST" class="d-flex align-items-center">
+                                            <input type="hidden" name="action" value="assign_lead">
+                                            <input type="hidden" name="submission_id" value="<?= $sub['id'] ?>">
+                                            <select name="agent_id" class="form-control form-control-sm bg-dark text-white border-secondary mr-2" style="width: auto;">
+                                                <option value="">Unassigned</option>
+                                                <?php foreach ($agents as $agent): ?>
+                                                    <option value="<?= $agent['id'] ?>" <?= $sub['assigned_agent_id'] == $agent['id'] ? 'selected' : '' ?>><?= htmlspecialchars($agent['username']) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-outline-warning">Save</button>
+                                        </form>
                                     <?php endif; ?>
                                 </td>
                                 <td>

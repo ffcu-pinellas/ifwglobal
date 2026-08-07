@@ -63,6 +63,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $error = "Error creating role. It may already exist.";
             }
         }
+    } elseif ($action === 'update_staff_role') {
+        $user_id = (int)$_POST['user_id'];
+        $role = $_POST['role'] ?? 'agent';
+        if ($user_id !== $_SESSION['admin_id'] || $role === 'superadmin') {
+            try {
+                $stmt = $pdo->prepare("UPDATE IFW_users SET role = ? WHERE id = ?");
+                $stmt->execute([$role, $user_id]);
+                $success = "User role updated successfully.";
+            } catch (Exception $e) {
+                $error = "Error updating role.";
+            }
+        } else {
+            $error = "You cannot demote yourself from superadmin.";
+        }
     }
 }
 
@@ -140,11 +154,47 @@ require_once '../includes/admin_sidebar.php';
                             <td><?= date('M j, Y', strtotime($staff['created_at'])) ?></td>
                             <td>
                                 <?php if ($staff['id'] !== $_SESSION['admin_id']): ?>
+                                    <button class="btn btn-sm btn-outline-warning mr-1" data-toggle="modal" data-target="#editRoleModal<?= $staff['id'] ?>" title="Edit Role"><i class="fas fa-edit"></i> Edit Role</button>
                                     <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove staff member <?= htmlspecialchars($staff['username']) ?>?');">
                                         <input type="hidden" name="action" value="delete_staff">
                                         <input type="hidden" name="user_id" value="<?= $staff['id'] ?>">
                                         <button type="submit" class="btn btn-sm btn-danger" title="Delete Account"><i class="fas fa-trash"></i> Delete</button>
                                     </form>
+                                    
+                                    <!-- Edit Role Modal -->
+                                    <div class="modal fade" id="editRoleModal<?= $staff['id'] ?>" tabindex="-1">
+                                      <div class="modal-dialog">
+                                        <div class="modal-content bg-dark text-white border-warning">
+                                          <div class="modal-header border-secondary">
+                                            <h5 class="modal-title text-warning font-weight-bold"><i class="fas fa-user-edit mr-2"></i>Edit Role for <?= htmlspecialchars($staff['username']) ?></h5>
+                                            <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                          </div>
+                                          <form method="POST">
+                                              <div class="modal-body">
+                                                <input type="hidden" name="action" value="update_staff_role">
+                                                <input type="hidden" name="user_id" value="<?= $staff['id'] ?>">
+                                                <div class="mb-3">
+                                                    <label class="font-weight-bold text-white">Account Security Role <span class="text-warning">*</span></label>
+                                                    <select name="role" class="form-control bg-dark text-white border-secondary" required>
+                                                        <option value="agent" <?= $staff['role'] == 'agent' ? 'selected' : '' ?>>Agent / Case Investigator</option>
+                                                        <option value="admin" <?= $staff['role'] == 'admin' ? 'selected' : '' ?>>Administrator</option>
+                                                        <option value="superadmin" <?= $staff['role'] == 'superadmin' ? 'selected' : '' ?>>Superadmin</option>
+                                                        <optgroup label="Custom Roles">
+                                                        <?php foreach($roles as $r): ?>
+                                                            <option value="<?= htmlspecialchars($r['name']) ?>" <?= $staff['role'] == $r['name'] ? 'selected' : '' ?>><?= htmlspecialchars(ucfirst($r['name'])) ?></option>
+                                                        <?php endforeach; ?>
+                                                        </optgroup>
+                                                    </select>
+                                                </div>
+                                              </div>
+                                              <div class="modal-footer border-secondary">
+                                                <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4">Save Changes</button>
+                                              </div>
+                                          </form>
+                                        </div>
+                                      </div>
+                                    </div>
                                 <?php else: ?>
                                     <span class="badge badge-success px-2 py-1"><i class="fas fa-user-check mr-1"></i> Current Session</span>
                                 <?php endif; ?>

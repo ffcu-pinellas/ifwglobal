@@ -104,6 +104,14 @@ if (!$is_agent) {
     }
 }
 
+// Fetch recent leads for auto-populating new clients
+$recent_leads = [];
+if (!$is_agent) {
+    try {
+        $recent_leads = $pdo->query("SELECT id, submission_data, created_at FROM IFW_contact_submissions ORDER BY created_at DESC LIMIT 50")->fetchAll();
+    } catch (Exception $e) {}
+}
+
 require_once '../includes/admin_header.php';
 require_once '../includes/admin_sidebar.php';
 ?>
@@ -241,6 +249,23 @@ require_once '../includes/admin_sidebar.php';
       <form method="POST">
           <div class="modal-body">
             <input type="hidden" name="action" value="add_client">
+            
+            <div class="form-group bg-secondary p-3 rounded mb-4 border border-info">
+                <label class="font-weight-bold text-info"><i class="fas fa-magic mr-1"></i> Auto-Populate from Leads & Enquiries</label>
+                <select id="leadSelect" class="form-control bg-dark text-white border-info">
+                    <option value="">-- Select a Lead (Optional) --</option>
+                    <?php foreach ($recent_leads as $lead): 
+                        $data = json_decode($lead['submission_data'], true);
+                        $leadName = htmlspecialchars($data['name'] ?? ($data['first_name'] . ' ' . $data['last_name']) ?? 'Unknown');
+                        $leadEmail = htmlspecialchars($data['email'] ?? '');
+                        $dateStr = date('M j, Y g:i A', strtotime($lead['created_at']));
+                    ?>
+                        <option value="<?= htmlspecialchars(json_encode($data)) ?>"><?= $leadName ?> (<?= $leadEmail ?>) - <?= $dateStr ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <small class="form-text text-light mt-2">Selecting a lead will automatically fill in the fields below.</small>
+            </div>
+            
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label class="font-weight-bold text-white">First Name <span class="text-warning">*</span></label>
@@ -269,5 +294,38 @@ require_once '../includes/admin_sidebar.php';
   </div>
 </div>
 <?php endif; ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const leadSelect = document.getElementById('leadSelect');
+    if (leadSelect) {
+        leadSelect.addEventListener('change', function() {
+            if (!this.value) return;
+            
+            try {
+                const data = JSON.parse(this.value);
+                const firstNameInput = document.querySelector('input[name="first_name"]');
+                const lastNameInput = document.querySelector('input[name="last_name"]');
+                const emailInput = document.querySelector('input[name="email"]');
+                const phoneInput = document.querySelector('input[name="phone"]');
+                
+                if (data.email) emailInput.value = data.email;
+                if (data.phone || data.phone_number) phoneInput.value = data.phone || data.phone_number;
+                
+                if (data.first_name) {
+                    firstNameInput.value = data.first_name;
+                    lastNameInput.value = data.last_name || '';
+                } else if (data.name) {
+                    const parts = data.name.trim().split(' ');
+                    firstNameInput.value = parts[0] || '';
+                    lastNameInput.value = parts.slice(1).join(' ') || '';
+                }
+            } catch (e) {
+                console.error("Error parsing lead data", e);
+            }
+        });
+    }
+});
+</script>
 
 <?php require_once '../includes/admin_footer.php'; ?>
