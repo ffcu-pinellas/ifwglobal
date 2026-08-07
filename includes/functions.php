@@ -127,6 +127,21 @@ function has_permission($permission_name) {
     if ($role === 'admin') return true; // Admins have all permissions
     
     try {
+        // 1. Check user-specific overrides
+        $stmt_override = $pdo->prepare("
+            SELECT up.is_granted 
+            FROM IFW_permissions p
+            JOIN IFW_user_permissions up ON p.id = up.permission_id
+            WHERE up.user_id = ? AND p.name = ?
+        ");
+        $stmt_override->execute([$_SESSION['admin_id'], $permission_name]);
+        $override = $stmt_override->fetchColumn();
+        
+        if ($override !== false) {
+            return (bool)$override; // Explicitly granted or denied
+        }
+
+        // 2. Fallback to role permissions
         $stmt = $pdo->prepare("
             SELECT p.id 
             FROM IFW_permissions p

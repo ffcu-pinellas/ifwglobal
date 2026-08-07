@@ -558,11 +558,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             HQ          </a>
         </li>
               <li class="alert__numbers-item">
-          <a href="tel:+6183280402" class="alert__numbers-link" data-title="+61 (02) 8328 0402">
+          <a href="tel:+6183280402" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
             AUS          </a>
         </li>
               <li class="alert__numbers-item">
-          <a href="tel:+12475287" class="alert__numbers-link" data-title="+1 (239) 247 5287">
+          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
             USA          </a>
         </li>
           </ul>
@@ -672,21 +672,21 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 </style>
 
 <div class="phone-headers">
-  <a href="tel:+61283280402">
+  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>">
     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
     </svg>
     <strong class="country-full">Australia: </strong>
     <strong class="country-short">Aus</strong>
-    <span class="phone-number">+61 (02) 8328 0402</span>
+    <span class="phone-number"><?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></span>
   </a>
-  <a href="tel:+12392475287">
+  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>">
     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
     </svg>
     <strong class="country-full">USA: </strong>
     <strong class="country-short">US</strong>
-    <span class="phone-number">+1 (239) 247 5287</span>
+    <span class="phone-number"><?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?></span>
   </a>
 </div>
 <!-- /end HFCM by 99 Robots -->
@@ -781,7 +781,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <p><span style="font-weight: 400">If you are approached by one of the above contacts, do not reply. Instead, please </span><a href="/contact/"><span style="font-weight: 400">let us know</span></a><span style="font-weight: 400"> if you are being targeted as soon as possible so that we can take action against the fraudsters.</span></p>
 <h2><b>Always compare the URL</b></h2>
 <p><span style="font-weight: 400">Before parting with any money, you need to double check the website’s URL, which can be found in your address bar. If it is not an exact match for </span><a href="/"><span style="font-weight: 400">www.ifwglobal.com</span></a><span style="font-weight: 400">, then you should exit it immediately. You should always ask for a video call, as IFW has a strict policy in place to meet its clients face to face on a Zoom or Teams call.&nbsp; Most scammers will never meet on a video call.</span></p>
-<p><span style="font-weight: 400">Have you already fallen victim to this online scam? Please contact IFW’s head office on <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?> or </span><a href="mailto:<?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?>"><span style="font-weight: 400"><?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?></span></a><span style="font-weight: 400"> now.&nbsp;</span></p>
+<p><span style="font-weight: 400">Have you already fallen victim to this online scam? Please contact IFW’s head office on <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?> or </span><a href="mailto:<?= htmlspecialchars(get_setting($pdo, 'contact_email', '<?= htmlspecialchars(get_setting(\, 'contact_email', 'info@ifwglobal.com')) ?>')) ?>"><span style="font-weight: 400"><?= htmlspecialchars(get_setting($pdo, 'contact_email', '<?= htmlspecialchars(get_setting(\, 'contact_email', 'info@ifwglobal.com')) ?>')) ?></span></a><span style="font-weight: 400"> now.&nbsp;</span></p>
 <p><span style="font-weight: 400">As a global leader in fraud investigation, our experienced specialists utilise exceptional resources and exclusive connections to crack down on criminals around the world – and this illegitimate website is no exception.</span></p>
 	</div>
 </div>
@@ -1056,11 +1056,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 HQ              </a>
             </li>
                       <li class="phones__item">
-              <a href="tel:+6183280402" class="phones__link" data-title="+61 (02) 8328 0402">
+              <a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
                 AUS              </a>
             </li>
                       <li class="phones__item">
-              <a href="tel:+12475287" class="phones__link" data-title="+1 (239) 247 5287">
+              <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
                 USA              </a>
             </li>
                   </ul>
@@ -1315,14 +1315,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                   Australia                </strong>
 
                 
-                +61 (02) 8328 0402
+                <?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
                               </a>
-                          <a href="tel:+12475287" class="site-footer__phone">
+                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="site-footer__phone">
                 <strong class="site-footer__phone-name">
                   USA                </strong>
 
                 
-                +1 (239) 247 5287
+                <?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>
                               </a>
             					</div>
 
@@ -1449,11 +1449,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 						HQ					</a>
 				</li>
 							<li class="phones__item">
-					<a href="tel:+6183280402" class="phones__link" data-title="+61 (02) 8328 0402">
+					<a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
 						AUS					</a>
 				</li>
 							<li class="phones__item">
-					<a href="tel:+12475287" class="phones__link" data-title="+1 (239) 247 5287">
+					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
 						USA					</a>
 				</li>
 					</ul>

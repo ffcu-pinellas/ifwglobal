@@ -77,6 +77,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } else {
             $error = "You cannot demote yourself from superadmin.";
         }
+    } elseif ($action === 'update_user_permissions') {
+        $user_id = (int)$_POST['user_id'];
+        $overrides = $_POST['permissions'] ?? []; // format: ['perm_id' => '1', 'perm_id2' => '0']
+        
+        try {
+            // Delete existing overrides for this user
+            $stmt = $pdo->prepare("DELETE FROM IFW_user_permissions WHERE user_id = ?");
+            $stmt->execute([$user_id]);
+            
+            // Insert new overrides
+            if (!empty($overrides)) {
+                $insertStmt = $pdo->prepare("INSERT INTO IFW_user_permissions (user_id, permission_id, is_granted) VALUES (?, ?, ?)");
+                foreach ($overrides as $perm_id => $is_granted) {
+                    if ($is_granted === '1' || $is_granted === '0') {
+                        $insertStmt->execute([$user_id, $perm_id, (int)$is_granted]);
+                    }
+                }
+            }
+            $success = "User-specific permissions updated successfully.";
+        } catch (PDOException $e) {
+            $error = "Error updating user permissions.";
+        }
     }
 }
 
@@ -89,9 +111,25 @@ try {
 // Fetch roles and permissions safely
 $roles = [];
 $permissions = [];
+$user_permissions = [];
 try {
+    // Auto-create user_permissions table if it doesn't exist yet
+    $pdo->exec("CREATE TABLE IF NOT EXISTS IFW_user_permissions (
+        user_id INT NOT NULL,
+        permission_id INT NOT NULL,
+        is_granted TINYINT(1) NOT NULL DEFAULT 1,
+        PRIMARY KEY (user_id, permission_id),
+        FOREIGN KEY (user_id) REFERENCES IFW_users(id) ON DELETE CASCADE,
+        FOREIGN KEY (permission_id) REFERENCES IFW_permissions(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
     $roles = $pdo->query("SELECT * FROM IFW_roles ORDER BY name")->fetchAll();
     $permissions = $pdo->query("SELECT * FROM IFW_permissions ORDER BY name")->fetchAll();
+    
+    $up_stmt = $pdo->query("SELECT user_id, permission_id, is_granted FROM IFW_user_permissions");
+    while ($row = $up_stmt->fetch()) {
+        $user_permissions[$row['user_id']][$row['permission_id']] = (int)$row['is_granted'];
+    }
 } catch (Exception $e) {}
 
 require_once '../includes/admin_header.php';
@@ -155,11 +193,63 @@ require_once '../includes/admin_sidebar.php';
                             <td>
                                 <?php if ($staff['id'] !== $_SESSION['admin_id']): ?>
                                     <button class="btn btn-sm btn-outline-warning mr-1" data-toggle="modal" data-target="#editRoleModal<?= $staff['id'] ?>" title="Edit Role"><i class="fas fa-edit"></i> Edit Role</button>
+                                    <button class="btn btn-sm btn-outline-info mr-1" data-toggle="modal" data-target="#customPermsModal<?= $staff['id'] ?>" title="Custom Permissions"><i class="fas fa-key"></i></button>
                                     <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove staff member <?= htmlspecialchars($staff['username']) ?>?');">
                                         <input type="hidden" name="action" value="delete_staff">
                                         <input type="hidden" name="user_id" value="<?= $staff['id'] ?>">
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete Account"><i class="fas fa-trash"></i> Delete</button>
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete Account"><i class="fas fa-trash"></i></button>
                                     </form>
+                                    
+                                    <!-- Custom Permissions Modal -->
+                                    <div class="modal fade" id="customPermsModal<?= $staff['id'] ?>" tabindex="-1">
+                                      <div class="modal-dialog modal-lg">
+                                        <div class="modal-content bg-dark text-white border-info">
+                                          <div class="modal-header border-secondary">
+                                            <h5 class="modal-title text-info font-weight-bold"><i class="fas fa-key mr-2"></i>Custom Permissions for <?= htmlspecialchars($staff['username']) ?></h5>
+                                            <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                          </div>
+                                          <form method="POST">
+                                              <div class="modal-body">
+                                                <input type="hidden" name="action" value="update_user_permissions">
+                                                <input type="hidden" name="user_id" value="<?= $staff['id'] ?>">
+                                                <p class="text-muted small">Here you can override the default role permissions for this specific user. Selecting "Grant" gives them the permission regardless of their role. Selecting "Deny" revokes it. Selecting "Default" leaves it to their role.</p>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-dark table-striped mt-3">
+                                                        <thead>
+                                                            <tr class="text-info">
+                                                                <th>Permission</th>
+                                                                <th>Description</th>
+                                                                <th>Override</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php foreach($permissions as $perm): 
+                                                                $current_status = $user_permissions[$staff['id']][$perm['id']] ?? '';
+                                                            ?>
+                                                            <tr>
+                                                                <td class="font-weight-bold text-white"><?= htmlspecialchars($perm['name']) ?></td>
+                                                                <td class="text-muted" style="font-size: 12px;"><?= htmlspecialchars($perm['description']) ?></td>
+                                                                <td>
+                                                                    <select name="permissions[<?= $perm['id'] ?>]" class="form-control form-control-sm bg-dark text-white border-secondary">
+                                                                        <option value="" <?= $current_status === '' ? 'selected' : '' ?>>Inherit (Default)</option>
+                                                                        <option value="1" <?= $current_status === 1 ? 'selected' : '' ?>>Force Grant</option>
+                                                                        <option value="0" <?= $current_status === 0 ? 'selected' : '' ?>>Force Deny</option>
+                                                                    </select>
+                                                                </td>
+                                                            </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                              </div>
+                                              <div class="modal-footer border-secondary">
+                                                <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-info font-weight-bold text-dark px-4">Save Permissions</button>
+                                              </div>
+                                          </form>
+                                        </div>
+                                      </div>
+                                    </div>
                                     
                                     <!-- Edit Role Modal -->
                                     <div class="modal fade" id="editRoleModal<?= $staff['id'] ?>" tabindex="-1">

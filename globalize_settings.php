@@ -56,7 +56,7 @@ foreach ($files as $file) {
     $content = str_replace('1300439456', "<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\$pdo, 'phone_australia', '1300439456'))) ?>", $content);
     
     // Email
-    $content = str_replace('info@ifwglobal.com', "<?= htmlspecialchars(get_setting(\$pdo, 'contact_email', 'info@ifwglobal.com')) ?>", $content);
+    $content = str_replace('<?= htmlspecialchars(get_setting(\, 'contact_email', 'info@ifwglobal.com')) ?>', "<?= htmlspecialchars(get_setting(\$pdo, 'contact_email', '<?= htmlspecialchars(get_setting(\, 'contact_email', 'info@ifwglobal.com')) ?>')) ?>", $content);
     
     // Office Address
     $content = str_replace('Level 13, 201 Elizabeth Street, Sydney', "<?= htmlspecialchars(get_setting(\$pdo, 'office_address', 'Level 13, 201 Elizabeth Street, Sydney')) ?>", $content);

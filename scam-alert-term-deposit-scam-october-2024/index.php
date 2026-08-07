@@ -558,11 +558,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             HQ          </a>
         </li>
               <li class="alert__numbers-item">
-          <a href="tel:+6183280402" class="alert__numbers-link" data-title="+61 (02) 8328 0402">
+          <a href="tel:+6183280402" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
             AUS          </a>
         </li>
               <li class="alert__numbers-item">
-          <a href="tel:+12475287" class="alert__numbers-link" data-title="+1 (239) 247 5287">
+          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
             USA          </a>
         </li>
           </ul>
@@ -672,21 +672,21 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 </style>
 
 <div class="phone-headers">
-  <a href="tel:+61283280402">
+  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>">
     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
     </svg>
     <strong class="country-full">Australia: </strong>
     <strong class="country-short">Aus</strong>
-    <span class="phone-number">+61 (02) 8328 0402</span>
+    <span class="phone-number"><?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></span>
   </a>
-  <a href="tel:+12392475287">
+  <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>">
     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
     </svg>
     <strong class="country-full">USA: </strong>
     <strong class="country-short">US</strong>
-    <span class="phone-number">+1 (239) 247 5287</span>
+    <span class="phone-number"><?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?></span>
   </a>
 </div>
 <!-- /end HFCM by 99 Robots -->
@@ -753,7 +753,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 	<div class="copy">
 		<h1><strong>TERM DEPOSIT SCAM WARNING</strong></h1>
 <p class="x_MsoNormal"><span data-olk-copy-source="MessageBody">British fraudsters from overseas are contacting Australian investors offering term deposits and bank bonds whilst impersonating genuine Australian financial institutions, banks, and support services. The fraudsters are cloning real and authorised Australian companies using fake websites created by the scam syndicate. The fraudsters will offer to set up Term Deposits at an attractive interest rate and induce the victim into sending money to a bank account controlled by a money launderer (known as a money mule). Once the victim transfers their funds, the money is immediately withdrawn from the nominated money mule account and transferred overseas or cashed out into cryptocurrency. </span></p>
-<p>If you believe you may have already fallen victim to this scam, contact IFW’s Head Office immediately on <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>, <?= htmlspecialchars(get_setting($pdo, 'contact_email', 'info@ifwglobal.com')) ?> or submit an <a href="/contact/">Investment Fraud enquiry</a> to discuss your fraud and what can be done to investigate and recover any stolen money.</p>
+<p>If you believe you may have already fallen victim to this scam, contact IFW’s Head Office immediately on <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>, <?= htmlspecialchars(get_setting($pdo, 'contact_email', '<?= htmlspecialchars(get_setting(\, 'contact_email', 'info@ifwglobal.com')) ?>')) ?> or submit an <a href="/contact/">Investment Fraud enquiry</a> to discuss your fraud and what can be done to investigate and recover any stolen money.</p>
 <p>As a global leader in <a href="/scam/serious-and-organised-fraud/">fraud investigation</a>, our experienced <a href="/investigation/private-investigators/">private investigators</a> utilise exceptional resources and exclusive connections to crack down on criminals around the world.</p>
 <p>IFW Global Investigations is a private <a href="/intelligence/intelligence-reports/">intelligence and investigations firm</a> that represents investors who believe they have been scammed or duped into fraudulent investment schemes. We are strictly vetted by the NSW Police Force in Australia and the State of Florida in the USA, and you can view and verify our investigator licences at <a href="/about-us/">/about-us/</a></p>
 	</div>
@@ -1118,11 +1118,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 HQ              </a>
             </li>
                       <li class="phones__item">
-              <a href="tel:+6183280402" class="phones__link" data-title="+61 (02) 8328 0402">
+              <a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
                 AUS              </a>
             </li>
                       <li class="phones__item">
-              <a href="tel:+12475287" class="phones__link" data-title="+1 (239) 247 5287">
+              <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
                 USA              </a>
             </li>
                   </ul>
@@ -1377,14 +1377,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                   Australia                </strong>
 
                 
-                +61 (02) 8328 0402
+                <?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
                               </a>
-                          <a href="tel:+12475287" class="site-footer__phone">
+                          <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="site-footer__phone">
                 <strong class="site-footer__phone-name">
                   USA                </strong>
 
                 
-                +1 (239) 247 5287
+                <?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>
                               </a>
             					</div>
 
@@ -1511,11 +1511,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 						HQ					</a>
 				</li>
 							<li class="phones__item">
-					<a href="tel:+6183280402" class="phones__link" data-title="+61 (02) 8328 0402">
+					<a href="tel:+6183280402" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
 						AUS					</a>
 				</li>
 							<li class="phones__item">
-					<a href="tel:+12475287" class="phones__link" data-title="+1 (239) 247 5287">
+					<a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting(\, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting(\, 'phone_usa', '+1 (239) 247 5287')) ?>">
 						USA					</a>
 				</li>
 					</ul>

@@ -111,9 +111,9 @@ $currency = $invoice['currency'] ?? 'USD';
                     <tr>
                         <td>
                             <strong>IFW Global Headquarters</strong><br>
-                            Level 5, 20 Bond Street<br>
+                            <?= htmlspecialchars(get_setting(\, 'office_address', 'Level 5, 20 Bond Street')) ?><br>
                             Sydney NSW 2000, Australia<br>
-                            info@ifwglobal.com
+                            <?= htmlspecialchars(get_setting(\, 'contact_email', 'info@ifwglobal.com')) ?>
                         </td>
                         
                         <td>

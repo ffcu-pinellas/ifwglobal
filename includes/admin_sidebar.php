@@ -291,6 +291,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <span class="link-text text-white">Site Settings</span>
                     </a>
                 </li>
+                
+                <!-- NAV ITEM Form Builder -->
+                <li class="nav-item <?php echo ($current_page == 'form_builder.php') ? 'active' : ''; ?>">
+                    <a href="/admin/form_builder.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-list-alt text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Form Builder</span>
+                    </a>
+                </li>
                 <?php endif; ?>
 
                 <!-- NAV ITEM Messages -->
