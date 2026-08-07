@@ -1,18 +1,9 @@
-<?php
-$dir = __DIR__;
-while (!file_exists($dir . '/config.php')) {
-    $dir = dirname($dir);
-    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
-}
-require_once $dir . '/config.php';
-require_once $dir . '/includes/functions.php';
-?>
-return array(
+<?php return array(
     'root' => array(
         'name' => '__root__',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '0a0cd6f16ad1a7d0605cd37a56ecd6cbc45d5083',
+        'reference' => '250cc1ee975f714562b7b3947d76065f6121251e',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -22,7 +13,7 @@ return array(
         '__root__' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '0a0cd6f16ad1a7d0605cd37a56ecd6cbc45d5083',
+            'reference' => '250cc1ee975f714562b7b3947d76065f6121251e',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

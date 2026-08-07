@@ -1,12 +1,5 @@
 <?php
-$dir = __DIR__;
-while (!file_exists($dir . '/config.php')) {
-    $dir = dirname($dir);
-    if ($dir === '/' || $dir === '\' || preg_match('/^[A-Z]:\\$/i', $dir)) break;
-}
-require_once $dir . '/config.php';
-require_once $dir . '/includes/functions.php';
-?>
+
 /**
  * PHPMailer - PHP email creation and transport class.
  * PHP Version 5.5
@@ -58,13 +51,6 @@ if (!isset($_GET['code']) && !isset($_POST['provider'])) {
     ?>
 <html>
 <body>
-<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
-<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
-    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
-</div>
-<?php endif; ?>
-
-<?php require_once $dir . '/includes/announcement.php'; ?>
 <form method="post">
     <h1>Select Provider</h1>
     <input type="radio" name="provider" value="Google" id="providerGoogle">
