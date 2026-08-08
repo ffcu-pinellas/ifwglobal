@@ -124,7 +124,7 @@ require_once '../includes/admin_sidebar.php';
                                     </form>
                                 </td>
                                 <td>
-                                    <button class="btn btn-sm btn-info text-white" data-toggle="modal" data-target="#viewModal_<?= $case['id'] ?>"><i class="fas fa-eye"></i></button>
+                                    <a href="case_view.php?id=<?= $case['id'] ?>" class="btn btn-sm btn-info text-white" title="Manage Case & Timeline"><i class="fas fa-folder-open mr-1"></i> View & Manage</a>
                                     <?php if (!$is_agent): ?>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Delete this case?');">
                                             <input type="hidden" name="action" value="delete_case">

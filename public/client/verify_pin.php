@@ -1,5 +1,5 @@
 <?php
-// public/client/verify_otp.php
+// public/client/verify_pin.php
 $dir = __DIR__;
 while (!file_exists($dir . '/config.php')) {
     $dir = dirname($dir);
@@ -7,7 +7,6 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-require_once $dir . '/includes/mailer.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -19,57 +18,33 @@ if (!isset($_SESSION['pending_client_id'])) {
 }
 
 $error = '';
-$success = '';
 
-// Handle Resend Request
-if (isset($_GET['action']) && $_GET['action'] === 'resend') {
-    $new_otp = rand(100000, 999999);
-    $_SESSION['otp_code'] = $new_otp;
-    $_SESSION['otp_time'] = time();
-    
-    $email = $_SESSION['pending_client_email'];
-    $name = $_SESSION['pending_client_name'];
-    
-    $subject = "Your New IFW Portal Verification Code";
-    $body = "Your new 6-digit verification code is: {$new_otp}\nThis code will expire in 10 minutes.";
-    
-    @send_html_email($email, $subject, "<h2>IFW Global Security Verification</h2><p>Hello {$name},</p><p>Your new 6-digit login verification code is: <strong style='font-size: 1.5rem; color: #0b2e59;'>{$new_otp}</strong></p><p>This code will expire in 10 minutes.</p>");
-    $success = "A new 6-digit verification code has been dispatched to your email.";
-}
-
-// Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $entered_otp = trim($_POST['otp'] ?? '');
+    $entered_pin = trim($_POST['pin'] ?? '');
 
-    if (empty($entered_otp)) {
-        $error = "Please enter the 6-digit verification code.";
-    } elseif (time() - $_SESSION['otp_time'] > 600) {
-        $error = "The verification code has expired. Please request a new code below.";
-    } elseif ($entered_otp == $_SESSION['otp_code']) {
-        // OTP is correct
+    if (empty($entered_pin)) {
+        $error = "Please enter your PIN.";
+    } else {
         $stmt = $pdo->prepare("SELECT pin_hash FROM IFW_clients WHERE id = ?");
         $stmt->execute([$_SESSION['pending_client_id']]);
         $client = $stmt->fetch();
         
-        if (!empty($client['pin_hash'])) {
-            header("Location: verify_pin.php");
-            exit;
-        } else {
+        if ($client && password_verify($entered_pin, $client['pin_hash'])) {
+            // Fully logged in
             $_SESSION['client_logged_in'] = true;
             $_SESSION['client_portal_id'] = $_SESSION['pending_client_id'];
             $_SESSION['client_name'] = $_SESSION['pending_client_name'];
             
+            // Cleanup
             unset($_SESSION['pending_client_id']);
             unset($_SESSION['pending_client_email']);
             unset($_SESSION['pending_client_name']);
-            unset($_SESSION['otp_code']);
-            unset($_SESSION['otp_time']);
             
             header("Location: dashboard.php");
             exit;
+        } else {
+            $error = "Invalid PIN.";
         }
-    } else {
-        $error = "Invalid verification code. Please check your email and try again.";
     }
 }
 ?>
@@ -84,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <?php endif; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Two-Factor Authentication - IFW Global Client Portal</title>
+    <title>Enter PIN - IFW Global</title>
     
     <!-- Google Fonts & FontAwesome -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -108,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             border-radius: 16px;
             padding: 40px;
             width: 100%;
-            max-width: 485px;
+            max-width: 400px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
         }
         .brand-logo {
@@ -125,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             justify-content: center;
             gap: 10px;
         }
-        .btn-primary {
+        .btn-warning {
             background: linear-gradient(135deg, #fecc56 0%, #f1b834 100%);
             border: none;
             color: #000000;
@@ -134,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             border-radius: 8px;
             transition: all 0.3s ease;
         }
-        .btn-primary:hover {
+        .btn-warning:hover {
             background: linear-gradient(135deg, #f1b834 0%, #d89e20 100%);
             transform: translateY(-1px);
             box-shadow: 0 5px 15px rgba(254, 204, 86, 0.25);
@@ -166,40 +141,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
 
-<div class="auth-card">
+<div class="auth-card text-center">
     <div class="brand-logo">
         <h3><i class="fas fa-shield-alt"></i> IFW GLOBAL</h3>
     </div>
     
-    <div class="text-center mb-4">
-        <h5 class="fw-bold">Security Verification</h5>
-        <p class="text-muted small">We've dispatched a 6-digit verification code to your registered email address.</p>
+    <div class="mb-4">
+        <h5 class="fw-bold">Security PIN Required</h5>
+        <p class="text-muted small">Please enter your 4-digit security PIN to unlock your portal.</p>
     </div>
     
-    <?php if (!empty($error)): ?>
+    <?php if ($error): ?>
         <div class="alert alert-danger border-0 text-center py-2 mb-3" style="font-size: 0.9rem; background-color: rgba(220, 53, 69, 0.15); color: #ea868f;">
             <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
         </div>
     <?php endif; ?>
-    
-    <?php if (!empty($success)): ?>
-        <div class="alert alert-success border-0 text-center py-2 mb-3" style="font-size: 0.9rem; background-color: rgba(40, 167, 69, 0.15); color: #a3cfbb;">
-            <i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($success) ?>
-        </div>
-    <?php endif; ?>
-    
+
     <form method="POST">
         <div class="mb-4">
-            <label class="form-label small text-muted">Enter Verification Code</label>
-            <input type="text" name="otp" class="form-control text-center fs-4 fw-bold letter-spacing-5" maxlength="6" placeholder="000000" required autofocus>
+            <input type="password" class="form-control form-control-lg text-center fw-bold fs-3 letter-spacing-5" name="pin" placeholder="****" required maxlength="4" autofocus>
         </div>
-        
-        <button type="submit" class="btn btn-primary w-100 mb-3"><i class="fas fa-lock-open me-2"></i>Verify & Proceed</button>
+        <button type="submit" class="btn btn-warning w-100 py-3 font-weight-bold text-dark"><i class="fas fa-lock-open me-2"></i>Unlock Portal</button>
     </form>
     
-    <div class="text-center mt-3">
-        <p class="small text-muted mb-0">Didn't receive the code?</p>
-        <a href="verify_otp.php?action=resend" class="text-warning-custom small"><i class="fas fa-redo me-1"></i>Resend Code</a>
+    <div class="mt-4">
+        <a href="login.php" class="text-warning-custom small"><i class="fas fa-arrow-left me-1"></i>Back to Login</a>
     </div>
 </div>
 

@@ -4,12 +4,85 @@ require_once '../config.php';
 require_once '../includes/functions.php';
 require_admin_login();
 
-$chat_provider = get_setting($pdo, 'chat_provider', 'native');
-if ($chat_provider === 'tawk') {
-    header("Location: index.php");
+$chat_provider = get_setting($pdo, 'chat_provider', 'internal');
+$tawk_property = get_setting($pdo, 'tawkto_property_id', '');
+$manychat_code = get_setting($pdo, 'manychat_script_code', '');
+$custom_code   = get_setting($pdo, 'custom_chat_code', '');
+
+// If NOT internal, show a provider page instead of the internal chat
+if ($chat_provider !== 'internal') {
+    require_once '../includes/admin_header.php';
+    require_once '../includes/admin_sidebar.php';
+    ?>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="text-warning font-weight-bold mb-1"><i class="fas fa-headset mr-2"></i>Client Communications</h3>
+            <p class="text-muted mb-0">Live support chat via your configured provider.</p>
+        </div>
+        <a href="index.php" class="btn btn-outline-warning btn-sm font-weight-bold"><i class="fas fa-arrow-left mr-1"></i> Back to Dashboard</a>
+    </div>
+    <div class="card shadow-lg bg-dark border-secondary mb-4">
+        <div class="card-header bg-dark text-warning border-secondary font-weight-bold">
+            <i class="fas fa-comments mr-2"></i>
+            <?php if ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
+                Tawk.to Live Support Console
+            <?php elseif ($chat_provider === 'manychat'): ?>
+                ManyChat Messenger Console
+            <?php else: ?>
+                Custom Chat Provider
+            <?php endif; ?>
+            <span class="badge badge-warning text-dark ml-2"><?= ucfirst($chat_provider) ?> (Active)</span>
+        </div>
+        <div class="card-body bg-dark p-3">
+            <?php if ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
+                <?php if (!empty($tawk_property)): ?>
+                    <?php
+                    preg_match('/tawk\.to\/chat\/([a-zA-Z0-9]+)/', $tawk_property, $m);
+                    $prop_id = $m[1] ?? $tawk_property;
+                    // Try to extract chat hash too
+                    preg_match('/tawk\.to\/chat\/[^\/]+\/([a-zA-Z0-9]+)/', $tawk_property, $m2);
+                    $chat_hash = $m2[1] ?? 'default';
+                    $iframe_src = "https://tawk.to/chat/{$prop_id}/{$chat_hash}?pop=1";
+                    ?>
+                    <div class="alert alert-info border-0 mb-3 bg-dark" style="border-left: 4px solid #fecc56 !important;">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        The Tawk.to widget appears to your clients on the public site. Use the embedded console below to respond to them, or open the full dashboard.
+                        <a href="https://dashboard.tawk.to" target="_blank" class="btn btn-sm btn-warning text-dark font-weight-bold ml-2">Open Full Tawk Dashboard <i class="fas fa-external-link-alt ml-1"></i></a>
+                    </div>
+                    <iframe src="<?= htmlspecialchars($iframe_src) ?>" style="width:100%; height:600px; border:none; border-radius:8px; background:#111;"></iframe>
+                <?php else: ?>
+                    <div class="alert alert-warning font-weight-bold">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Tawk.to is selected but no Property ID is configured. 
+                        <a href="settings.php" class="btn btn-sm btn-warning text-dark ml-2">Configure in Settings</a>
+                    </div>
+                <?php endif; ?>
+
+            <?php elseif ($chat_provider === 'manychat'): ?>
+                <div class="alert alert-info border-0 mb-3 bg-dark" style="border-left: 4px solid #fecc56 !important;">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    ManyChat is configured as your chat provider. Manage conversations from your ManyChat dashboard.
+                    <a href="https://manychat.com" target="_blank" class="btn btn-sm btn-warning text-dark font-weight-bold ml-2">Open ManyChat Dashboard <i class="fas fa-external-link-alt ml-1"></i></a>
+                </div>
+                <?php if (!empty($manychat_code)): ?>
+                    <div class="text-muted small text-center py-5">
+                        <i class="fas fa-check-circle text-success fa-3x mb-3 d-block"></i>
+                        ManyChat widget is active on the client-facing pages. Your clients can reach you there.
+                    </div>
+                <?php endif; ?>
+
+            <?php else: ?>
+                <div class="alert alert-warning"><i class="fas fa-info-circle mr-2"></i>Custom chat provider is active. Manage from your provider's dashboard.</div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?php
+    require_once '../includes/admin_footer.php';
     exit;
 }
 
+// If we reach here: provider = internal
 require_once '../includes/admin_header.php';
 ?>
 <div class="container-fluid mt-4">

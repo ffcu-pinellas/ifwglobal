@@ -234,18 +234,6 @@ if (isset($pdo)) {
                     </a>
                 </li>
 
-                <!-- NAV ITEM Chat/Messaging - dynamically changes based on admin setting -->
-                <?php if ($chat_provider === 'internal'): ?>
-                <li class="nav-item <?php echo ($current_page == 'chat.php') ? 'active' : ''; ?>">
-                    <a href="<?php echo BASE_URL; ?>/<?php echo ($user_role == 'client') ? 'client/chat.php' : 'admin/chat.php'; ?>" class="nav-link d-flex align-items-center px-3 py-2">
-                        <i class="fas fa-comments text-warning mr-3" style="width: 20px;"></i>
-                        <span class="link-text text-white">Secure Messaging</span>
-                        <?php if ($global_unread_chat > 0): ?>
-                            <span class="badge badge-danger ml-auto" style="border-radius: 50%; padding: 4px 6px; font-size: 10px;"><?php echo $global_unread_chat; ?></span>
-                        <?php endif; ?>
-                    </a>
-                </li>
-                <?php endif; ?>
 
                 <?php if ($user_role !== 'client'): ?>
                 <!-- NAV ITEM Cases -->
@@ -344,11 +332,26 @@ if (isset($pdo)) {
                 </li>
                 <?php endif; ?>
 
-                <!-- NAV ITEM Messages -->
+                <!-- NAV ITEM Unified Messaging - dynamically changes based on admin setting -->
                 <li class="nav-item <?php echo ($current_page == 'chat.php') ? 'active' : ''; ?>">
-                    <a href="<?php echo BASE_URL; ?>/<?php echo ($user_role == 'client') ? 'client' : 'admin'; ?>/chat.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/<?php echo ($user_role == 'client') ? 'client/chat.php' : 'admin/chat.php'; ?>" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-comments text-warning mr-3" style="width: 20px;"></i>
-                        <span class="link-text text-white">Live Messages</span>
+                        <span class="link-text text-white">
+                            <?php 
+                            if ($chat_provider === 'tawkto' || $chat_provider === 'tawk') {
+                                echo 'Tawk.to Chat';
+                            } elseif ($chat_provider === 'manychat') {
+                                echo 'ManyChat Support';
+                            } elseif ($chat_provider === 'custom') {
+                                echo 'Support Chat';
+                            } else {
+                                echo 'Secure Messaging';
+                            }
+                            ?>
+                        </span>
+                        <?php if (($chat_provider === 'internal' || $chat_provider === 'native') && $global_unread_chat > 0): ?>
+                            <span class="badge badge-danger ml-auto" style="border-radius: 50%; padding: 4px 6px; font-size: 10px;"><?php echo $global_unread_chat; ?></span>
+                        <?php endif; ?>
                     </a>
                 </li>
 

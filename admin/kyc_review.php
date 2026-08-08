@@ -259,7 +259,7 @@ require_once '../includes/admin_sidebar.php';
                         </td>
                         <td>
                             <button type="button" class="btn btn-sm btn-outline-info py-0 px-2 mr-1" 
-                                data-toggle="modal" data-target="#editKycFieldModal_<?= $f['id'] ?>"
+                                data-toggle="modal" data-target="#editKycFieldModalMain"
                                 onclick="openEditModal(<?= $f['id'] ?>, <?= htmlspecialchars(json_encode($f['field_label'])) ?>, <?= htmlspecialchars(json_encode($f['field_name'])) ?>, '<?= $f['field_type'] ?>', <?= htmlspecialchars(json_encode($f['field_options'] ?? '')) ?>, <?= $f['is_required'] ?>, <?= $f['sort_order'] ?? $f['id'] ?>)">
                                 <i class="fas fa-edit"></i>
                             </button>

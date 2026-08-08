@@ -25,9 +25,14 @@ if (!$invoice) {
     die('<p style="font-family:sans-serif;padding:20px;">Invoice not found.</p>');
 }
 
-$stmtItems = $pdo->prepare("SELECT * FROM IFW_invoice_items WHERE invoice_id = ?");
-$stmtItems->execute([$id]);
-$items = $stmtItems->fetchAll();
+$items = [];
+try {
+    $stmtItems = $pdo->prepare("SELECT * FROM IFW_invoice_items WHERE invoice_id = ?");
+    $stmtItems->execute([$id]);
+    $items = $stmtItems->fetchAll();
+} catch (Exception $e) {
+    $items = [];
+}
 
 $currency = $invoice['currency'] ?? 'USD';
 ?>

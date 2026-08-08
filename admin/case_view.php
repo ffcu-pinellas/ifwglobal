@@ -21,9 +21,9 @@ if (!$case) die("Case not found.");
 
 // Check assignment if not admin/manage_cases
 if ($_SESSION['admin_role'] !== 'admin' && !has_permission('manage_cases')) {
-    $chk = $pdo->prepare("SELECT 1 FROM IFW_case_assignments WHERE case_id = ? AND user_id = ?");
-    $chk->execute([$case_id, $_SESSION['admin_id']]);
-    if (!$chk->fetch()) die("Unauthorized to view this case.");
+    if ((int)$case['attorney_id'] !== (int)$_SESSION['admin_id']) {
+        die("Unauthorized to view this case.");
+    }
 }
 
 // Handle Notes Submission
@@ -36,6 +36,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
+// Handle Timeline Event Submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_timeline') {
+    $milestone_title = trim($_POST['milestone_title']);
+    $milestone_body = trim($_POST['milestone_body']);
+    $milestone_date = !empty($_POST['milestone_date']) ? $_POST['milestone_date'] : date('Y-m-d');
+    $status_color = $_POST['status_color'] ?? 'primary';
+    $is_client_visible = isset($_POST['is_client_visible']) ? 1 : 0;
+    
+    if (!empty($milestone_title)) {
+        $stmt = $pdo->prepare("INSERT INTO IFW_case_timeline (case_id, created_by, milestone_title, milestone_body, milestone_date, status_color, is_client_visible) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$case_id, $_SESSION['admin_id'], $milestone_title, $milestone_body, $milestone_date, $status_color, $is_client_visible]);
+        
+        // Add a notification for client
+        try {
+            $notif_title = "Case Update: " . $milestone_title;
+            $notif_body = substr($milestone_body, 0, 100);
+            $stmt_notif = $pdo->prepare("INSERT INTO IFW_notifications (client_id, type, title, body, icon, link) VALUES (?, 'case_update', ?, ?, 'briefcase', '/client/my_cases.php?case_id=')");
+            $stmt_notif->execute([$case['client_id'], $notif_title, $notif_body]);
+            $last_notif_id = $pdo->lastInsertId();
+            // Update the link to point to this case
+            $pdo->prepare("UPDATE IFW_notifications SET link = ? WHERE id = ?")->execute(['/client/my_cases.php?case_id=' . $case_id, $last_notif_id]);
+        } catch(Exception $e) {}
+        
+        $success = "Milestone added successfully.";
+    }
+}
+
+// Handle Timeline Event Deletion
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_timeline') {
+    $timeline_id = (int)$_POST['timeline_id'];
+    $stmt = $pdo->prepare("DELETE FROM IFW_case_timeline WHERE id = ? AND case_id = ?");
+    $stmt->execute([$timeline_id, $case_id]);
+    $success = "Timeline milestone removed.";
+}
+
 // Fetch Notes
 $notesStmt = $pdo->prepare("
     SELECT n.*, u.username 
@@ -46,6 +81,17 @@ $notesStmt = $pdo->prepare("
 ");
 $notesStmt->execute([$case_id]);
 $notes = $notesStmt->fetchAll();
+
+// Fetch Timeline Events
+$timelineStmt = $pdo->prepare("
+    SELECT t.*, u.username 
+    FROM IFW_case_timeline t 
+    LEFT JOIN IFW_users u ON t.created_by = u.id 
+    WHERE t.case_id = ? 
+    ORDER BY t.milestone_date DESC, t.created_at DESC
+");
+$timelineStmt->execute([$case_id]);
+$timeline_events = $timelineStmt->fetchAll();
 
 $_SESSION['role'] = $_SESSION['admin_role'] ?? 'admin';
 $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
@@ -95,6 +141,48 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
             </div>
         </div>
 
+        <!-- Case Timeline / Milestones -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold"><i class="material-icons text-warning mr-1" style="vertical-align: text-bottom;">timeline</i> Case Timeline & Milestones</h5>
+                <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark" data-toggle="modal" data-target="#addTimelineModal">
+                    <i class="material-icons mr-1" style="font-size:16px; vertical-align:text-bottom;">add</i> Add Milestone
+                </button>
+            </div>
+            <div class="card-body">
+                <?php if (empty($timeline_events)): ?>
+                    <p class="text-muted text-center py-3">No milestones posted for this case yet.</p>
+                <?php else: ?>
+                    <div class="timeline-wrapper" style="position: relative; padding-left: 20px; border-left: 2px solid #ddd; margin-left: 10px;">
+                        <?php foreach($timeline_events as $event): ?>
+                            <div class="timeline-event mb-4" style="position: relative;">
+                                <div class="timeline-dot" style="position: absolute; left: -27px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background-color: <?php 
+                                    echo ['primary' => '#0b2e59', 'success' => '#28a745', 'warning' => '#ffc107', 'danger' => '#dc3545', 'info' => '#17a2b8'][$event['status_color']] ?? '#0b2e59'; 
+                                ?>;"></div>
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong class="text-dark d-block" style="font-size: 1.1rem;"><?php echo htmlspecialchars($event['milestone_title']); ?></strong>
+                                        <span class="text-muted small">
+                                            <i class="material-icons" style="font-size: 14px; vertical-align: text-bottom;">event</i> <?php echo date('M j, Y', strtotime($event['milestone_date'])); ?>
+                                            &middot; Visibility: <?php echo $event['is_client_visible'] ? '<span class="text-success font-weight-bold">Client Visible</span>' : '<span class="text-warning font-weight-bold">Internal Only</span>'; ?>
+                                        </span>
+                                        <?php if (!empty($event['milestone_body'])): ?>
+                                            <p class="text-muted mt-2 mb-0 small" style="white-space: pre-wrap;"><?php echo htmlspecialchars($event['milestone_body']); ?></p>
+                                        <?php endif; ?>
+                                    </div>
+                                    <form method="POST" onsubmit="return confirm('Remove this milestone?');">
+                                        <input type="hidden" name="action" value="delete_timeline">
+                                        <input type="hidden" name="timeline_id" value="<?php echo $event['id']; ?>">
+                                        <button type="submit" class="btn btn-link text-danger p-0"><i class="material-icons" style="font-size: 18px;">delete</i></button>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <!-- Internal Notes -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-bottom">
@@ -120,7 +208,7 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
                             <strong class="text-primary"><i class="material-icons" style="font-size: 16px; vertical-align: text-bottom;">person</i> <?php echo htmlspecialchars($note['username']); ?></strong>
                             <small class="text-muted"><i class="material-icons" style="font-size: 14px; vertical-align: text-bottom;">schedule</i> <?php echo date('M j, Y h:i A', strtotime($note['created_at'])); ?></small>
                         </div>
-                        <div class="text-dark bg-light p-3 rounded"><?php echo nl2br(htmlspecialchars($note['note'])); ?></div>
+                        <div class="text-dark bg-light p-3 rounded"><?php echo nl2br(htmlspecialchars($note['note'] ?: $note['note_text'] ?? '')); ?></div>
                     </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -141,6 +229,58 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
             </div>
         </div>
     </div>
+</div>
+
+<!-- Add Timeline Modal -->
+<div class="modal fade" id="addTimelineModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white border-warning">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-warning font-weight-bold"><i class="material-icons mr-2" style="vertical-align: text-bottom;">timeline</i> Add Case Milestone</h5>
+        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+      </div>
+      <form method="POST">
+        <div class="modal-body">
+            <input type="hidden" name="action" value="add_timeline">
+            
+            <div class="form-group mb-3">
+                <label class="text-white font-weight-bold">Milestone Title <span class="text-warning">*</span></label>
+                <input type="text" name="milestone_title" class="form-control bg-dark text-white border-secondary" required placeholder="e.g. Asset Tracing Report Completed">
+            </div>
+            
+            <div class="form-group mb-3">
+                <label class="text-white font-weight-bold">Event Date</label>
+                <input type="date" name="milestone_date" class="form-control bg-dark text-white border-secondary" value="<?php echo date('Y-m-d'); ?>">
+            </div>
+            
+            <div class="form-group mb-3">
+                <label class="text-white font-weight-bold">Status Color</label>
+                <select name="status_color" class="form-control bg-dark text-white border-secondary">
+                    <option value="primary">Dark Blue (General)</option>
+                    <option value="info">Light Blue (In Progress)</option>
+                    <option value="warning">Yellow (Pending)</option>
+                    <option value="success">Green (Resolved/Successful)</option>
+                    <option value="danger">Red (Attention Needed/Failed)</option>
+                </select>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label class="text-white font-weight-bold">Details / Description</label>
+                <textarea name="milestone_body" rows="4" class="form-control bg-dark text-white border-secondary" placeholder="Enter milestone details..."></textarea>
+            </div>
+            
+            <div class="custom-control custom-switch mt-3">
+                <input type="checkbox" class="custom-control-input" id="clientVisibleSwitch" name="is_client_visible" value="1" checked>
+                <label class="custom-control-label text-light font-weight-bold" for="clientVisibleSwitch" style="cursor: pointer;">Visible to Client in Dashboard</label>
+            </div>
+        </div>
+        <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4">Add Event</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <?php require_once '../includes/admin_footer.php'; ?>
