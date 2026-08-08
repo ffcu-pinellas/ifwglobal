@@ -51,14 +51,22 @@ if (!$_footer_is_chat_page):
     if ($_footer_chat_provider === 'tawkto'):
         $tawk_code = isset($pdo) ? get_setting($pdo, 'tawkto_property_id', '') : '';
         if ($tawk_code):
-            // Check if it's a script snippet or a property ID
-            if (strpos($tawk_code, '<script') !== false):
-                echo $tawk_code;
-            else:
-                // Treat as property ID / URL - embed as script
-                // Extract property id from URL if full URL given
-                preg_match('/tawk\.to\/chat\/([a-zA-Z0-9]+)/', $tawk_code, $m);
-                $prop_id = $m[1] ?? $tawk_code;
+            // Strip any HTML tags, script wrappers, comments from stored value to get clean property ID
+            $clean_id = $tawk_code;
+            $clean_id = strip_tags($clean_id);                             // Remove any <script> tags
+            $clean_id = preg_replace('/<!--.*?-->/s', '', $clean_id);      // Remove HTML comments
+            $clean_id = preg_replace('/var\s+Tawk_API[\s\S]*?embed\.tawk\.to\//i', '', $clean_id); // Strip JS preamble
+            $clean_id = preg_replace('/[\'"];.*$/s', '', $clean_id);       // Remove trailing JS
+            $clean_id = trim($clean_id, " \t\n\r;'\"/");
+            
+            if (strpos($clean_id, 'embed.tawk.to/') !== false) {
+                $clean_id = preg_replace('/.*embed\.tawk\.to\//', '', $clean_id);
+                $clean_id = trim($clean_id, " \t\n\r;'\"");
+            }
+            
+            // Validate: should look like "XXXXXXXX/YYYYY" or "hash/default"
+            if (!empty($clean_id) && preg_match('/^[a-zA-Z0-9_\/\-]{10,}$/', $clean_id)):
+                $tawkto_src = 'https://embed.tawk.to/' . $clean_id;
 ?>
 <!--Start of Tawk.to Script-->
 <script type="text/javascript">
@@ -66,7 +74,7 @@ var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
 (function(){
 var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
 s1.async=true;
-s1.src='https://embed.tawk.to/<?php echo htmlspecialchars($prop_id); ?>/default';
+s1.src='<?php echo htmlspecialchars($tawkto_src, ENT_QUOTES); ?>';
 s1.charset='UTF-8';
 s1.setAttribute('crossorigin','*');
 s0.parentNode.insertBefore(s1,s0);

@@ -310,9 +310,9 @@ require_once '../includes/admin_sidebar.php';
                     <input type="number" name="sort_order" class="form-control bg-dark text-white border-secondary" value="<?= count($fields) + 1 ?>">
                 </div>
                 <div class="col-md-2 mb-2 d-flex flex-column justify-content-end">
-                    <div class="custom-control custom-checkbox mb-2">
-                        <input type="checkbox" class="custom-control-input" id="addIsReq" name="is_required" checked>
-                        <label class="custom-control-label text-light" for="addIsReq">Required</label>
+                    <div class="form-check mb-2 d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input" id="addIsReq" name="is_required" value="1" checked style="width: 18px; height: 18px; cursor: pointer;">
+                        <label class="form-check-label text-light ml-2" for="addIsReq" style="cursor: pointer;">Required</label>
                     </div>
                     <button type="submit" class="btn btn-warning btn-sm text-dark font-weight-bold"><i class="fas fa-plus mr-1"></i>Add Field</button>
                 </div>
@@ -371,9 +371,9 @@ require_once '../includes/admin_sidebar.php';
                 <div class="col-md-6">
                     <div class="form-group mb-3">
                         <label class="font-weight-bold text-light d-block">&nbsp;</label>
-                        <div class="custom-control custom-switch mt-2">
-                            <input type="checkbox" class="custom-control-input" id="editFieldRequired" name="is_required" value="1">
-                            <label class="custom-control-label text-light font-weight-bold" for="editFieldRequired">Mandatory Field</label>
+                        <div class="form-check mt-2 d-flex align-items-center">
+                            <input type="checkbox" class="form-check-input" id="editFieldRequired" name="is_required" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                            <label class="form-check-label text-light font-weight-bold ml-2" for="editFieldRequired" style="cursor: pointer;">Mandatory Field</label>
                         </div>
                     </div>
                 </div>

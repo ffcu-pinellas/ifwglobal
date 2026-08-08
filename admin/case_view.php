@@ -71,6 +71,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $success = "Timeline milestone removed.";
 }
 
+// Handle Document Upload to Vault
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'upload_document') {
+    if (isset($_FILES['doc_file']) && $_FILES['doc_file']['error'] === UPLOAD_ERR_OK) {
+        $file_tmp = $_FILES['doc_file']['tmp_name'];
+        $file_name = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $_FILES['doc_file']['name']);
+        $doc_type = $_POST['document_type'] ?? 'Standard';
+        $requires_sig = isset($_POST['requires_signature']) ? 1 : 0;
+        
+        $base_dir = dirname(__DIR__);
+        $target_dir = $base_dir . '/uploads/vault/';
+        if (!file_exists($target_dir)) {
+            mkdir($target_dir, 0777, true);
+        }
+        
+        $new_filename = time() . '_' . $file_name;
+        $target_file = $target_dir . $new_filename;
+        $db_path = 'uploads/vault/' . $new_filename;
+        
+        if (move_uploaded_file($file_tmp, $target_file)) {
+            $stmt = $pdo->prepare("INSERT INTO IFW_documents (client_id, file_name, file_path, document_type, requires_signature) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$case['client_id'], $file_name, $db_path, $doc_type, $requires_sig]);
+            $success = "Document uploaded successfully to client vault.";
+        } else {
+            $error = "Failed to save uploaded file.";
+        }
+    } else {
+        $error = "Please choose a valid file to upload.";
+    }
+}
+
+// Handle Document Deletion from Vault
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_document') {
+    $doc_id = (int)$_POST['document_id'];
+    $base_dir = dirname(__DIR__);
+    
+    // Fetch file path
+    $fStmt = $pdo->prepare("SELECT file_path FROM IFW_documents WHERE id = ? AND client_id = ?");
+    $fStmt->execute([$doc_id, $case['client_id']]);
+    $doc_file = $fStmt->fetch();
+    
+    if ($doc_file) {
+        @unlink($base_dir . '/' . $doc_file['file_path']);
+        $pdo->prepare("DELETE FROM IFW_documents WHERE id = ?")->execute([$doc_id]);
+        $success = "Document deleted from vault.";
+    }
+}
+
 // Fetch Notes
 $notesStmt = $pdo->prepare("
     SELECT n.*, u.username 
@@ -92,6 +139,11 @@ $timelineStmt = $pdo->prepare("
 ");
 $timelineStmt->execute([$case_id]);
 $timeline_events = $timelineStmt->fetchAll();
+
+// Fetch Client Documents
+$docsStmt = $pdo->prepare("SELECT * FROM IFW_documents WHERE client_id = ? ORDER BY uploaded_at DESC");
+$docsStmt->execute([$case['client_id']]);
+$documents = $docsStmt->fetchAll();
 
 $_SESSION['role'] = $_SESSION['admin_role'] ?? 'admin';
 $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
@@ -223,8 +275,8 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
                 <h5 class="card-title mb-0 fw-bold">Case Actions</h5>
             </div>
             <div class="list-group list-group-flush">
-                <a href="#" class="list-group-item list-group-item-action"><i class="material-icons text-danger mr-2" style="vertical-align: middle;">picture_as_pdf</i> Vault Documents</a>
-                <a href="#" class="list-group-item list-group-item-action"><i class="material-icons text-info mr-2" style="vertical-align: middle;">receipt</i> Case Invoices</a>
+                <a href="#" class="list-group-item list-group-item-action" data-toggle="modal" data-target="#vaultDocumentsModal"><i class="material-icons text-danger mr-2" style="vertical-align: middle;">picture_as_pdf</i> Vault Documents</a>
+                <a href="invoices.php?client_id=<?php echo $case['client_id']; ?>" class="list-group-item list-group-item-action"><i class="material-icons text-info mr-2" style="vertical-align: middle;">receipt</i> Case Invoices</a>
                 <a href="chat.php?client_id=<?php echo $case['client_id']; ?>" class="list-group-item list-group-item-action"><i class="material-icons text-warning mr-2" style="vertical-align: middle;">chat</i> Message Client</a>
             </div>
         </div>
@@ -269,9 +321,9 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
                 <textarea name="milestone_body" rows="4" class="form-control bg-dark text-white border-secondary" placeholder="Enter milestone details..."></textarea>
             </div>
             
-            <div class="custom-control custom-switch mt-3">
-                <input type="checkbox" class="custom-control-input" id="clientVisibleSwitch" name="is_client_visible" value="1" checked>
-                <label class="custom-control-label text-light font-weight-bold" for="clientVisibleSwitch" style="cursor: pointer;">Visible to Client in Dashboard</label>
+            <div class="form-check mt-3 d-flex align-items-center">
+                <input type="checkbox" class="form-check-input" id="clientVisibleSwitch" name="is_client_visible" value="1" checked style="width: 18px; height: 18px; cursor: pointer;">
+                <label class="form-check-label text-light font-weight-bold ml-2" for="clientVisibleSwitch" style="cursor: pointer;">Visible to Client in Dashboard</label>
             </div>
         </div>
         <div class="modal-footer border-secondary">
@@ -279,6 +331,104 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
             <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4">Add Event</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Vault Documents Modal -->
+<div class="modal fade" id="vaultDocumentsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark text-white border-warning">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-warning font-weight-bold"><i class="material-icons mr-2" style="vertical-align: text-bottom;">folder_special</i> Case Document Vault</h5>
+        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+          <!-- Upload New Document Form -->
+          <form method="POST" enctype="multipart/form-data" class="bg-black p-3 rounded mb-4 border border-secondary">
+              <input type="hidden" name="action" value="upload_document">
+              <h6 class="text-warning font-weight-bold mb-3"><i class="fas fa-upload mr-1"></i> Upload Document to Vault</h6>
+              <div class="row">
+                  <div class="col-md-5 mb-2">
+                      <label class="small text-muted font-weight-bold d-block">Select File</label>
+                      <input type="file" name="doc_file" class="form-control-file text-light" required>
+                  </div>
+                  <div class="col-md-4 mb-2">
+                      <label class="small text-muted font-weight-bold">Document Type</label>
+                      <select name="document_type" class="form-control form-control-sm bg-dark text-white border-secondary">
+                          <option value="Standard">Standard / General Document</option>
+                          <option value="Service Agreement">Service Agreement</option>
+                          <option value="Power of Attorney">Power of Attorney</option>
+                          <option value="NDA">NDA (Non-Disclosure Agreement)</option>
+                          <option value="Invoice">Invoice Attachment</option>
+                      </select>
+                  </div>
+                  <div class="col-md-3 mb-2 d-flex flex-column justify-content-end pb-1">
+                      <div class="form-check mb-2 d-flex align-items-center">
+                          <input type="checkbox" class="form-check-input" id="sigRequired" name="requires_signature" value="1" style="width:16px; height:16px; cursor:pointer;">
+                          <label class="form-check-label text-light small ml-2" for="sigRequired" style="cursor:pointer;">Requires Signature</label>
+                      </div>
+                      <button type="submit" class="btn btn-warning btn-sm font-weight-bold text-dark w-100">Upload</button>
+                  </div>
+              </div>
+          </form>
+
+          <!-- Documents List -->
+          <h6 class="text-light font-weight-bold mb-3"><i class="fas fa-file-pdf mr-1"></i> Vaulted Files & Agreements</h6>
+          <div class="table-responsive">
+              <table class="table table-dark table-hover table-striped mb-0" style="background:#111;">
+                  <thead>
+                      <tr>
+                          <th>File Name</th>
+                          <th>Type</th>
+                          <th>Status</th>
+                          <th>Uploaded</th>
+                          <th>Actions</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      <?php if (empty($documents)): ?>
+                          <tr>
+                              <td colspan="5" class="text-center text-muted py-4">No documents vaulted for this client.</td>
+                          </tr>
+                      <?php else: ?>
+                          <?php foreach($documents as $doc): ?>
+                              <tr>
+                                  <td>
+                                      <a href="<?= BASE_URL . '/' . htmlspecialchars($doc['file_path']) ?>" target="_blank" class="text-warning font-weight-bold">
+                                          <i class="fas fa-file-download mr-1"></i> <?= htmlspecialchars($doc['file_name']) ?>
+                                      </a>
+                                  </td>
+                                  <td><span class="badge badge-secondary"><?= htmlspecialchars($doc['document_type']) ?></span></td>
+                                  <td>
+                                      <?php if ($doc['requires_signature']): ?>
+                                          <?php if ($doc['is_signed']): ?>
+                                              <span class="badge badge-success" title="Signed at: <?= $doc['signed_at'] ?> IP: <?= $doc['signature_ip'] ?>"><i class="fas fa-check-circle mr-1"></i> Signed</span>
+                                          <?php else: ?>
+                                              <span class="badge badge-warning text-dark"><i class="fas fa-signature mr-1"></i> Pending Signature</span>
+                                          <?php endif; ?>
+                                      <?php else: ?>
+                                          <span class="badge badge-info">Standard View</span>
+                                      <?php endif; ?>
+                                  </td>
+                                  <td class="small text-muted"><?= date('M j, Y H:i', strtotime($doc['uploaded_at'])) ?></td>
+                                  <td>
+                                      <form method="POST" class="d-inline" onsubmit="return confirm('Delete this vaulted document?');">
+                                          <input type="hidden" name="action" value="delete_document">
+                                          <input type="hidden" name="document_id" value="<?= $doc['id'] ?>">
+                                          <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="fas fa-trash-alt mr-1"></i>Delete</button>
+                                      </form>
+                                  </td>
+                              </tr>
+                          <?php endforeach; ?>
+                      <?php endif; ?>
+                  </tbody>
+              </table>
+          </div>
+      </div>
+      <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Close</button>
+      </div>
     </div>
   </div>
 </div>

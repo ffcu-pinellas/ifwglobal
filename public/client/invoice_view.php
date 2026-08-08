@@ -27,7 +27,20 @@ try {
                          WHERE i.id = ? AND i.client_id = ?");
     $s->execute([$id, $client_id]);
     $invoice = $s->fetch();
-} catch(Exception $e) {}
+} catch (Exception $e) {
+    if (stripos($e->getMessage(), 'country') !== false) {
+        try {
+            $s = $pdo->prepare("SELECT i.*, c.first_name, c.last_name, c.email, c.phone, '' AS country,
+                                        ca.case_number, ca.title AS case_title
+                                 FROM IFW_invoices i
+                                 JOIN IFW_clients c ON i.client_id = c.id
+                                 LEFT JOIN IFW_cases ca ON i.case_id = ca.id
+                                 WHERE i.id = ? AND i.client_id = ?");
+            $s->execute([$id, $client_id]);
+            $invoice = $s->fetch();
+        } catch (Exception $ex) {}
+    }
+}
 
 if (!$invoice) { header("Location: /client/dashboard.php?error=notfound"); exit; }
 

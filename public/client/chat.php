@@ -129,10 +129,21 @@ require_once $dir . '/includes/admin_sidebar.php';
                 <div class="card-body bg-dark p-2" style="height: 550px;">
                     <?php if (!empty($tawk_property)): ?>
                         <?php
-                        preg_match('/tawk\.to\/chat\/([a-zA-Z0-9]+)/', $tawk_property, $m);
-                        $prop_id = $m[1] ?? $tawk_property;
-                        preg_match('/tawk\.to\/chat\/[^\/]+\/([a-zA-Z0-9]+)/', $tawk_property, $m2);
-                        $chat_hash = $m2[1] ?? 'default';
+                        $clean_tawk = $tawk_property;
+                        $clean_tawk = strip_tags($clean_tawk);
+                        $clean_tawk = preg_replace('/<!--.*?-->/s', '', $clean_tawk);
+                        $clean_tawk = preg_replace('/var\s+Tawk_API[\s\S]*?embed\.tawk\.to\//i', '', $clean_tawk);
+                        $clean_tawk = preg_replace('/[\'"];.*$/s', '', $clean_tawk);
+                        $clean_tawk = trim($clean_tawk, " \t\n\r;'\"/");
+                        if (strpos($clean_tawk, 'tawk.to/chat/') !== false) {
+                            $clean_tawk = preg_replace('/.*tawk\.to\/chat\//', '', $clean_tawk);
+                        } elseif (strpos($clean_tawk, 'embed.tawk.to/') !== false) {
+                            $clean_tawk = preg_replace('/.*embed\.tawk\.to\//', '', $clean_tawk);
+                        }
+                        $clean_tawk = trim($clean_tawk, " \t\n\r;'\"/");
+                        $parts = explode('/', $clean_tawk);
+                        $prop_id = $parts[0] ?? '';
+                        $chat_hash = $parts[1] ?? 'default';
                         $iframe_src = "https://tawk.to/chat/{$prop_id}/{$chat_hash}?pop=1";
                         ?>
                         <iframe src="<?= htmlspecialchars($iframe_src) ?>" style="width: 100%; height: 100%; border: none; border-radius: 8px; background: #111;"></iframe>

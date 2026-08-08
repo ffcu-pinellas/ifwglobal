@@ -18,7 +18,17 @@ try {
     $stmt->execute([$id]);
     $invoice = $stmt->fetch();
 } catch (PDOException $e) {
-    die('<p style="font-family:sans-serif;padding:20px;">Database error: ' . htmlspecialchars($e->getMessage()) . '</p>');
+    if (stripos($e->getMessage(), 'country') !== false) {
+        $stmt = $pdo->prepare("SELECT i.*, c.first_name, c.last_name, c.email, c.phone, '' AS country, ca.case_number 
+                               FROM IFW_invoices i 
+                               JOIN IFW_clients c ON i.client_id = c.id 
+                               LEFT JOIN IFW_cases ca ON i.case_id = ca.id 
+                               WHERE i.id = ?");
+        $stmt->execute([$id]);
+        $invoice = $stmt->fetch();
+    } else {
+        die('<p style="font-family:sans-serif;padding:20px;">Database error: ' . htmlspecialchars($e->getMessage()) . '</p>');
+    }
 }
 
 if (!$invoice) {

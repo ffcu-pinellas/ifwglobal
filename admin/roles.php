@@ -377,9 +377,9 @@ require_once '../includes/admin_sidebar.php';
                         <div class="text-muted small">No permissions defined in system yet.</div>
                     <?php else: ?>
                         <?php foreach($permissions as $perm): ?>
-                            <div class="custom-control custom-checkbox mb-2">
-                                <input type="checkbox" class="custom-control-input" id="perm_<?= $perm['id'] ?>" name="permissions[]" value="<?= $perm['id'] ?>">
-                                <label class="custom-control-label text-light" style="cursor:pointer;" for="perm_<?= $perm['id'] ?>"><?= htmlspecialchars(ucfirst(str_replace('_', ' ', $perm['name']))) ?></label>
+                            <div class="form-check mb-2 d-flex align-items-center">
+                                <input type="checkbox" class="form-check-input" id="perm_<?= $perm['id'] ?>" name="permissions[]" value="<?= $perm['id'] ?>" style="width: 18px; height: 18px; cursor: pointer;">
+                                <label class="form-check-label text-light ml-2" style="cursor:pointer;" for="perm_<?= $perm['id'] ?>"><?= htmlspecialchars(ucfirst(str_replace('_', ' ', $perm['name']))) ?></label>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>

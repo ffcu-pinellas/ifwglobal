@@ -139,11 +139,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Fetch Invoices
 $invoices = [];
+$client_filter = isset($_GET['client_id']) ? (int)$_GET['client_id'] : 0;
 try {
     if ($is_agent) {
-        $invoices = $pdo->query("SELECT i.*, c.first_name, c.last_name FROM IFW_invoices i JOIN IFW_clients c ON i.client_id = c.id WHERE c.assigned_agent_id = {$_SESSION['admin_id']} ORDER BY i.created_at DESC")->fetchAll();
+        if ($client_filter > 0) {
+            $stmt = $pdo->prepare("SELECT i.*, c.first_name, c.last_name FROM IFW_invoices i JOIN IFW_clients c ON i.client_id = c.id WHERE c.assigned_agent_id = ? AND i.client_id = ? ORDER BY i.created_at DESC");
+            $stmt->execute([$_SESSION['admin_id'], $client_filter]);
+            $invoices = $stmt->fetchAll();
+        } else {
+            $stmt = $pdo->prepare("SELECT i.*, c.first_name, c.last_name FROM IFW_invoices i JOIN IFW_clients c ON i.client_id = c.id WHERE c.assigned_agent_id = ? ORDER BY i.created_at DESC");
+            $stmt->execute([$_SESSION['admin_id']]);
+            $invoices = $stmt->fetchAll();
+        }
     } else {
-        $invoices = $pdo->query("SELECT i.*, c.first_name, c.last_name FROM IFW_invoices i JOIN IFW_clients c ON i.client_id = c.id ORDER BY i.created_at DESC")->fetchAll();
+        if ($client_filter > 0) {
+            $stmt = $pdo->prepare("SELECT i.*, c.first_name, c.last_name FROM IFW_invoices i JOIN IFW_clients c ON i.client_id = c.id WHERE i.client_id = ? ORDER BY i.created_at DESC");
+            $stmt->execute([$client_filter]);
+            $invoices = $stmt->fetchAll();
+        } else {
+            $invoices = $pdo->query("SELECT i.*, c.first_name, c.last_name FROM IFW_invoices i JOIN IFW_clients c ON i.client_id = c.id ORDER BY i.created_at DESC")->fetchAll();
+        }
     }
 } catch (Exception $e) {}
 
@@ -368,9 +383,9 @@ require_once '../includes/admin_sidebar.php';
                 <small class="text-success"><i class="fas fa-info-circle mr-1"></i>This will be prominently displayed on the client's invoice. Leave blank to use global payment settings.</small>
             </div>
             
-            <div class="custom-control custom-switch">
-              <input type="checkbox" class="custom-control-input" id="emailSwitch" name="email_invoice" checked>
-              <label class="custom-control-label text-warning font-weight-bold" style="cursor:pointer;" for="emailSwitch">Email styled invoice statement to client immediately</label>
+            <div class="form-check mt-3 d-flex align-items-center">
+              <input type="checkbox" class="form-check-input" id="emailSwitch" name="email_invoice" value="1" checked style="width: 18px; height: 18px; cursor: pointer;">
+              <label class="form-check-label text-warning font-weight-bold ml-2" style="cursor:pointer;" for="emailSwitch">Email styled invoice statement to client immediately</label>
             </div>
           </div>
           <div class="modal-footer border-secondary">

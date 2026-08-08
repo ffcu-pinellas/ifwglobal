@@ -41,11 +41,21 @@ if ($chat_provider !== 'internal') {
             <?php if ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
                 <?php if (!empty($tawk_property)): ?>
                     <?php
-                    preg_match('/tawk\.to\/chat\/([a-zA-Z0-9]+)/', $tawk_property, $m);
-                    $prop_id = $m[1] ?? $tawk_property;
-                    // Try to extract chat hash too
-                    preg_match('/tawk\.to\/chat\/[^\/]+\/([a-zA-Z0-9]+)/', $tawk_property, $m2);
-                    $chat_hash = $m2[1] ?? 'default';
+                    $clean_tawk = $tawk_property;
+                    $clean_tawk = strip_tags($clean_tawk);
+                    $clean_tawk = preg_replace('/<!--.*?-->/s', '', $clean_tawk);
+                    $clean_tawk = preg_replace('/var\s+Tawk_API[\s\S]*?embed\.tawk\.to\//i', '', $clean_tawk);
+                    $clean_tawk = preg_replace('/[\'"];.*$/s', '', $clean_tawk);
+                    $clean_tawk = trim($clean_tawk, " \t\n\r;'\"/");
+                    if (strpos($clean_tawk, 'tawk.to/chat/') !== false) {
+                        $clean_tawk = preg_replace('/.*tawk\.to\/chat\//', '', $clean_tawk);
+                    } elseif (strpos($clean_tawk, 'embed.tawk.to/') !== false) {
+                        $clean_tawk = preg_replace('/.*embed\.tawk\.to\//', '', $clean_tawk);
+                    }
+                    $clean_tawk = trim($clean_tawk, " \t\n\r;'\"/");
+                    $parts = explode('/', $clean_tawk);
+                    $prop_id = $parts[0] ?? '';
+                    $chat_hash = $parts[1] ?? 'default';
                     $iframe_src = "https://tawk.to/chat/{$prop_id}/{$chat_hash}?pop=1";
                     ?>
                     <div class="alert alert-info border-0 mb-3 bg-dark" style="border-left: 4px solid #fecc56 !important;">

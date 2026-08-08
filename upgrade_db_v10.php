@@ -196,6 +196,9 @@ $alterations = [
     // IFW_case_notes alterations
     ["ALTER TABLE IFW_case_notes ADD COLUMN case_id INT NULL AFTER client_id", "IFW_case_notes.case_id"],
     ["ALTER TABLE IFW_case_notes ADD COLUMN note TEXT NULL AFTER note_text", "IFW_case_notes.note"],
+
+    // IFW_clients alterations
+    ["ALTER TABLE IFW_clients ADD COLUMN country VARCHAR(100) NULL AFTER phone", "IFW_clients.country"],
 ];
 
 foreach ($alterations as [$sql, $label]) {
