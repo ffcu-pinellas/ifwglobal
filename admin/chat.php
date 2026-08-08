@@ -16,7 +16,8 @@ require_once '../includes/admin_header.php';
     <div class="row h-100" style="min-height: 75vh;">
         <!-- Sidebar: Client List -->
         <div class="col-md-4 col-lg-3 border-right border-secondary bg-dark d-flex flex-column p-0">
-            <div class="p-3 border-bottom border-secondary bg-black">
+            <div class="p-3 border-bottom border-secondary bg-black d-flex align-items-center">
+                <a href="index.php" class="btn btn-sm btn-outline-warning mr-3"><i class="fas fa-arrow-left"></i> Back</a>
                 <h5 class="text-warning m-0"><i class="fas fa-users mr-2"></i> Client Conversations</h5>
             </div>
             <div class="flex-grow-1 overflow-auto" id="client-list" style="background: #111;">

@@ -104,7 +104,7 @@ if ($chat_provider !== 'internal') {
         </div>
         
         <div class="nav-links">
-            <a href="dashboard.php"><i class="fas fa-home"></i> Home</a>
+            <a href="dashboard.php"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
             <a href="chat.php" class="active"><i class="fas fa-comment-alt"></i> Messages</a>
             <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>

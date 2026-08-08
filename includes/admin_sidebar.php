@@ -1,7 +1,9 @@
-﻿<?php
+<?php
 $user_role = $_SESSION['role'] ?? $_SESSION['admin_role'] ?? 'admin';
 $user_name = $_SESSION['user_name'] ?? $_SESSION['admin_username'] ?? 'User';
 $current_page = basename($_SERVER['PHP_SELF']);
+
+$chat_provider = isset($pdo) ? get_setting($pdo, 'chat_provider', 'native') : 'native';
 
 // Global Unread Chat Count Logic
 $global_unread_chat = 0;
@@ -287,6 +289,16 @@ if (isset($pdo)) {
                 </li>
                 <?php endif; ?>
 
+                <?php if ($user_role !== 'client'): ?>
+                <!-- NAV ITEM Invoices -->
+                <li class="nav-item <?php echo ($current_page == 'invoices.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>/admin/invoices.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-file-invoice-dollar text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Invoicing</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+
                 <?php if ($user_role === 'superadmin' || $user_role === 'admin'): ?>
                 <!-- NAV ITEM Submissions -->
                 <li class="nav-item <?php echo ($current_page == 'submissions.php') ? 'active' : ''; ?>">
@@ -304,13 +316,6 @@ if (isset($pdo)) {
                     </a>
                 </li>
 
-                <!-- NAV ITEM Invoices -->
-                <li class="nav-item <?php echo ($current_page == 'invoices.php') ? 'active' : ''; ?>">
-                    <a href="<?php echo BASE_URL; ?>/admin/invoices.php" class="nav-link d-flex align-items-center px-3 py-2">
-                        <i class="fas fa-file-invoice-dollar text-warning mr-3" style="width: 20px;"></i>
-                        <span class="link-text text-white">Invoices & Billing</span>
-                    </a>
-                </li>
 
                 <!-- NAV ITEM Audit Logs -->
                 <li class="nav-item <?php echo ($current_page == 'audit_logs.php') ? 'active' : ''; ?>">
