@@ -25,6 +25,11 @@ $_SESSION['role'] = 'client';
 $vault_stmt = $pdo->prepare("SELECT * FROM IFW_documents WHERE client_id = ? ORDER BY uploaded_at DESC");
 $vault_stmt->execute([$client_id]);
 $vault_docs = $vault_stmt->fetchAll();
+
+// Fetch Active Cases
+$case_stmt = $pdo->prepare("SELECT * FROM IFW_cases WHERE client_id = ? ORDER BY created_at DESC");
+$case_stmt->execute([$client_id]);
+$client_cases = $case_stmt->fetchAll();
 ?>
 
 <?php require_once '../includes/admin_header.php'; ?>
@@ -35,6 +40,48 @@ $vault_docs = $vault_stmt->fetchAll();
     <div class="col-12 mb-4">
         <h4 class="text-dark">My Cases & Vault</h4>
         <p class="text-muted">Manage your case documents securely.</p>
+    </div>
+
+    <!-- Active Cases Section -->
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm border-0 bg-dark text-white">
+            <div class="card-header bg-black py-3 border-secondary">
+                <h5 class="mb-0 fw-bold text-warning"><i class="fas fa-briefcase mr-2"></i> Active Case Files</h5>
+            </div>
+            <div class="card-body p-0">
+                <?php if (empty($client_cases)): ?>
+                    <div class="text-center py-5">
+                        <i class="material-icons text-muted" style="font-size: 3rem;">work_off</i>
+                        <p class="mt-3 text-muted">You have no active cases.</p>
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0 align-middle">
+                            <thead class="text-warning">
+                                <tr>
+                                    <th>Case Ref #</th>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>Opened Date</th>
+                                    <th>Agent Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($client_cases as $case): ?>
+                                    <tr>
+                                        <td><strong><?= htmlspecialchars($case['case_number']) ?></strong></td>
+                                        <td><?= htmlspecialchars($case['title']) ?></td>
+                                        <td><span class="badge badge-primary px-2 py-1"><?= htmlspecialchars($case['status']) ?></span></td>
+                                        <td><?= date('M j, Y', strtotime($case['created_at'])) ?></td>
+                                        <td class="small text-muted"><?= nl2br(htmlspecialchars($case['description'])) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
 
     <!-- Vault Tab -->

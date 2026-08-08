@@ -84,8 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-require_once '../includes/client_header.php';
-require_once '../includes/client_sidebar.php';
+require_once '../includes/admin_header.php';
+require_once '../includes/admin_sidebar.php';
 ?>
 
 <div class="row justify-content-center">
@@ -174,4 +174,4 @@ require_once '../includes/client_sidebar.php';
     </div>
 </div>
 
-<?php require_once '../includes/client_footer.php'; ?>
+<?php require_once '../includes/admin_footer.php'; ?>

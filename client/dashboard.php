@@ -74,9 +74,14 @@ $bank_details = get_setting($pdo, 'bank_details', 'Not provided yet.');
 $payment_instructions = get_setting($pdo, 'payment_instructions', 'Not provided yet.');
 
 // Fetch Invoices
-$inv_stmt = $pdo->prepare("SELECT * FROM IFW_invoices WHERE client_id = ? ORDER BY created_at DESC LIMIT 5");
+$inv_stmt = $pdo->prepare("SELECT * FROM IFW_invoices WHERE client_id = ? ORDER BY issue_date DESC LIMIT 5");
 $inv_stmt->execute([$client_id]);
 $invoices = $inv_stmt->fetchAll();
+
+// Fetch Active Cases
+$case_stmt = $pdo->prepare("SELECT * FROM IFW_cases WHERE client_id = ? ORDER BY created_at DESC LIMIT 3");
+$case_stmt->execute([$client_id]);
+$client_cases = $case_stmt->fetchAll();
 ?>
 
 <?php require_once '../includes/admin_header.php'; ?>
@@ -122,15 +127,31 @@ $invoices = $inv_stmt->fetchAll();
         <div class="card shadow-sm border-0 mb-4 bg-dark text-white">
             <div class="card-body">
                 <h5 class="fw-bold mb-3 text-warning"><i class="fas fa-briefcase mr-2"></i> Current Case Status</h5>
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h4 class="mb-1 text-light"><?php echo htmlspecialchars($client['status']); ?></h4>
-                        <p class="text-muted small mb-0">Your case is currently in the <strong><?php echo htmlspecialchars($client['status']); ?></strong> phase.</p>
+                <?php if (empty($client_cases)): ?>
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-1 text-light">RECEIVED</h4>
+                            <p class="text-muted small mb-0">Your account is active, but no specific cases are currently assigned. We are in the initial review phase.</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-tasks text-warning fa-3x opacity-50"></i>
+                        </div>
                     </div>
-                    <div>
-                        <i class="fas fa-tasks text-warning fa-3x opacity-50"></i>
-                    </div>
-                </div>
+                <?php else: ?>
+                    <?php foreach ($client_cases as $case): ?>
+                        <div class="d-flex align-items-center mb-3 p-3 border border-secondary rounded" style="background: rgba(0,0,0,0.2);">
+                            <div class="flex-grow-1">
+                                <h5 class="mb-1 text-light font-weight-bold">Case #<?= htmlspecialchars($case['case_number']) ?> - <?= htmlspecialchars($case['title']) ?></h5>
+                                <h6 class="mb-2 text-warning"><?= htmlspecialchars($case['status']) ?></h6>
+                                <p class="text-muted small mb-0"><?= nl2br(htmlspecialchars($case['description'])) ?></p>
+                            </div>
+                            <div class="ml-3 text-center">
+                                <i class="fas fa-folder-open text-warning fa-2x opacity-50 mb-1"></i>
+                                <div class="small text-muted"><?= date('M j, Y', strtotime($case['created_at'])) ?></div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -181,21 +202,21 @@ $invoices = $inv_stmt->fetchAll();
                             <tbody>
                                 <?php foreach($invoices as $inv): ?>
                                 <tr>
-                                    <td><strong>#INV-<?php echo str_pad($inv['id'], 5, '0', STR_PAD_LEFT); ?></strong></td>
-                                    <td><?php echo date('M j, Y', strtotime($inv['created_at'])); ?></td>
+                                    <td><strong><?= htmlspecialchars($inv['invoice_number']) ?></strong></td>
+                                    <td><?php echo date('M j, Y', strtotime($inv['issue_date'])); ?></td>
                                     <td><?php echo $inv['due_date'] ? date('M j, Y', strtotime($inv['due_date'])) : 'N/A'; ?></td>
-                                    <td>$<?php echo number_format($inv['amount'], 2); ?></td>
+                                    <td><strong><?php echo htmlspecialchars($inv['currency'] ?? 'USD'); ?> <?php echo number_format($inv['total_amount'], 2); ?></strong></td>
                                     <td>
                                         <?php 
                                         $badge = 'secondary';
-                                        if($inv['status'] == 'paid') $badge = 'success';
-                                        if($inv['status'] == 'unpaid') $badge = 'danger';
-                                        if($inv['status'] == 'partial') $badge = 'warning';
+                                        if(strtolower($inv['status']) == 'paid') $badge = 'success';
+                                        if(strtolower($inv['status']) == 'unpaid') $badge = 'danger';
+                                        if(strtolower($inv['status']) == 'overdue') $badge = 'warning';
                                         ?>
-                                        <span class="badge badge-<?php echo $badge; ?>"><?php echo ucfirst($inv['status']); ?></span>
+                                        <span class="badge badge-<?php echo $badge; ?> px-2 py-1"><?php echo ucfirst($inv['status']); ?></span>
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="alert('Payment details are provided in your payment instructions panel.')">Pay Now</button>
+                                        <a href="invoice_view.php?id=<?= $inv['id'] ?>" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm"><i class="fas fa-file-invoice-dollar mr-1"></i> View & Pay</a>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>

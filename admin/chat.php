@@ -3,6 +3,13 @@
 require_once '../config.php';
 require_once '../includes/functions.php';
 require_admin_login();
+
+$chat_provider = get_setting($pdo, 'chat_provider', 'native');
+if ($chat_provider === 'tawk') {
+    header("Location: index.php");
+    exit;
+}
+
 require_once '../includes/admin_header.php';
 ?>
 <div class="container-fluid mt-4">

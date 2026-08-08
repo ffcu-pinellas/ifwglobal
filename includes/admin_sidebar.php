@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $user_role = $_SESSION['role'] ?? $_SESSION['admin_role'] ?? 'admin';
 $user_name = $_SESSION['user_name'] ?? $_SESSION['admin_username'] ?? 'User';
 $current_page = basename($_SERVER['PHP_SELF']);
@@ -30,7 +30,7 @@ if (isset($pdo)) {
 ?>
 <style>
     /* ============================================================
-       FIXED SIDEBAR POSITIONING — Kills all OverlayScrollbars glue
+       FIXED SIDEBAR POSITIONING â€” Kills all OverlayScrollbars glue
        ============================================================ */
     #wrapper-left {
         position: fixed !important;
@@ -167,7 +167,7 @@ if (isset($pdo)) {
     }
 </style>
 <script>
-/* Block OverlayScrollbars from running on the sidebar — run before DOM ready */
+/* Block OverlayScrollbars from running on the sidebar â€” run before DOM ready */
 (function() {
     // Override jQuery overlayScrollbars plugin before it initializes
     document.addEventListener('DOMContentLoaded', function() {
@@ -203,7 +203,7 @@ if (isset($pdo)) {
     <div class="sidebar sidebar-dark sidebar-danger bg-dark">
         <!-- SIDEBAR HEADER -->
         <div class="sidebar-header border-fade p-3 d-flex align-items-center justify-content-between" style="border-bottom: 1px solid rgba(254, 204, 86, 0.2);">
-            <a href="/<?php echo ($user_role === 'client') ? 'client/dashboard.php' : 'admin/index.php'; ?>" class="sidebar-brand text-decoration-none">
+            <a href="<?php echo BASE_URL; ?>/<?php echo ($user_role === 'client') ? 'client/dashboard.php' : 'admin/index.php'; ?>" class="sidebar-brand text-decoration-none">
                 <h4 class="mb-0 text-warning font-weight-bold"><i class="fas fa-shield-alt mr-2"></i>IFW GLOBAL</h4>
             </a>
             <a href="javascript:void(0);" class="sidebar-close d-md-none text-warning" data-toggle="class" data-target="#wrapper" toggle-class="toggled">
@@ -226,7 +226,7 @@ if (isset($pdo)) {
             <ul class="sidebar-nav py-2">
                 <!-- NAV ITEM dashboard -->
                 <li class="nav-item <?php echo ($current_page == 'index.php' || $current_page == 'dashboard.php') ? 'active' : ''; ?>">
-                    <a href="/<?php echo ($user_role == 'client') ? 'client/dashboard.php' : 'admin/index.php'; ?>" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/<?php echo ($user_role == 'client') ? 'client/dashboard.php' : 'admin/index.php'; ?>" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-tachometer-alt text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Dashboard</span>
                     </a>
@@ -234,7 +234,7 @@ if (isset($pdo)) {
 
                 <!-- NAV ITEM Secure Messaging -->
                 <li class="nav-item <?php echo ($current_page == 'chat.php') ? 'active' : ''; ?>">
-                    <a href="/<?php echo ($user_role == 'client') ? 'client/chat.php' : 'admin/chat.php'; ?>" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/<?php echo ($user_role == 'client') ? 'client/chat.php' : 'admin/chat.php'; ?>" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-comments text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Secure Messaging</span>
                         <?php if ($global_unread_chat > 0): ?>
@@ -246,7 +246,7 @@ if (isset($pdo)) {
                 <?php if ($user_role !== 'client'): ?>
                 <!-- NAV ITEM Cases -->
                 <li class="nav-item <?php echo ($current_page == 'cases.php' || $current_page == 'case_view.php') ? 'active' : ''; ?>">
-                    <a href="/admin/cases.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/admin/cases.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-folder-open text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Recovery Cases</span>
                     </a>
@@ -254,7 +254,7 @@ if (isset($pdo)) {
 
                 <!-- NAV ITEM Clients -->
                 <li class="nav-item <?php echo ($current_page == 'client_manager.php') ? 'active' : ''; ?>">
-                    <a href="/admin/client_manager.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/admin/client_manager.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-users text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Client Accounts</span>
                     </a>
@@ -262,7 +262,7 @@ if (isset($pdo)) {
                 
                 <!-- NAV ITEM KYC Review -->
                 <li class="nav-item <?php echo ($current_page == 'kyc_review.php') ? 'active' : ''; ?>">
-                    <a href="/admin/kyc_review.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/admin/kyc_review.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-id-card text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">KYC Verification</span>
                     </a>
@@ -272,7 +272,7 @@ if (isset($pdo)) {
                 <?php if ($user_role === 'client'): ?>
                 <!-- CLIENT PORTAL LINKS -->
                 <li class="nav-item <?php echo ($current_page == 'my_cases.php') ? 'active' : ''; ?>">
-                    <a href="/client/my_cases.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/client/my_cases.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-file-invoice text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">My Recovery Cases</span>
                     </a>
@@ -280,7 +280,7 @@ if (isset($pdo)) {
                 
                 <!-- NAV ITEM Client KYC -->
                 <li class="nav-item <?php echo ($current_page == 'kyc.php') ? 'active' : ''; ?>">
-                    <a href="/client/kyc.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/client/kyc.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-shield-alt text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Identity Verification</span>
                     </a>
@@ -290,7 +290,7 @@ if (isset($pdo)) {
                 <?php if ($user_role === 'superadmin' || $user_role === 'admin'): ?>
                 <!-- NAV ITEM Submissions -->
                 <li class="nav-item <?php echo ($current_page == 'submissions.php') ? 'active' : ''; ?>">
-                    <a href="/admin/submissions.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/admin/submissions.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-inbox text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Leads & Enquiries</span>
                     </a>
@@ -298,7 +298,7 @@ if (isset($pdo)) {
 
                 <!-- NAV ITEM Roles & Permissions -->
                 <li class="nav-item <?php echo ($current_page == 'roles.php') ? 'active' : ''; ?>">
-                    <a href="/admin/roles.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/admin/roles.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-user-shield text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Roles & Staff</span>
                     </a>
@@ -306,7 +306,7 @@ if (isset($pdo)) {
 
                 <!-- NAV ITEM Invoices -->
                 <li class="nav-item <?php echo ($current_page == 'invoices.php') ? 'active' : ''; ?>">
-                    <a href="/admin/invoices.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/admin/invoices.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-file-invoice-dollar text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Invoices & Billing</span>
                     </a>
@@ -314,7 +314,7 @@ if (isset($pdo)) {
 
                 <!-- NAV ITEM Audit Logs -->
                 <li class="nav-item <?php echo ($current_page == 'audit_logs.php') ? 'active' : ''; ?>">
-                    <a href="/admin/audit_logs.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/admin/audit_logs.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-history text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Audit Logs</span>
                     </a>
@@ -322,7 +322,7 @@ if (isset($pdo)) {
 
                 <!-- NAV ITEM Settings -->
                 <li class="nav-item <?php echo ($current_page == 'settings.php') ? 'active' : ''; ?>">
-                    <a href="/admin/settings.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/admin/settings.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-cog text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Site Settings</span>
                     </a>
@@ -330,7 +330,7 @@ if (isset($pdo)) {
                 
                 <!-- NAV ITEM Form Builder -->
                 <li class="nav-item <?php echo ($current_page == 'form_builder.php') ? 'active' : ''; ?>">
-                    <a href="/admin/form_builder.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/admin/form_builder.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-list-alt text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Form Builder</span>
                     </a>
@@ -339,7 +339,7 @@ if (isset($pdo)) {
 
                 <!-- NAV ITEM Messages -->
                 <li class="nav-item <?php echo ($current_page == 'chat.php') ? 'active' : ''; ?>">
-                    <a href="/<?php echo ($user_role == 'client') ? 'client' : 'admin'; ?>/chat.php" class="nav-link d-flex align-items-center px-3 py-2">
+                    <a href="<?php echo BASE_URL; ?>/<?php echo ($user_role == 'client') ? 'client' : 'admin'; ?>/chat.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-comments text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Live Messages</span>
                     </a>
@@ -352,3 +352,5 @@ if (isset($pdo)) {
 <!-- WRAPPER CONTENT STARTS -->
 <div id="wrapper-content">
     <div class="container-fluid p-4">
+
+

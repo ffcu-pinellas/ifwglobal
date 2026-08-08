@@ -55,8 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if ($total_amount < 0) $total_amount = 0;
     
     // Insert Invoice
-    $stmt = $pdo->prepare("INSERT INTO IFW_invoices (invoice_number, client_id, case_id, status, issue_date, due_date, subtotal, tax_rate, tax_amount, discount_amount, total_amount, currency, notes) VALUES (?, ?, ?, 'Unpaid', ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$inv_number, $client_id, $case_id, $issue_date, $due_date, $subtotal, $tax_rate, $tax_amount, $discount_amount, $total_amount, $currency, trim($_POST['notes'] ?? '')]);
+    $stmt = $pdo->prepare("INSERT INTO IFW_invoices (invoice_number, client_id, case_id, status, issue_date, due_date, subtotal, tax_rate, tax_amount, discount_amount, total_amount, currency, notes, payment_info) VALUES (?, ?, ?, 'Unpaid', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$inv_number, $client_id, $case_id, $issue_date, $due_date, $subtotal, $tax_rate, $tax_amount, $discount_amount, $total_amount, $currency, trim($_POST['notes'] ?? ''), trim($_POST['payment_info'] ?? '')]);
     $invoice_id = $pdo->lastInsertId();
     
     // Insert Items
@@ -107,6 +107,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $html_body .= "</table>
                            <p style='margin-top: 20px;'><strong>Due Date:</strong> " . date('M j, Y', strtotime($due_date)) . "</p>
                            <p>You can securely pay this invoice by logging into your <a href='" . BASE_URL . "/client/login.php'>Client Portal</a>.</p>";
+                           
+            if (!empty(trim($_POST['payment_info'] ?? ''))) {
+                $html_body .= "<div style='margin-top: 30px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #b58d3c;'>
+                                <h3 style='margin-top: 0; color: #333;'>Payment Instructions</h3>
+                                <p style='white-space: pre-wrap; font-family: monospace; color: #555;'>" . htmlspecialchars(trim($_POST['payment_info'])) . "</p>
+                               </div>";
+            }
                            
             send_html_email($client['email'], "Invoice {$inv_number} from IFW Global", $html_body);
         }
@@ -351,8 +358,14 @@ require_once '../includes/admin_sidebar.php';
             </div>
 
             <div class="form-group mb-4">
-                <label class="text-white font-weight-bold">Additional Notes / Payment Terms</label>
-                <textarea name="notes" rows="2" class="form-control bg-dark text-white border-secondary" placeholder="Payment is due within 14 days. Wire transfer details..."></textarea>
+                <label class="text-white font-weight-bold">Additional Notes</label>
+                <textarea name="notes" rows="2" class="form-control bg-dark text-white border-secondary" placeholder="Any additional notes..."></textarea>
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="text-white font-weight-bold text-success"><i class="fas fa-university mr-2"></i>Payment Information (For Client)</label>
+                <textarea name="payment_info" rows="3" class="form-control bg-dark text-white border-success" placeholder="Bank Name: Example Bank&#10;Account No: 123456789&#10;Routing: 987654321&#10;SWIFT: EXMBUS33" required></textarea>
+                <small class="text-muted">This will be prominently displayed on the client's invoice PDF and in their dashboard when they click 'Pay Now'.</small>
             </div>
             
             <div class="custom-control custom-switch">

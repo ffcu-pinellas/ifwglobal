@@ -1,16 +1,24 @@
 <?php
-// admin/invoice_print.php
+// client/invoice_view.php
 require_once '../config.php';
 require_once '../includes/functions.php';
-require_admin_login();
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (!isset($_SESSION['client_logged_in']) || !$_SESSION['client_logged_in']) {
+    header("Location: login.php");
+    exit;
+}
+$client_id = $_SESSION['client_portal_id'] ?? 0;
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $stmt = $pdo->prepare("SELECT i.*, c.first_name, c.last_name, c.email, c.phone, c.country, ca.case_number 
                        FROM IFW_invoices i 
                        JOIN IFW_clients c ON i.client_id = c.id 
                        LEFT JOIN IFW_cases ca ON i.case_id = ca.id 
-                       WHERE i.id = ?");
-$stmt->execute([$id]);
+                       WHERE i.id = ? AND i.client_id = ?");
+$stmt->execute([$id, $client_id]);
 $invoice = $stmt->fetch();
 
 if (!$invoice) {
