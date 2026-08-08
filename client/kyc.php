@@ -1,11 +1,4 @@
 <?php
-$dir = __DIR__;
-while (!file_exists($dir . '/config.php')) {
-    $dir = dirname($dir);
-    if ($dir === '/' || $dir === '\\' || preg_match('/^[A-Z]:\\\\$/i', $dir)) break;
-}
-require_once $dir . '/config.php';
-require_once $dir . '/includes/functions.php';
 // client/kyc.php
 require_once '../config.php';
 require_once '../includes/functions.php';
@@ -71,8 +64,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     try {
-        $stmt = $pdo->prepare("INSERT INTO IFW_kyc_submissions (client_id, submission_data) VALUES (?, ?)");
-        $stmt->execute([$client_id, json_encode($kyc_data)]);
+        if ($submission && $submission['status'] === 'Pending') {
+            // Update existing pending submission
+            $stmt = $pdo->prepare("UPDATE IFW_kyc_submissions SET submission_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $stmt->execute([json_encode($kyc_data), $submission['id']]);
+        } elseif ($submission && $submission['status'] === 'Rejected') {
+            // Update existing rejected submission and set back to pending
+            $stmt = $pdo->prepare("UPDATE IFW_kyc_submissions SET submission_data = ?, status = 'Pending', updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $stmt->execute([json_encode($kyc_data), $submission['id']]);
+        } else {
+            // Insert new submission
+            $stmt = $pdo->prepare("INSERT INTO IFW_kyc_submissions (client_id, submission_data) VALUES (?, ?)");
+            $stmt->execute([$client_id, json_encode($kyc_data)]);
+        }
         header("Location: kyc.php?success=1");
         exit;
     } catch (Exception $e) {

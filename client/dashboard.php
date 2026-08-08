@@ -145,10 +145,10 @@ $invoices = $inv_stmt->fetchAll();
                     <?php elseif ($kyc_status === 'rejected'): ?>
                         <p class="text-danger small fw-bold mb-1"><i class="material-icons" style="font-size: 14px;">error</i> Verification Failed</p>
                         <p class="text-muted small mb-2">Reason: <?php echo htmlspecialchars($kyc_record['admin_feedback']); ?></p>
-                        <button class="btn btn-sm btn-primary rounded-pill" data-toggle="modal" data-target="#kycModal">Re-upload Documents</button>
+                        <button class="btn btn-sm btn-primary rounded-pill" onclick="window.location.href='kyc.php'">Re-upload Documents</button>
                     <?php else: ?>
                         <p class="text-muted small mb-3"><strong>Highly Recommended:</strong> Verify your identity to expedite your case processing and unlock secure file vaults.</p>
-                        <button class="btn btn-sm btn-primary rounded-pill" data-toggle="modal" data-target="#kycModal">Verify Identity Now</button>
+                        <button class="btn btn-sm btn-primary rounded-pill" onclick="window.location.href='kyc.php'">Verify Identity Now</button>
                     <?php endif; ?>
                 </div>
             </div>
@@ -277,37 +277,5 @@ $invoices = $inv_stmt->fetchAll();
     </div>
 </div>
 
-<!-- KYC Modal -->
-<div class="modal fade" id="kycModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold text-primary"><i class="material-icons text-warning" style="vertical-align: text-bottom;">verified_user</i> Identity Verification</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p class="small text-muted">Please upload a clear copy of your Government Issued ID (Passport or Driver's License) or a recent Proof of Address (Utility Bill).</p>
-                <form id="kyc-form">
-                    <div class="form-group mb-3">
-                        <label class="font-weight-bold">Document Type</label>
-                        <select class="form-control" id="kyc_doc_type">
-                            <option value="Government ID">Government ID (Passport / License)</option>
-                            <option value="Proof of Address">Proof of Address (Utility Bill)</option>
-                        </select>
-                    </div>
-                    <div class="form-group mb-3">
-                        <label class="font-weight-bold">Select File</label>
-                        <input class="form-control" type="file" id="kyc_file" accept=".jpg,.jpeg,.png,.pdf">
-                        <small class="form-text text-muted">Max size: 10MB.</small>
-                    </div>
-                    <div id="kyc-alert" class="alert d-none small"></div>
-                    <button type="button" class="btn btn-primary w-100 rounded-pill" id="kyc-submit-btn">Upload for Verification</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
 <?php require_once '../includes/admin_footer.php'; ?>
