@@ -4,11 +4,11 @@ require_once '../config.php';
 require_once '../includes/functions.php';
 
 // Ensure user is logged in as a client
-if (!isset($_SESSION['client_id'])) {
+if (!isset($_SESSION['client_logged_in']) || !$_SESSION['client_logged_in']) {
     header("Location: login.php");
     exit;
 }
-$client_id = $_SESSION['client_id'];
+$client_id = $_SESSION['client_portal_id'] ?? 0;
 
 // Check if they already submitted
 $submission = false;
