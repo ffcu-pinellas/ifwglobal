@@ -64,10 +64,14 @@ $client = $stmt->fetch();
 $_SESSION['user_name'] = $client['first_name'];
 
 // Fetch KYC Status
-$kyc_stmt = $pdo->prepare("SELECT * FROM IFW_kyc_documents WHERE client_id = ? ORDER BY uploaded_at DESC LIMIT 1");
-$kyc_stmt->execute([$client_id]);
-$kyc_record = $kyc_stmt->fetch();
-$kyc_status = $kyc_record ? $kyc_record['status'] : null;
+$kyc_status = null;
+$kyc_record = null;
+try {
+    $kyc_stmt = $pdo->prepare("SELECT * FROM IFW_kyc_submissions WHERE client_id = ? ORDER BY submitted_at DESC LIMIT 1");
+    $kyc_stmt->execute([$client_id]);
+    $kyc_record = $kyc_stmt->fetch();
+    $kyc_status = $kyc_record ? strtolower($kyc_record['status']) : null;
+} catch (Exception $e) {}
 
 // Fetch Bank details from settings
 $bank_details = get_setting($pdo, 'bank_details', 'Not provided yet.');
@@ -79,9 +83,12 @@ $inv_stmt->execute([$client_id]);
 $invoices = $inv_stmt->fetchAll();
 
 // Fetch Active Cases
-$case_stmt = $pdo->prepare("SELECT * FROM IFW_cases WHERE client_id = ? ORDER BY created_at DESC LIMIT 3");
-$case_stmt->execute([$client_id]);
-$client_cases = $case_stmt->fetchAll();
+$client_cases = [];
+try {
+    $case_stmt = $pdo->prepare("SELECT * FROM IFW_cases WHERE client_id = ? ORDER BY created_at DESC LIMIT 3");
+    $case_stmt->execute([$client_id]);
+    $client_cases = $case_stmt->fetchAll();
+} catch (Exception $e) {}
 ?>
 
 <?php require_once '../includes/admin_header.php'; ?>
@@ -165,11 +172,11 @@ $client_cases = $case_stmt->fetchAll();
                         <span class="badge badge-warning text-dark"><i class="material-icons" style="font-size: 12px;">hourglass_empty</i> Review Pending</span>
                     <?php elseif ($kyc_status === 'rejected'): ?>
                         <p class="text-danger small fw-bold mb-1"><i class="material-icons" style="font-size: 14px;">error</i> Verification Failed</p>
-                        <p class="text-muted small mb-2">Reason: <?php echo htmlspecialchars($kyc_record['admin_feedback']); ?></p>
-                        <button class="btn btn-sm btn-primary rounded-pill" onclick="window.location.href='kyc.php'">Re-upload Documents</button>
+                        <p class="text-muted small mb-2">Reason: <?php echo htmlspecialchars($kyc_record['rejection_reason'] ?? 'Please resubmit your documents.'); ?></p>
+                        <a href="kyc.php" class="btn btn-sm btn-warning rounded-pill text-dark font-weight-bold">Re-submit Documents</a>
                     <?php else: ?>
-                        <p class="text-muted small mb-3"><strong>Highly Recommended:</strong> Verify your identity to expedite your case processing and unlock secure file vaults.</p>
-                        <button class="btn btn-sm btn-primary rounded-pill" onclick="window.location.href='kyc.php'">Verify Identity Now</button>
+                        <p class="text-muted small mb-3"><strong>Action Required:</strong> Verify your identity to expedite your case processing and unlock secure file vaults.</p>
+                        <a href="kyc.php" class="btn btn-sm btn-warning rounded-pill text-dark font-weight-bold"><i class="fas fa-shield-alt mr-1"></i> Verify Identity Now</a>
                     <?php endif; ?>
                 </div>
             </div>

@@ -22,14 +22,20 @@ $client_id = $_SESSION['client_portal_id'];
 $_SESSION['role'] = 'client';
 
 // Fetch Vault Documents
-$vault_stmt = $pdo->prepare("SELECT * FROM IFW_documents WHERE client_id = ? ORDER BY uploaded_at DESC");
-$vault_stmt->execute([$client_id]);
-$vault_docs = $vault_stmt->fetchAll();
+$vault_docs = [];
+try {
+    $vault_stmt = $pdo->prepare("SELECT * FROM IFW_documents WHERE client_id = ? ORDER BY uploaded_at DESC");
+    $vault_stmt->execute([$client_id]);
+    $vault_docs = $vault_stmt->fetchAll();
+} catch (Exception $e) {}
 
 // Fetch Active Cases
-$case_stmt = $pdo->prepare("SELECT * FROM IFW_cases WHERE client_id = ? ORDER BY created_at DESC");
-$case_stmt->execute([$client_id]);
-$client_cases = $case_stmt->fetchAll();
+$client_cases = [];
+try {
+    $case_stmt = $pdo->prepare("SELECT * FROM IFW_cases WHERE client_id = ? ORDER BY created_at DESC");
+    $case_stmt->execute([$client_id]);
+    $client_cases = $case_stmt->fetchAll();
+} catch (Exception $e) {}
 ?>
 
 <?php require_once '../includes/admin_header.php'; ?>
@@ -38,8 +44,8 @@ $client_cases = $case_stmt->fetchAll();
 <!-- PAGE CONTENT -->
 <div class="row">
     <div class="col-12 mb-4">
-        <h4 class="text-dark">My Cases & Vault</h4>
-        <p class="text-muted">Manage your case documents securely.</p>
+        <h4 class="text-dark">My Cases & Documents</h4>
+        <p class="text-muted">View your active cases and securely manage documents.</p>
     </div>
 
     <!-- Active Cases Section -->

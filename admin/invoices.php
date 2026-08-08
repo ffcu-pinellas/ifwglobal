@@ -364,8 +364,8 @@ require_once '../includes/admin_sidebar.php';
 
             <div class="form-group mb-4">
                 <label class="text-white font-weight-bold text-success"><i class="fas fa-university mr-2"></i>Payment Information (For Client)</label>
-                <textarea name="payment_info" rows="3" class="form-control bg-dark text-white border-success" placeholder="Bank Name: Example Bank&#10;Account No: 123456789&#10;Routing: 987654321&#10;SWIFT: EXMBUS33" required></textarea>
-                <small class="text-muted">This will be prominently displayed on the client's invoice PDF and in their dashboard when they click 'Pay Now'.</small>
+                <textarea name="payment_info" rows="4" class="form-control bg-dark text-white border-success" placeholder="Bank Name: Example Bank&#10;Account Name: IFW Global Ltd&#10;Account No: 123456789&#10;Routing / Sort Code: 987654&#10;SWIFT / IBAN: EXMBUS33XXX&#10;&#10;Or Crypto:&#10;USDT (TRC20): T...xyz"></textarea>
+                <small class="text-success"><i class="fas fa-info-circle mr-1"></i>This will be prominently displayed on the client's invoice. Leave blank to use global payment settings.</small>
             </div>
             
             <div class="custom-control custom-switch">

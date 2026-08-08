@@ -234,7 +234,8 @@ if (isset($pdo)) {
                     </a>
                 </li>
 
-                <!-- NAV ITEM Secure Messaging -->
+                <!-- NAV ITEM Chat/Messaging - dynamically changes based on admin setting -->
+                <?php if ($chat_provider === 'internal'): ?>
                 <li class="nav-item <?php echo ($current_page == 'chat.php') ? 'active' : ''; ?>">
                     <a href="<?php echo BASE_URL; ?>/<?php echo ($user_role == 'client') ? 'client/chat.php' : 'admin/chat.php'; ?>" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-comments text-warning mr-3" style="width: 20px;"></i>
@@ -244,6 +245,7 @@ if (isset($pdo)) {
                         <?php endif; ?>
                     </a>
                 </li>
+                <?php endif; ?>
 
                 <?php if ($user_role !== 'client'): ?>
                 <!-- NAV ITEM Cases -->
@@ -276,7 +278,7 @@ if (isset($pdo)) {
                 <li class="nav-item <?php echo ($current_page == 'my_cases.php') ? 'active' : ''; ?>">
                     <a href="<?php echo BASE_URL; ?>/client/my_cases.php" class="nav-link d-flex align-items-center px-3 py-2">
                         <i class="fas fa-file-invoice text-warning mr-3" style="width: 20px;"></i>
-                        <span class="link-text text-white">My Recovery Cases</span>
+                        <span class="link-text text-white">My Cases</span>
                     </a>
                 </li>
                 

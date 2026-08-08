@@ -5,16 +5,24 @@ require_once '../includes/functions.php';
 require_admin_login();
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$stmt = $pdo->prepare("SELECT i.*, c.first_name, c.last_name, c.email, c.phone, c.country, ca.case_number 
-                       FROM IFW_invoices i 
-                       JOIN IFW_clients c ON i.client_id = c.id 
-                       LEFT JOIN IFW_cases ca ON i.case_id = ca.id 
-                       WHERE i.id = ?");
-$stmt->execute([$id]);
-$invoice = $stmt->fetch();
+
+if ($id <= 0) { die('<p style="font-family:sans-serif;padding:20px;">No invoice specified.</p>'); }
+
+$invoice = null;
+try {
+    $stmt = $pdo->prepare("SELECT i.*, c.first_name, c.last_name, c.email, c.phone, c.country, ca.case_number 
+                           FROM IFW_invoices i 
+                           JOIN IFW_clients c ON i.client_id = c.id 
+                           LEFT JOIN IFW_cases ca ON i.case_id = ca.id 
+                           WHERE i.id = ?");
+    $stmt->execute([$id]);
+    $invoice = $stmt->fetch();
+} catch (PDOException $e) {
+    die('<p style="font-family:sans-serif;padding:20px;">Database error: ' . htmlspecialchars($e->getMessage()) . '</p>');
+}
 
 if (!$invoice) {
-    die("Invoice not found.");
+    die('<p style="font-family:sans-serif;padding:20px;">Invoice not found.</p>');
 }
 
 $stmtItems = $pdo->prepare("SELECT * FROM IFW_invoice_items WHERE invoice_id = ?");

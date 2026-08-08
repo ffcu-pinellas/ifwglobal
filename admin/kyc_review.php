@@ -25,12 +25,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $name = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', trim($_POST['field_name'])));
         $label = trim($_POST['field_label']);
         $type = $_POST['field_type'];
+        $options = trim($_POST['field_options'] ?? '');
         $req = isset($_POST['is_required']) ? 1 : 0;
+        $order = (int)($_POST['sort_order'] ?? 99);
         
         if (!empty($name) && !empty($label)) {
-            $stmt = $pdo->prepare("INSERT INTO IFW_kyc_fields (field_name, field_label, field_type, is_required) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$name, $label, $type, $req]);
-            header("Location: kyc_review.php?field_added=1");
+            try {
+                $stmt = $pdo->prepare("INSERT INTO IFW_kyc_fields (field_name, field_label, field_type, field_options, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$name, $label, $type, $options ?: null, $req, $order]);
+                header("Location: kyc_review.php?field_added=1");
+                exit;
+            } catch (Exception $e) {
+                // If field_options or sort_order columns don't exist, try without them
+                $stmt = $pdo->prepare("INSERT INTO IFW_kyc_fields (field_name, field_label, field_type, is_required) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$name, $label, $type, $req]);
+                header("Location: kyc_review.php?field_added=1");
+                exit;
+            }
+        }
+    }
+
+    if ($_POST['action'] === 'edit_field') {
+        $id = (int)$_POST['field_id'];
+        $label = trim($_POST['field_label']);
+        $name = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', trim($_POST['field_name'])));
+        $type = $_POST['field_type'];
+        $options = trim($_POST['field_options'] ?? '');
+        $req = isset($_POST['is_required']) ? 1 : 0;
+        $order = (int)($_POST['sort_order'] ?? 1);
+
+        if ($id > 0 && !empty($label)) {
+            try {
+                $stmt = $pdo->prepare("UPDATE IFW_kyc_fields SET field_label = ?, field_name = ?, field_type = ?, field_options = ?, is_required = ?, sort_order = ? WHERE id = ?");
+                $stmt->execute([$label, $name, $type, $options ?: null, $req, $order, $id]);
+            } catch (Exception $e) {
+                // Fallback without newer columns
+                $stmt = $pdo->prepare("UPDATE IFW_kyc_fields SET field_label = ?, field_name = ?, field_type = ?, is_required = ? WHERE id = ?");
+                $stmt->execute([$label, $name, $type, $req, $id]);
+            }
+            header("Location: kyc_review.php?field_updated=1");
             exit;
         }
     }
@@ -39,6 +72,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt = $pdo->prepare("DELETE FROM IFW_kyc_fields WHERE id = ?");
         $stmt->execute([(int)$_POST['field_id']]);
         header("Location: kyc_review.php?field_deleted=1");
+        exit;
+    }
+
+    if ($_POST['action'] === 'toggle_required') {
+        $id = (int)$_POST['field_id'];
+        $req = (int)$_POST['is_required'];
+        $stmt = $pdo->prepare("UPDATE IFW_kyc_fields SET is_required = ? WHERE id = ?");
+        $stmt->execute([$req, $id]);
+        header("Location: kyc_review.php?field_updated=1");
         exit;
     }
 }
@@ -71,6 +113,9 @@ require_once '../includes/admin_sidebar.php';
 
 <?php if(isset($_GET['success'])): ?>
     <div class="alert alert-success font-weight-bold"><i class="fas fa-check-circle mr-2"></i>KYC Status Updated.</div>
+<?php endif; ?>
+<?php if(isset($_GET['field_added']) || isset($_GET['field_updated']) || isset($_GET['field_deleted'])): ?>
+    <div class="alert alert-info font-weight-bold"><i class="fas fa-check-circle mr-2"></i>KYC field configuration saved.</div>
 <?php endif; ?>
 
 <div class="card shadow-lg bg-dark border-secondary">
@@ -183,28 +228,45 @@ require_once '../includes/admin_sidebar.php';
 
 <!-- Fields Config Modal -->
 <div class="modal fade" id="fieldsModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content bg-dark text-white border-warning">
       <div class="modal-header border-secondary">
-        <h5 class="modal-title text-warning font-weight-bold">Dynamic KYC Fields Configuration</h5>
+        <h5 class="modal-title text-warning font-weight-bold"><i class="fas fa-sliders-h mr-2"></i>Dynamic KYC Fields Configuration</h5>
         <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="small text-muted mb-4">Add or remove fields that clients must fill out during Identity Verification. The client portal will automatically generate the form based on these fields.</p>
+        <p class="small text-muted mb-3">Add or remove fields that clients must fill out during Identity Verification. The client portal will automatically generate the form based on these fields. Clients can modify their submissions as long as admin or assigned staff hasn't approved. If rejected, client has to resubmit.</p>
         
-        <table class="table table-dark table-sm table-bordered">
-            <thead><tr class="text-warning"><th>Field Label</th><th>Type</th><th>Required</th><th>Action</th></tr></thead>
+        <table class="table table-dark table-sm table-bordered mb-4">
+            <thead><tr class="text-warning"><th>#</th><th>Field Label</th><th>DB Name</th><th>Type</th><th>Options</th><th>Required</th><th style="min-width:120px;">Action</th></tr></thead>
             <tbody>
+                <?php if (empty($fields)): ?>
+                    <tr><td colspan="7" class="text-center text-muted">No fields configured yet.</td></tr>
+                <?php endif; ?>
                 <?php foreach($fields as $f): ?>
                     <tr>
-                        <td><?= htmlspecialchars($f['field_label']) ?> <small class="text-muted">(<?= htmlspecialchars($f['field_name']) ?>)</small></td>
-                        <td><?= strtoupper($f['field_type']) ?></td>
-                        <td><?= $f['is_required'] ? '<i class="fas fa-check text-success"></i>' : '-' ?></td>
+                        <td><?= $f['sort_order'] ?? $f['id'] ?></td>
+                        <td><strong><?= htmlspecialchars($f['field_label']) ?></strong></td>
+                        <td><code><?= htmlspecialchars($f['field_name']) ?></code></td>
+                        <td><span class="badge badge-secondary"><?= strtoupper($f['field_type']) ?></span></td>
+                        <td><small class="text-muted"><?= htmlspecialchars($f['field_options'] ?? '') ?></small></td>
                         <td>
-                            <form method="POST" onsubmit="return confirm('Delete this field?');">
+                            <?php if ($f['is_required']): ?>
+                                <span class="badge badge-danger">Required</span>
+                            <?php else: ?>
+                                <span class="badge badge-secondary">Optional</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-info py-0 px-2 mr-1" 
+                                data-toggle="modal" data-target="#editKycFieldModal_<?= $f['id'] ?>"
+                                onclick="openEditModal(<?= $f['id'] ?>, <?= htmlspecialchars(json_encode($f['field_label'])) ?>, <?= htmlspecialchars(json_encode($f['field_name'])) ?>, '<?= $f['field_type'] ?>', <?= htmlspecialchars(json_encode($f['field_options'] ?? '')) ?>, <?= $f['is_required'] ?>, <?= $f['sort_order'] ?? $f['id'] ?>)">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this field?');">
                                 <input type="hidden" name="action" value="delete_field">
                                 <input type="hidden" name="field_id" value="<?= $f['id'] ?>">
-                                <button class="btn btn-sm btn-danger py-0 px-2"><i class="fas fa-trash"></i></button>
+                                <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="fas fa-trash"></i></button>
                             </form>
                         </td>
                     </tr>
@@ -212,34 +274,148 @@ require_once '../includes/admin_sidebar.php';
             </tbody>
         </table>
         
-        <hr class="border-secondary my-4">
-        <h6 class="text-warning">Add New Field</h6>
-        <form method="POST" class="row">
+        <hr class="border-secondary">
+        <h6 class="text-warning font-weight-bold mb-3"><i class="fas fa-plus-circle mr-2"></i>Add New KYC Field</h6>
+        <form method="POST">
             <input type="hidden" name="action" value="add_field">
-            <div class="col-md-4 mb-2">
-                <input type="text" name="field_label" class="form-control bg-dark text-white border-secondary" placeholder="Label (e.g. Utility Bill)" required>
-            </div>
-            <div class="col-md-4 mb-2">
-                <input type="text" name="field_name" class="form-control bg-dark text-white border-secondary" placeholder="DB Name (e.g. utility_bill)" required>
-            </div>
-            <div class="col-md-2 mb-2">
-                <select name="field_type" class="form-control bg-dark text-white border-secondary">
-                    <option value="text">Text</option>
-                    <option value="date">Date</option>
-                    <option value="file">File Upload</option>
-                </select>
-            </div>
-            <div class="col-md-2 mb-2 d-flex align-items-center">
-                <div class="custom-control custom-checkbox mr-2">
-                    <input type="checkbox" class="custom-control-input" id="isreq" name="is_required" checked>
-                    <label class="custom-control-label" for="isreq">Req</label>
+            <div class="row">
+                <div class="col-md-3 mb-2">
+                    <label class="text-muted small">Field Label <span class="text-danger">*</span></label>
+                    <input type="text" name="field_label" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Utility Bill" required>
                 </div>
-                <button type="submit" class="btn btn-warning btn-sm text-dark font-weight-bold">Add</button>
+                <div class="col-md-2 mb-2">
+                    <label class="text-muted small">DB Name <span class="text-danger">*</span></label>
+                    <input type="text" name="field_name" class="form-control bg-dark text-white border-secondary" placeholder="e.g. utility_bill" required>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="text-muted small">Type</label>
+                    <select name="field_type" class="form-control bg-dark text-white border-secondary" id="addFieldType" onchange="toggleOptions(this, 'addOptions')">
+                        <option value="text">Text</option>
+                        <option value="date">Date</option>
+                        <option value="file">File Upload</option>
+                        <option value="textarea">Textarea</option>
+                        <option value="select">Dropdown</option>
+                        <option value="number">Number</option>
+                        <option value="tel">Phone</option>
+                        <option value="email">Email</option>
+                        <option value="country">Country Select</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2" id="addOptions" style="display:none;">
+                    <label class="text-muted small">Options (comma separated)</label>
+                    <input type="text" name="field_options" class="form-control bg-dark text-white border-secondary" placeholder="Yes, No, N/A">
+                </div>
+                <div class="col-md-1 mb-2">
+                    <label class="text-muted small">Order</label>
+                    <input type="number" name="sort_order" class="form-control bg-dark text-white border-secondary" value="<?= count($fields) + 1 ?>">
+                </div>
+                <div class="col-md-2 mb-2 d-flex flex-column justify-content-end">
+                    <div class="custom-control custom-checkbox mb-2">
+                        <input type="checkbox" class="custom-control-input" id="addIsReq" name="is_required" checked>
+                        <label class="custom-control-label text-light" for="addIsReq">Required</label>
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-sm text-dark font-weight-bold"><i class="fas fa-plus mr-1"></i>Add Field</button>
+                </div>
             </div>
         </form>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Edit KYC Field Modal (Single, populated via JS) -->
+<div class="modal fade" id="editKycFieldModalMain" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white border-info">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-info font-weight-bold"><i class="fas fa-edit mr-2"></i>Edit KYC Field</h5>
+        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+      </div>
+      <form method="POST">
+        <div class="modal-body">
+            <input type="hidden" name="action" value="edit_field">
+            <input type="hidden" name="field_id" id="editFieldId">
+            <div class="form-group mb-3">
+                <label class="font-weight-bold text-light">Field Label</label>
+                <input type="text" name="field_label" id="editFieldLabel" class="form-control bg-secondary text-white border-0" required>
+            </div>
+            <div class="form-group mb-3">
+                <label class="font-weight-bold text-light">Field Identifier (DB Name)</label>
+                <input type="text" name="field_name" id="editFieldName" class="form-control bg-secondary text-white border-0" required>
+            </div>
+            <div class="form-group mb-3">
+                <label class="font-weight-bold text-light">Field Type</label>
+                <select name="field_type" id="editFieldType" class="form-control bg-secondary text-white border-0" onchange="toggleOptions(this, 'editOptionsRow')">
+                    <option value="text">Text</option>
+                    <option value="date">Date</option>
+                    <option value="file">File Upload</option>
+                    <option value="textarea">Textarea</option>
+                    <option value="select">Dropdown</option>
+                    <option value="number">Number</option>
+                    <option value="tel">Phone</option>
+                    <option value="email">Email</option>
+                    <option value="country">Country Select</option>
+                </select>
+            </div>
+            <div class="form-group mb-3" id="editOptionsRow" style="display:none;">
+                <label class="font-weight-bold text-light">Dropdown Options (comma separated)</label>
+                <input type="text" name="field_options" id="editFieldOptions" class="form-control bg-secondary text-white border-0" placeholder="Option 1, Option 2, Option 3">
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-light">Display Order</label>
+                        <input type="number" name="sort_order" id="editFieldOrder" class="form-control bg-secondary text-white border-0" value="1">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-light d-block">&nbsp;</label>
+                        <div class="custom-control custom-switch mt-2">
+                            <input type="checkbox" class="custom-control-input" id="editFieldRequired" name="is_required" value="1">
+                            <label class="custom-control-label text-light font-weight-bold" for="editFieldRequired">Mandatory Field</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-info font-weight-bold text-white px-4">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openEditModal(id, label, name, type, options, isRequired, order) {
+    document.getElementById('editFieldId').value = id;
+    document.getElementById('editFieldLabel').value = label;
+    document.getElementById('editFieldName').value = name;
+    document.getElementById('editFieldOrder').value = order;
+    
+    var typeSelect = document.getElementById('editFieldType');
+    typeSelect.value = type;
+    toggleOptions(typeSelect, 'editOptionsRow');
+    
+    document.getElementById('editFieldOptions').value = options || '';
+    document.getElementById('editFieldRequired').checked = isRequired == 1;
+    
+    $('#editKycFieldModalMain').modal('show');
+}
+
+function toggleOptions(selectEl, rowId) {
+    var row = document.getElementById(rowId);
+    if (!row) return;
+    row.style.display = (selectEl.value === 'select') ? 'block' : 'none';
+}
+
+// On load, init the add field dropdown
+document.addEventListener('DOMContentLoaded', function() {
+    var el = document.getElementById('addFieldType');
+    if (el) toggleOptions(el, 'addOptions');
+});
+</script>
 
 <?php require_once '../includes/admin_footer.php'; ?>
