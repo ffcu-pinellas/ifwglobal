@@ -141,26 +141,6 @@ require_once $dir . '/includes/admin_sidebar.php';
                 <p class="text-muted mb-0 small">Client Portal — <?= date('l, F j, Y') ?></p>
             </div>
             <div class="d-flex align-items-center">
-                <!-- Notification Bell -->
-                <?php if (!empty($notifications)): ?>
-                <div class="notif-bell mr-3" data-toggle="dropdown">
-                    <i class="fas fa-bell fa-lg text-warning"></i>
-                    <?php if ($unread_count > 0): ?>
-                        <span class="notif-badge"><?= $unread_count ?></span>
-                    <?php endif; ?>
-                </div>
-                <div class="dropdown-menu dropdown-menu-right shadow-lg" style="width:340px; max-height:400px; overflow-y:auto;">
-                    <h6 class="dropdown-header font-weight-bold">Notifications</h6>
-                    <?php foreach($notifications as $n): ?>
-                        <a class="dropdown-item border-bottom py-3" href="<?= htmlspecialchars($n['link'] ?? '#') ?>">
-                            <div class="font-weight-bold text-dark small"><?= htmlspecialchars($n['title']) ?></div>
-                            <div class="text-muted" style="font-size:12px;"><?= htmlspecialchars($n['body'] ?? '') ?></div>
-                            <div class="text-muted" style="font-size:10px;"><?= date('M j, g:i a', strtotime($n['created_at'])) ?></div>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-
                 <button class="btn btn-sm btn-outline-dark font-weight-bold mr-2" data-toggle="modal" data-target="#passwordModal">
                     <i class="fas fa-key mr-1"></i> Change Password
                 </button>
@@ -186,7 +166,7 @@ require_once $dir . '/includes/admin_sidebar.php';
     <div class="col-md-3 mb-3">
         <div class="stat-mini bg-dark shadow-sm" style="color:#fecc56;">
             <div class="text-muted small text-uppercase mb-1" style="font-size:11px; color:#aaa !important;">Total Invoiced</div>
-            <div style="font-size:2rem;">$<?= number_format(array_sum(array_column($invoices,'amount')),0) ?></div>
+            <div style="font-size:2rem;"><?= number_format(array_sum(array_column($invoices,'amount')),0) ?> USD</div>
         </div>
     </div>
     <div class="col-md-3 mb-3">
@@ -242,7 +222,7 @@ require_once $dir . '/includes/admin_sidebar.php';
                 </h6>
                 <p class="mb-0 text-dark small">
                     You have <strong><?= $active_penalty_invoices ?></strong> overdue invoice(s) with active late fees. 
-                    Total accumulated penalty interest: <strong class="text-danger">$<?= number_format($total_accumulated_penalty, 2) ?></strong>. 
+                    Total accumulated penalty interest: <strong class="text-danger"><?= number_format($total_accumulated_penalty, 2) ?> USD</strong>. 
                     Please pay promptly to halt further interest accumulation.
                 </p>
             </div>
@@ -380,13 +360,13 @@ require_once $dir . '/includes/admin_sidebar.php';
                                 <td>
                                     <span class="text-dark"><?= htmlspecialchars(substr($inv['description'] ?? 'Professional Services', 0, 50)) ?></span>
                                     <?php if ($late_fee > 0): ?>
-                                        <br><small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i>Late fee: +$<?= number_format($late_fee,2) ?></small>
+                                        <br><small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i>Late fee: +<?= number_format($late_fee,2) ?> <?= htmlspecialchars($inv['currency'] ?? 'USD') ?></small>
                                     <?php endif; ?>
                                 </td>
                                 <td class="font-weight-bold">
-                                    $<?= number_format($total_due, 2) ?>
+                                    <?= htmlspecialchars($inv['currency'] ?? 'USD') ?> <?= number_format($total_due, 2) ?>
                                     <?php if ($late_fee > 0): ?>
-                                        <br><small class="text-muted" style="font-size:10px;">Base: $<?= number_format($inv['amount'],2) ?></small>
+                                        <br><small class="text-muted" style="font-size:10px;">Base: <?= htmlspecialchars($inv['currency'] ?? 'USD') ?> <?= number_format($inv['amount'],2) ?></small>
                                     <?php endif; ?>
                                 </td>
                                 <td>
@@ -431,7 +411,7 @@ require_once $dir . '/includes/admin_sidebar.php';
              <?php
              $proofs = [];
              try {
-                 $stmtP = $pdo->prepare("SELECT p.*, i.invoice_number FROM IFW_invoice_payments p JOIN IFW_invoices i ON p.invoice_id = i.id WHERE p.client_id = ? ORDER BY p.created_at DESC");
+                 $stmtP = $pdo->prepare("SELECT p.*, i.invoice_number, i.currency FROM IFW_invoice_payments p JOIN IFW_invoices i ON p.invoice_id = i.id WHERE p.client_id = ? ORDER BY p.created_at DESC");
                  $stmtP->execute([$client_id]);
                  $proofs = $stmtP->fetchAll();
              } catch(Exception $e) {}
@@ -456,7 +436,7 @@ require_once $dir . '/includes/admin_sidebar.php';
                                  <tr>
                                      <td><span class="text-muted small"><?= date('M j, Y', strtotime($pr['created_at'])) ?></span></td>
                                      <td><strong><?= htmlspecialchars($pr['invoice_number']) ?></strong></td>
-                                     <td><strong class="text-success">$<?= number_format($pr['amount'], 2) ?></strong></td>
+                                     <td><strong class="text-success"><?= htmlspecialchars($pr['currency'] ?? 'USD') ?> <?= number_format($pr['amount'], 2) ?></strong></td>
                                      <td><span class="badge badge-info"><?= htmlspecialchars($pr['payment_method']) ?></span><br><small class="text-muted">Ref: <?= htmlspecialchars($pr['reference_number']) ?></small></td>
                                      <td>
                                          <?php if ($pr['status'] === 'Pending'): ?>

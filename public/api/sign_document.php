@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // If no pin is set in DB yet, reject and prompt to set one
     if (empty($client['pin_hash'])) {
-        echo json_encode(['status' => 'error', 'message' => 'No Security PIN configured yet. Please set up your PIN in your dashboard first.']);
+        echo json_encode(['status' => 'error', 'message' => 'No Security PIN configured yet. Please set up your Security PIN in your dashboard first.']);
         exit;
     }
     

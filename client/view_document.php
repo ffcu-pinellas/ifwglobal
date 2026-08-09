@@ -166,6 +166,12 @@ $logo_url = get_setting($pdo, 'logo_url', '/admin_assets/img/logo/logo.svg');
                 </div>
             <?php endif; ?>
         </div>
+        
+        <div class="paper-footer" style="margin-top: 60px; border-top: 2px solid #fecc56; padding-top: 20px; text-align: center; font-size: 0.85rem; color: #888; font-family: 'Montserrat', sans-serif;">
+            <strong style="color: #111;">IFW Global Secure Document Vault</strong><br>
+            This document is generated, tracked, and securely vaulted on the IFW Global Platform.<br>
+            Unauthorized distribution or alteration is strictly prohibited.
+        </div>
     </div>
 </div>
 

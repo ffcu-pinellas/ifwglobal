@@ -39,7 +39,7 @@ if (!$chk->fetch()) { header("Location: /client/dashboard.php?error=not_found");
 // Handle file upload
 $proof_path = null;
 if (!empty($_FILES['proof_file']['name'])) {
-    $upload_dir = is_dir($dir . '/public') ? $dir . '/public/uploads/payment_proofs/' : $dir . '/uploads/payment_proofs/';
+    $upload_dir = $dir . '/uploads/payment_proofs/';
     if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
     
     $ext = strtolower(pathinfo($_FILES['proof_file']['name'], PATHINFO_EXTENSION));

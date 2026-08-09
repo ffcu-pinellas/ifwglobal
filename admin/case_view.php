@@ -81,11 +81,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (isset($_FILES['doc_file']) && $_FILES['doc_file']['error'] === UPLOAD_ERR_OK) {
         $file_tmp = $_FILES['doc_file']['tmp_name'];
         $file_name = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $_FILES['doc_file']['name']);
-        $doc_type = $_POST['document_type'] ?? 'Standard';
+        $doc_type = $_POST['document_type_select'] ?? 'Standard';
+        if ($doc_type === 'Other' && !empty($_POST['document_type_custom'])) {
+            $doc_type = trim($_POST['document_type_custom']);
+        }
         $requires_sig = isset($_POST['requires_signature']) ? 1 : 0;
         
         $base_dir = dirname(__DIR__);
-        $target_dir = is_dir($base_dir . '/public') ? $base_dir . '/public/uploads/vault/' : $base_dir . '/uploads/vault/';
+        $target_dir = $base_dir . '/uploads/vault/';
         if (!is_dir($target_dir)) {
             mkdir($target_dir, 0777, true);
         }
@@ -388,13 +391,15 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
                           </div>
                           <div class="col-md-4 mb-2">
                               <label class="small text-muted font-weight-bold">Document Type</label>
-                              <select name="document_type" class="form-control form-control-sm bg-dark text-white border-secondary">
+                              <select name="document_type_select" id="docTypeSelect" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" onchange="toggleCustomDocType()">
                                   <option value="Standard">Standard / General Document</option>
                                   <option value="Service Agreement">Service Agreement</option>
                                   <option value="Power of Attorney">Power of Attorney</option>
                                   <option value="NDA">NDA (Non-Disclosure Agreement)</option>
                                   <option value="Invoice">Invoice Attachment</option>
+                                  <option value="Other">Other (Custom)</option>
                               </select>
+                              <input type="text" name="document_type_custom" id="docTypeCustom" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Specify custom type" style="display:none;">
                           </div>
                           <div class="col-md-3 mb-2 d-flex flex-column justify-content-end pb-1">
                               <div class="form-check mb-2 d-flex align-items-center">
@@ -545,51 +550,171 @@ function loadDocTemplate(select) {
     var val = select.value;
     var clientName = "<?= htmlspecialchars($case['first_name'] . ' ' . $case['last_name']) ?>";
     
+    var docHeader = `<div style="text-align: justify; font-family: 'Times New Roman', Times, serif; line-height: 1.8;">`;
+    var docFooter = `<br><br><p style="text-align: center; font-size: 0.9em; border-top: 1px solid #ccc; padding-top: 10px;"><i>This document is confidential and privileged. Executed on the IFW Global Secure Platform.</i></p></div>`;
+
     if (val === 'service_agreement') {
         document.getElementsByName('document_name')[0].value = 'Service Agreement - ' + clientName;
         document.getElementsByName('document_type')[0].value = 'Service Agreement';
         document.getElementById('customSigRequired').checked = true;
-        document.getElementById('customDocBody').value = `<h3><b>LETTER OF ENGAGEMENT & SERVICE AGREEMENT</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Applicability</p>\n<p>This Service Agreement ("Agreement") is made between <b>IFW Global</b> ("Agency") and <b>` + clientName + `</b> ("Client").</p>\n<p><b>1. SCOPE OF INVESTIGATION & RECOVERY SERVICES</b><br>\nAgency agrees to perform asset tracing, forensic tracking, and intelligence recovery services concerning the Client's financial loss.</p>\n<p><b>2. RETAINER & FEES</b><br>\nClient shall pay Agency the agreed professional services retainer. Any asset recovery success fees shall be calculated at the rate of 10% of recovery value.</p>\n<p><b>3. CONFIDENTIALITY</b><br>\nBoth parties agree to hold all information related to this investigation in the absolute strictest confidence.</p>`;
+        document.getElementById('customDocBody').value = docHeader + `<h3 style="text-align:center; font-weight:bold; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom:20px;">LETTER OF ENGAGEMENT & SERVICE AGREEMENT</h3>
+<p style="text-align:right;"><b>Date:</b> ` + new Date().toLocaleDateString() + `</p>
+<p><b>Jurisdiction:</b> Global / Universal Applicability</p>
+<p>This Service Agreement ("Agreement") is made between <b>IFW Global</b> ("Agency") and <b>` + clientName + `</b> ("Client").</p>
+<hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
+<h4 style="margin-bottom: 10px;">1. SCOPE OF INVESTIGATION & RECOVERY SERVICES</h4>
+<p>Agency agrees to perform comprehensive asset tracing, forensic blockchain tracking, and intelligence recovery services concerning the Client's reported financial loss. The Agency will utilize proprietary investigative methodologies to locate, secure, and recover misappropriated funds.</p>
+<h4 style="margin-bottom: 10px; margin-top: 20px;">2. RETAINER & FEES</h4>
+<p>Client shall pay Agency the agreed professional services retainer prior to commencement. Upon successful restitution, a recovery success fee shall be calculated at the rate of 10% of the total recovered value. No hidden fees shall be applied.</p>
+<h4 style="margin-bottom: 10px; margin-top: 20px;">3. CONFIDENTIALITY</h4>
+<p>Both parties agree to hold all information related to this investigation in the absolute strictest confidence. Disclosure to third parties is strictly prohibited without prior written consent.</p>
+<p style="margin-top: 30px;">IN WITNESS WHEREOF, the parties hereto have executed this Agreement securely via the IFW Global cryptographic signing portal.</p>` + docFooter;
     } else if (val === 'nda') {
-        document.getElementsByName('document_name')[0].value = 'NDA - Mutual Non-Disclosure Agreement - ' + clientName;
-        document.getElementsByName('document_type')[0].value = 'NDA';
+        document.getElementsByName('document_name')[0].value = 'Mutual NDA - ' + clientName;
+        document.getElementsByName('document_type')[0].value = 'Non-Disclosure Agreement';
         document.getElementById('customSigRequired').checked = true;
-        document.getElementById('customDocBody').value = `<h3><b>MUTUAL NON-DISCLOSURE AGREEMENT (NDA)</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Applicability</p>\n<p>This Mutual Non-Disclosure Agreement is entered into by and between <b>IFW Global</b> and <b>` + clientName + `</b>.</p>\n<p>The parties wish to explore a potential business relationship/investigation case, in connection with which they may disclose confidential proprietary information.</p>\n<p><b>1. CONFIDENTIAL INFORMATION</b><br>\n"Confidential Information" includes all written, oral, electronic, or visual information disclosed between the parties.</p>\n<p><b>2. RESTRICTION ON USE</b><br>\nNeither party shall use or disclose any Confidential Information of the other party for any purpose outside the scope of this investigation.</p>`;
+        document.getElementById('customDocBody').value = docHeader + `<h3 style="text-align:center; font-weight:bold; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom:20px;">MUTUAL NON-DISCLOSURE AGREEMENT (NDA)</h3>
+<p style="text-align:right;"><b>Date:</b> ` + new Date().toLocaleDateString() + `</p>
+<p><b>Jurisdiction:</b> Global / Universal Applicability</p>
+<p>This Mutual Non-Disclosure Agreement is entered into by and between <b>IFW Global</b> and <b>` + clientName + `</b> ("The Parties").</p>
+<hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
+<p>The Parties wish to explore a potential investigation and asset recovery case, in connection with which they may disclose confidential proprietary information.</p>
+<h4 style="margin-bottom: 10px;">1. CONFIDENTIAL INFORMATION</h4>
+<p>"Confidential Information" includes all written, oral, electronic, or visual information disclosed between the parties, including but not limited to forensic reports, identity dossiers, financial logs, and investigative tactics.</p>
+<h4 style="margin-bottom: 10px; margin-top: 20px;">2. RESTRICTION ON USE</h4>
+<p>Neither party shall use or disclose any Confidential Information of the other party for any purpose outside the strict scope of this investigation. The receiving party shall employ the highest degree of care to protect such information.</p>
+<h4 style="margin-bottom: 10px; margin-top: 20px;">3. SURVIVAL</h4>
+<p>The obligations under this Agreement shall survive the termination of the investigation case indefinitely.</p>` + docFooter;
     } else if (val === 'power_of_attorney') {
-        document.getElementsByName('document_name')[0].value = 'Power of Attorney - Letter of Mandate - ' + clientName;
+        document.getElementsByName('document_name')[0].value = 'Power of Attorney & Letter of Mandate - ' + clientName;
         document.getElementsByName('document_type')[0].value = 'Power of Attorney';
         document.getElementById('customSigRequired').checked = true;
-        document.getElementById('customDocBody').value = `<h3><b>LETTER OF MANDATE & LIMITED POWER OF ATTORNEY</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Applicability</p>\n<p>I, <b>` + clientName + `</b>, hereby appoint <b>IFW Global</b> as my lawful attorney-in-fact and authorized agent.</p>\n<p><b>1. POWER AND AUTHORITY</b><br>\nIFW Global shall have full power and authority to act on my behalf to trace, freeze, negotiate, and recover funds lost to illegal financial schemes, including requesting records from financial institutions and law enforcement.</p>\n<p><b>2. DURATION</b><br>\nThis Limited Power of Attorney is effective immediately and shall remain in effect until the conclusion of the recovery case or written revocation.</p>`;
+        document.getElementById('customDocBody').value = docHeader + `<h3 style="text-align:center; font-weight:bold; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom:20px;">LETTER OF MANDATE & LIMITED POWER OF ATTORNEY</h3>
+<p style="text-align:right;"><b>Date:</b> ` + new Date().toLocaleDateString() + `</p>
+<p><b>Jurisdiction:</b> Global / Universal Applicability</p>
+<p>I, <b>` + clientName + `</b>, hereby appoint <b>IFW Global</b> and its authorized investigative agents as my lawful attorney-in-fact and authorized representative.</p>
+<hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
+<h4 style="margin-bottom: 10px;">1. GRANT OF AUTHORITY</h4>
+<p>IFW Global shall have full power and authority to act on my behalf to trace, freeze, negotiate, and recover funds lost to illicit financial operations. This includes the explicit authority to request confidential records from financial institutions, cryptocurrency exchanges, and law enforcement agencies globally.</p>
+<h4 style="margin-bottom: 10px; margin-top: 20px;">2. LEGAL REPRESENTATION</h4>
+<p>My attorney-in-fact may sign, seal, execute, deliver, and acknowledge any and all documents necessary to facilitate the recovery of my assets, acting as fully as I could do if personally present.</p>
+<h4 style="margin-bottom: 10px; margin-top: 20px;">3. DURATION & REVOCATION</h4>
+<p>This Limited Power of Attorney is effective immediately upon cryptographic execution and shall remain in full force and effect until the conclusion of the recovery mandate, unless revoked by me in writing.</p>` + docFooter;
     } else if (val === 'cease_and_desist') {
         document.getElementsByName('document_name')[0].value = 'Cease & Desist Demand - ' + clientName;
         document.getElementsByName('document_type')[0].value = 'Cease & Desist';
         document.getElementById('customSigRequired').checked = false;
-        document.getElementById('customDocBody').value = `<h3><b>FORMAL CEASE AND DESIST DEMAND</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Applicability</p>\n<p><b>To Whom It May Concern,</b></p>\n<p>We act on behalf of <b>` + clientName + `</b> in relation to funds fraudulently obtained from our client. We have tracked these funds directly to your platform/organization.</p>\n<p><b>DEMAND IS HEREBY MADE</b> that you immediately cease and desist all unauthorized operations, preserve all logs and communication records, and hold all disputed assets pending legal freeze orders.</p>\n<p>Failure to comply immediately will result in us initiating formal criminal and civil complaints with international regulatory and law enforcement bodies.</p>`;
+        document.getElementById('customDocBody').value = docHeader + `<h3 style="text-align:center; font-weight:bold; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom:20px;">FORMAL CEASE AND DESIST DEMAND</h3>
+<p style="text-align:right;"><b>Date:</b> ` + new Date().toLocaleDateString() + `</p>
+<p><b>Jurisdiction:</b> Global / Universal Applicability</p>
+<p><b>VIA SECURE ELECTRONIC DELIVERY</b></p>
+<p><b>To Whom It May Concern,</b></p>
+<p>We act as retained investigators and authorized representatives on behalf of <b>` + clientName + `</b> in relation to funds fraudulently obtained from our client. Forensic tracing confirms that stolen assets have transited through or are currently held within your platform's infrastructure.</p>
+<hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
+<p><b>DEMAND IS HEREBY MADE</b> that you immediately:</p>
+<ul style="margin-bottom: 20px;">
+    <li>Cease and desist all unauthorized operations concerning our client's accounts.</li>
+    <li>Preserve all server logs, KYC data, IP addresses, and internal communication records.</li>
+    <li>Place an administrative hold on all disputed assets pending the arrival of a formal legal freeze order or subpoena.</li>
+</ul>
+<p>Failure to comply immediately will result in IFW Global escalating this matter. We will initiate formal criminal and civil complaints with international regulatory bodies and law enforcement agencies, naming your organization as an uncooperative accessory to financial fraud.</p>
+<p>Govern yourselves accordingly.</p>
+<p style="margin-top: 30px;"><b>IFW Global Legal & Compliance Department</b></p>` + docFooter;
     } else if (val === 'letter_of_demand') {
         document.getElementsByName('document_name')[0].value = 'Formal Letter of Demand - ' + clientName;
         document.getElementsByName('document_type')[0].value = 'Letter of Demand';
         document.getElementById('customSigRequired').checked = false;
-        document.getElementById('customDocBody').value = `<h3><b>FORMAL LETTER OF DEMAND (RESTITUTION)</b></h3>\n<p><b>Jurisdiction:</b> UK / Australia / Commonwealth Common Law</p>\n<p><b>Dear Sir/Madam,</b></p>\n<p>This is a formal Letter of Demand issued pursuant to standard pre-action protocols. We represent <b>` + clientName + `</b>.</p>\n<p>Our investigations show that you are currently holding assets/funds belonging to our client totaling the sum of [Amount Lost]. These funds were transferred under fraudulent representations.</p>\n<p>We hereby demand the immediate repayment of the aforementioned sum to our client's designated recovery account within fourteen (14) days. Failing restitution, we will commence civil proceedings without further notice.</p>`;
+        document.getElementById('customDocBody').value = docHeader + `<h3 style="text-align:center; font-weight:bold; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom:20px;">FORMAL LETTER OF DEMAND (RESTITUTION)</h3>
+<p style="text-align:right;"><b>Date:</b> ` + new Date().toLocaleDateString() + `</p>
+<p><b>Jurisdiction:</b> UK / Australia / Commonwealth Common Law</p>
+<p><b>Dear Sir/Madam,</b></p>
+<p>This is a formal Letter of Demand issued pursuant to standard pre-action protocols. We are the authorized representatives of <b>` + clientName + `</b>.</p>
+<hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
+<p>Our comprehensive forensic investigations confirm that you are currently holding or have received assets belonging to our client. These funds were transferred under fraudulent representations, constituting unjust enrichment and fraud.</p>
+<h4 style="margin-bottom: 10px;">DEMAND FOR RESTITUTION</h4>
+<p>We hereby demand the immediate repayment and full restitution of the aforementioned sum to our client's designated recovery account within <b>fourteen (14) days</b> from the date of this letter.</p>
+<p>Failing restitution within the specified timeframe, we have standing instructions to commence civil and criminal proceedings without further notice, which will result in substantial legal costs being claimed against you.</p>
+<p>We await your immediate compliance.</p>` + docFooter;
     } else if (val === 'writ_of_mandamus') {
         document.getElementsByName('document_name')[0].value = 'Petition for Writ of Mandamus - ' + clientName;
         document.getElementsByName('document_type')[0].value = 'Writ of Mandamus';
         document.getElementById('customSigRequired').checked = true;
-        document.getElementById('customDocBody').value = `<h3><b>PETITION FOR WRIT OF MANDAMUS</b></h3>\n<p><b>Jurisdiction:</b> United States Judicial System / US Common Law</p>\n<p><b>In the Matter of the Case of:</b> ` + clientName + `</p>\n<p><b>TO THE HONORABLE COURT:</b></p>\n<p>Petitioner <b>` + clientName + `</b>, by and through counsel IFW Global, hereby petitions this Court for a Writ of Mandamus directing the Respondent [Agency/Official Name] to perform their non-discretionary duty to [Specify Action, e.g., Release Frozen Scammer Assets].</p>\n<p>Petitioner has a clear, legal right to the performance of this duty, and Respondent has a clear legal obligation to perform it. Petitioner has no other adequate legal remedy.</p>`;
+        document.getElementById('customDocBody').value = docHeader + `<h3 style="text-align:center; font-weight:bold; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom:20px;">PETITION FOR WRIT OF MANDAMUS</h3>
+<p style="text-align:right;"><b>Date:</b> ` + new Date().toLocaleDateString() + `</p>
+<p><b>Jurisdiction:</b> United States Judicial System / US Common Law</p>
+<p><b>In the Matter of the Case of:</b> ` + clientName + ` (Petitioner)</p>
+<p><b>TO THE HONORABLE COURT / REGULATORY BODY:</b></p>
+<hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
+<p>Petitioner <b>` + clientName + `</b>, by and through their authorized investigative counsel IFW Global, hereby petitions for a Writ of Mandamus directing the Respondent to immediately execute their non-discretionary duty regarding the release of frozen illicit assets back to the rightful owner.</p>
+<h4 style="margin-bottom: 10px;">1. BASIS FOR PETITION</h4>
+<p>Petitioner has a clear, established legal right to the performance of this duty. Extensive forensic evidence provided by IFW Global confirms the Petitioner's undisputed ownership of the targeted assets. Respondent has a clear legal obligation to perform the release, and the duty is ministerial in nature.</p>
+<h4 style="margin-bottom: 10px; margin-top: 20px;">2. ABSENCE OF ALTERNATIVE REMEDY</h4>
+<p>Petitioner has exhausted all administrative remedies and has no other adequate legal remedy available to compel the return of the misappropriated funds.</p>
+<p style="margin-top: 30px;"><b>WHEREFORE</b>, Petitioner respectfully requests that a Writ of Mandamus be issued compelling the immediate release and transfer of the recovered assets.</p>` + docFooter;
     } else if (val === 'authority_to_act') {
         document.getElementsByName('document_name')[0].value = 'Authority to Act & Info Release - ' + clientName;
         document.getElementsByName('document_type')[0].value = 'Authority to Act';
         document.getElementById('customSigRequired').checked = true;
-        document.getElementById('customDocBody').value = `<h3><b>AUTHORITY TO ACT & RELEASE OF INFORMATION</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Applicability</p>\n<p>I, <b>` + clientName + `</b>, hereby authorize <b>IFW Global</b> and its designated agents to act as my representatives and investigators.</p>\n<p>I hereby instruct and authorize all banks, cryptocurrency exchanges, internet service providers, and law enforcement agencies to release any and all records, logs, IP addresses, transaction details, and KYC information related to my accounts and transactions to IFW Global immediately upon presentation of this document.</p>`;
+        document.getElementById('customDocBody').value = docHeader + `<h3 style="text-align:center; font-weight:bold; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom:20px;">AUTHORITY TO ACT & RELEASE OF INFORMATION</h3>
+<p style="text-align:right;"><b>Date:</b> ` + new Date().toLocaleDateString() + `</p>
+<p><b>Jurisdiction:</b> Global / Universal Applicability</p>
+<p>I, <b>` + clientName + `</b>, hereby authorize <b>IFW Global</b> and its designated agents to act as my exclusive representatives and investigators in the matter of my financial loss recovery.</p>
+<hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
+<h4 style="margin-bottom: 10px;">DIRECTIVE TO THIRD PARTIES</h4>
+<p>I hereby instruct, mandate, and authorize all banks, cryptocurrency exchanges, internet service providers, financial institutions, and law enforcement agencies to release any and all records related to my accounts and transactions to IFW Global immediately upon presentation of this document.</p>
+<p>This includes, but is not limited to:</p>
+<ul style="margin-bottom: 20px;">
+    <li>Transaction logs, IP addresses, and routing data.</li>
+    <li>KYC/AML documentation and identity records of opposing accounts.</li>
+    <li>Internal investigations or freeze status reports.</li>
+</ul>
+<p>A copy or digital reproduction of this executed document shall have the same legally binding effect as the original.</p>` + docFooter;
     } else if (val === 'settlement_release') {
         document.getElementsByName('document_name')[0].value = 'Settlement & Mutual Release - ' + clientName;
         document.getElementsByName('document_type')[0].value = 'Settlement Agreement';
         document.getElementById('customSigRequired').checked = true;
-        document.getElementById('customDocBody').value = `<h3><b>SETTLEMENT AND MUTUAL RELEASE AGREEMENT</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Applicability</p>\n<p>This Settlement and Mutual Release Agreement ("Agreement") is made between <b>` + clientName + `</b> ("Client") and [Scammer/Entity Name] ("Respondent").</p>\n<p><b>1. SETTLEMENT PAYMENT</b><br>\nRespondent agrees to pay Client the sum of [Settlement Amount] in full and final settlement of all claims.</p>\n<p><b>2. MUTUAL RELEASE</b><br>\nUpon receipt of the settlement payment, both parties hereby release, acquit, and forever discharge each other from any and all claims, liabilities, demands, or actions arising from the dispute.</p>`;
+        document.getElementById('customDocBody').value = docHeader + `<h3 style="text-align:center; font-weight:bold; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom:20px;">SETTLEMENT AND MUTUAL RELEASE AGREEMENT</h3>
+<p style="text-align:right;"><b>Date:</b> ` + new Date().toLocaleDateString() + `</p>
+<p><b>Jurisdiction:</b> Global / Universal Applicability</p>
+<p>This Settlement and Mutual Release Agreement ("Agreement") is made between <b>` + clientName + `</b> ("Client") and the responding party/entity ("Respondent").</p>
+<hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
+<h4 style="margin-bottom: 10px;">1. SETTLEMENT PAYMENT</h4>
+<p>Respondent agrees to pay Client the agreed sum in full and final settlement of all claims, controversies, and disputes arising out of the investigated financial loss.</p>
+<h4 style="margin-bottom: 10px; margin-top: 20px;">2. MUTUAL RELEASE</h4>
+<p>Upon confirmed receipt of the cleared settlement payment in the Client's designated account, both parties hereby fully and forever release, acquit, and discharge each other from any and all claims, liabilities, demands, damages, or actions of any kind.</p>
+<h4 style="margin-bottom: 10px; margin-top: 20px;">3. NON-ADMISSION OF LIABILITY</h4>
+<p>This Agreement is a compromise of a disputed claim and shall not be construed as an admission of liability by either party, which is expressly denied.</p>` + docFooter;
     } else if (val === 'blockchain_forensic') {
         document.getElementsByName('document_name')[0].value = 'Crypto Forensic Freeze Request - ' + clientName;
         document.getElementsByName('document_type')[0].value = 'Forensic Block Request';
         document.getElementById('customSigRequired').checked = false;
-        document.getElementById('customDocBody').value = `<h3><b>CRYPTOGRAPHIC FORENSIC FREEZE REQUEST</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Crypto Asset Regulations</p>\n<p><b>To: Compliance & Security Department, [Exchange/Custodian Name]</b></p>\n<p>We represent <b>` + clientName + `</b>, who was the victim of a cryptocurrency scam. Our forensic tracking shows the stolen assets were transferred to your exchange and deposited into the following wallet address(es):</p>\n<p><b>Wallet Address:</b> [Wallet Address Here]<br>\n<b>Transaction Hash:</b> [TXID Here]</p>\n<p>We request that you immediately place an administrative temporary hold/freeze on this account to prevent the dissipation of stolen assets while we obtain a formal subpoena/court freeze order.</p>`;
+        document.getElementById('customDocBody').value = docHeader + `<h3 style="text-align:center; font-weight:bold; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom:20px;">CRYPTOGRAPHIC FORENSIC FREEZE REQUEST</h3>
+<p style="text-align:right;"><b>Date:</b> ` + new Date().toLocaleDateString() + `</p>
+<p><b>Jurisdiction:</b> Global / Universal Crypto Asset Regulations</p>
+<p><b>To: Legal, Compliance & Security Department, [Exchange/Custodian Name]</b></p>
+<p>We formally represent <b>` + clientName + `</b>, who was the victim of a coordinated cryptocurrency fraud operation. Advanced forensic ledger tracking confirms that the stolen assets were transferred directly into your exchange's custody.</p>
+<hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
+<h4 style="margin-bottom: 10px;">INCIDENT DETAILS</h4>
+<p><b>Target Wallet Address:</b> [Insert Address]<br>
+<b>Transaction Hash (TXID):</b> [Insert TXID]<br>
+<b>Network:</b> [Insert Blockchain Network]</p>
+<h4 style="margin-bottom: 10px; margin-top: 20px;">URGENT ADMINISTRATIVE FREEZE REQUEST</h4>
+<p>Pursuant to international AML (Anti-Money Laundering) directives and your institution's Terms of Service regarding illicit activities, we request that you immediately place an <b>administrative temporary hold/freeze</b> on the target account.</p>
+<p>This freeze is necessary to prevent the dissipation or laundering of stolen assets while we obtain a formal court freeze order or law enforcement subpoena. Failure to act may render your exchange liable for facilitating the laundering of proceeds of crime.</p>
+<p style="margin-top: 30px;"><b>IFW Global Blockchain Forensics Team</b></p>` + docFooter;
+    }
+}
+
+function toggleCustomDocType() {
+    var select = document.getElementById('docTypeSelect');
+    var customInput = document.getElementById('docTypeCustom');
+    if (select.value === 'Other') {
+        customInput.style.display = 'block';
+        customInput.required = true;
+    } else {
+        customInput.style.display = 'none';
+        customInput.required = false;
+        customInput.value = '';
     }
 }
 

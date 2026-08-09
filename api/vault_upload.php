@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (in_array($ext, $allowed)) {
             // Dynamically resolve target folder to support both public and root setups
             $base_dir = $dir;
-            $target_dir = is_dir($base_dir . '/public') ? $base_dir . '/public/uploads/vault/' : $base_dir . '/uploads/vault/';
+            $target_dir = $base_dir . '/uploads/vault/';
             if (!is_dir($target_dir)) {
                 mkdir($target_dir, 0777, true);
             }

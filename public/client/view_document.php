@@ -157,7 +157,7 @@ $logo_url = get_setting($pdo, 'logo_url', '/admin_assets/img/logo/logo.svg');
                         </button>
                     </div>
                     <div class="only-print text-center py-4" style="border: 1px solid #ccc; font-style: italic;">
-                        Awaiting Secure Signature via IFW Global Client Recovery Portal.
+                        Awaiting Secure Signature via IFW Global Client Portal.
                     </div>
                 <?php endif; ?>
             <?php else: ?>

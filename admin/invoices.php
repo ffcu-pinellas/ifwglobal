@@ -410,7 +410,7 @@ require_once '../includes/admin_sidebar.php';
                                 </td>
                                 <td>
                                     <?php if ($p['status'] === 'Pending'): ?>
-                                        <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark" onclick="openReviewModal(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['first_name'] . ' ' . $p['last_name'])) ?>', '<?= htmlspecialchars(addslashes($p['invoice_number'])) ?>', '<?= number_format($p['amount'], 2) ?>')">
+                                        <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark" onclick="openReviewModal(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['first_name'] . ' ' . $p['last_name'])) ?>', '<?= htmlspecialchars(addslashes($p['invoice_number'])) ?>', '<?= htmlspecialchars(addslashes($p['currency'] ?? 'USD')) ?> <?= number_format($p['amount'], 2) ?>')">
                                             <i class="fas fa-gavel mr-1"></i> Review
                                         </button>
                                     <?php else: ?>
@@ -516,6 +516,9 @@ function openReviewModal(paymentId, clientName, invoiceRef, amount) {
                         <option value="GBP">GBP (£)</option>
                         <option value="AUD">AUD ($)</option>
                         <option value="CAD">CAD ($)</option>
+                        <option value="BTC">BTC (₿)</option>
+                        <option value="BUSD">BUSD</option>
+                        <option value="USDT">USDT</option>
                     </select>
                 </div>
             </div>

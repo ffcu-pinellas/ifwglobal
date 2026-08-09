@@ -87,16 +87,10 @@ try {
     } catch (Exception $ex) {}
 }
 
-// Base URL configuration (dynamic for Hostinger and localhost subdirectories)
+// Base URL configuration (dynamic for Hostinger)
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
 $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
-$script_dirname = dirname($_SERVER['SCRIPT_NAME']);
-$script_dirname = str_replace('\\', '/', $script_dirname);
-// Remove /admin or /client from the end of the script_dirname if present
-$script_dirname = preg_replace('#/(admin|client)$#', '', $script_dirname);
-if ($script_dirname === '/') $script_dirname = '';
-
-define('BASE_URL', $protocol . $host . $script_dirname);
+define('BASE_URL', $protocol . $host);
 // Secure session settings (recommendation for production)
 // ini_set('session.cookie_httponly', 1);
 // ini_set('session.cookie_secure', 1); // Only over HTTPS
