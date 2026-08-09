@@ -24,6 +24,18 @@ if (!$doc) {
     die('<p style="font-family:sans-serif;padding:20px;color:red;">Document not found or access denied.</p>');
 }
 
+$user_role = $_SESSION['admin_role'] ?? 'viewer';
+$admin_id = $_SESSION['admin_id'];
+
+if (!in_array($user_role, ['super_admin', 'superadmin', 'admin'])) {
+    // Check if client is assigned to this investigator
+    $check = $pdo->prepare("SELECT id FROM IFW_clients WHERE id = ? AND assigned_agent_id = ?");
+    $check->execute([$doc['client_id'], $admin_id]);
+    if (!$check->fetch()) {
+        die('<p style="font-family:sans-serif;padding:20px;color:red;">Unauthorized to view this document.</p>');
+    }
+}
+
 $logo_url = get_setting($pdo, 'logo_url', '/admin_assets/img/logo/logo.svg');
 ?>
 <!DOCTYPE html>

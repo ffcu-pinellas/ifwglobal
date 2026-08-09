@@ -38,6 +38,16 @@ try {
     try { $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN country VARCHAR(100) NULL AFTER phone"); } catch (Exception $ex) {}
 }
 try {
+    $pdo->query("SELECT dob FROM IFW_clients LIMIT 1");
+} catch (PDOException $e) {
+    try { $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN dob DATE NULL AFTER email"); } catch (Exception $ex) {}
+}
+try {
+    $pdo->query("SELECT address FROM IFW_clients LIMIT 1");
+} catch (PDOException $e) {
+    try { $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN address TEXT NULL AFTER dob"); } catch (Exception $ex) {}
+}
+try {
     $pdo->query("SELECT attachment_path FROM IFW_chat_messages LIMIT 1");
 } catch (PDOException $e) {
     try {

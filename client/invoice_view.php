@@ -65,12 +65,23 @@ $dynamic_late_fee = 0.00;
 $next_penalty_time = null;
 $time_remaining_sec = 0;
 
+$currency_symbols = [
+    'USD' => '$',
+    'EUR' => '€',
+    'GBP' => '£',
+    'AUD' => '$',
+    'CAD' => '$',
+];
+$symbol = $currency_symbols[$invoice['currency'] ?? 'USD'] ?? '$';
+$base_amount = ($invoice['total_amount'] > 0) ? (float)$invoice['total_amount'] : (float)$invoice['amount'];
+$subtotal_amount = ($invoice['subtotal'] > 0) ? (float)$invoice['subtotal'] : (float)$invoice['amount'];
+
 if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled']) && $invoice['late_fee_amount'] > 0) {
     $startDate = strtotime($invoice['late_fee_start_date'] ?? $invoice['due_date']);
     $now = time();
     $rate = $invoice['late_fee_amount'];
     if (!empty($invoice['late_fee_is_percentage'])) {
-        $rate = ($invoice['late_fee_amount'] / 100) * $invoice['amount'];
+        $rate = ($invoice['late_fee_amount'] / 100) * $base_amount;
     }
     
     if ($now >= $startDate) {
@@ -111,7 +122,7 @@ if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled']) && $in
 }
 
 $late_fee = ($invoice['status'] === 'paid') ? ($invoice['late_fee_accumulated'] ?? 0) : max($dynamic_late_fee, $invoice['late_fee_accumulated'] ?? 0);
-$total_due = $invoice['amount'] + $late_fee;
+$total_due = $base_amount + $late_fee;
 
 // Global payment info fallback
 $global_payment = get_setting($pdo, 'bank_details', '');
@@ -298,9 +309,9 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                     <tr>
                         <td><?= $i+1 ?></td>
                         <td><?= htmlspecialchars($item['description']) ?><?= !empty($item['notes']) ? '<br><small class="text-muted">'.$item['notes'].'</small>' : '' ?></td>
-                        <td class="text-right"><?= htmlspecialchars($item['quantity'] ?? 1) ?></td>
-                        <td class="text-right">$<?= number_format($item['unit_price'] ?? ($invoice['amount'] / max(1, count($items))), 2) ?></td>
-                        <td class="text-right font-weight-bold">$<?= number_format($item['total'] ?? ($item['quantity'] * $item['unit_price']), 2) ?></td>
+                        <td class="text-right"><?= htmlspecialchars($item['qty'] ?? 1) ?></td>
+                        <td class="text-right"><?= $symbol ?><?= number_format($item['rate'] ?? ($base_amount / max(1, count($items))), 2) ?></td>
+                        <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($item['amount'] ?? ($item['qty'] * $item['rate']), 2) ?></td>
                     </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
@@ -308,31 +319,31 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                         <td>1</td>
                         <td><?= htmlspecialchars($invoice['description'] ?? 'Professional Services') ?></td>
                         <td class="text-right">1</td>
-                        <td class="text-right">$<?= number_format($invoice['amount'], 2) ?></td>
-                        <td class="text-right font-weight-bold">$<?= number_format($invoice['amount'], 2) ?></td>
+                        <td class="text-right"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
+                        <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
                     </tr>
                 <?php endif; ?>
             </tbody>
             <tfoot>
                 <tr class="bg-light">
                     <td colspan="4" class="text-right font-weight-bold">Subtotal</td>
-                    <td class="text-right font-weight-bold">$<?= number_format($invoice['amount'], 2) ?></td>
+                    <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($subtotal_amount, 2) ?></td>
                 </tr>
                 <?php if (!empty($invoice['discount_amount']) && $invoice['discount_amount'] > 0): ?>
                 <tr class="bg-light">
                     <td colspan="4" class="text-right text-success">Discount</td>
-                    <td class="text-right text-success">-$<?= number_format($invoice['discount_amount'], 2) ?></td>
+                    <td class="text-right text-success">-<?= $symbol ?><?= number_format($invoice['discount_amount'], 2) ?></td>
                 </tr>
                 <?php endif; ?>
                 <?php if ($late_fee > 0): ?>
                 <tr class="bg-light">
                     <td colspan="4" class="text-right text-danger font-weight-bold">Late Fee</td>
-                    <td class="text-right text-danger font-weight-bold">+$<?= number_format($late_fee, 2) ?></td>
+                    <td class="text-right text-danger font-weight-bold">+<?= $symbol ?><?= number_format($late_fee, 2) ?></td>
                 </tr>
                 <?php endif; ?>
                 <tr style="background:#1a1a1a; color:#fecc56;">
                     <td colspan="4" class="text-right font-weight-bold" style="font-size:1.1rem;">TOTAL DUE</td>
-                    <td class="text-right font-weight-bold" style="font-size:1.2rem;">$<?= number_format($total_due, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
+                    <td class="text-right font-weight-bold" style="font-size:1.2rem;"><?= $symbol ?><?= number_format($total_due, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
                 </tr>
             </tfoot>
         </table>
@@ -347,7 +358,7 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                     <?php foreach($instalments as $inst): ?>
                     <tr>
                         <td>Instalment #<?= $inst['instalment_number'] ?></td>
-                        <td>$<?= number_format($inst['amount'], 2) ?></td>
+                        <td><?= $symbol ?><?= number_format($inst['amount'], 2) ?></td>
                         <td><?= date('M j, Y', strtotime($inst['due_date'])) ?></td>
                         <td>
                             <?php $is = strtolower($inst['status']);
@@ -366,7 +377,7 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
         <div class="p-4 rounded mb-4" style="background: #f8f9fa; border: 1px solid #dee2e6;">
             <h6 class="font-weight-bold text-dark mb-3"><i class="fas fa-university mr-2 text-warning"></i>Payment Information</h6>
             <p class="text-muted small mb-3">Please use the following details to make your payment. Reference your invoice number in all transactions.</p>
-            <div style="white-space:pre-wrap; font-family: 'Courier New', monospace; font-size:13px; line-height:1.8; background:#fff; border:1px solid #ddd; padding:16px; border-radius:6px;">
+            <div style="white-space:pre-wrap; font-family: 'Courier New', monospace; font-size:13px; line-height:1.8; background:#fff; border:1px solid #ddd; padding:16px; border-radius:6px; color:#000 !important;">
                 <?= htmlspecialchars($payment_info) ?>
             </div>
             <div class="alert alert-warning border-0 mt-3 mb-0 small">
@@ -400,7 +411,7 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                 </div>
                 <div class="p-4">
                     <h6 class="font-weight-bold mb-3"><i class="fas fa-university text-warning mr-2"></i>Payment Details</h6>
-                    <div class="bg-light p-3 rounded border mb-4" id="payInfoBlock" style="white-space:pre-wrap; font-family:monospace; font-size:13px; line-height:1.8;"></div>
+                    <div class="bg-light p-3 rounded border mb-4 text-dark" id="payInfoBlock" style="white-space:pre-wrap; font-family:monospace; font-size:13px; line-height:1.8; color:#000 !important;"></div>
                     <div class="alert alert-warning border-0 mb-4 small">
                         <i class="fas fa-exclamation-triangle mr-2"></i>After paying, upload your payment receipt below for verification.
                     </div>
@@ -413,20 +424,21 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="font-weight-bold small">Payment Method</label>
-                                <select name="payment_method" class="form-control" required>
+                                <select name="payment_method" class="form-control" onchange="if(this.value==='Other'){$('#otherPaymentMethodDiv').show().find('input').attr('required',true);}else{$('#otherPaymentMethodDiv').hide().find('input').removeAttr('required').val('');}" required>
                                     <option value="">Select...</option>
                                     <option>Bank Wire Transfer</option>
                                     <option>Cryptocurrency (Bitcoin)</option>
                                     <option>Cryptocurrency (USDT)</option>
-                                    <option>Credit/Debit Card</option>
-                                    <option>Western Union</option>
-                                    <option>MoneyGram</option>
                                     <option>Other</option>
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold small">Transaction / Reference No.</label>
-                                <input type="text" name="reference_number" class="form-control" placeholder="e.g. TXN12345678" required>
+                                <label class="font-weight-bold small">Transaction / Reference No. (Optional)</label>
+                                <input type="text" name="reference_number" class="form-control" placeholder="e.g. TXN12345678">
+                            </div>
+                            <div class="col-md-12 mb-3" id="otherPaymentMethodDiv" style="display:none;">
+                                <label class="font-weight-bold small text-warning">Specify Other Payment Method <span class="text-danger">*</span></label>
+                                <input type="text" name="other_payment_method" class="form-control" placeholder="e.g. PayPal, Cash App, Revolut">
                             </div>
                         </div>
                         <div class="mb-3">

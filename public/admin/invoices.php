@@ -5,15 +5,21 @@ require_once '../includes/functions.php';
 require_once '../includes/mailer.php';
 require_admin_login();
 
-$is_agent = isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'agent';
+$is_agent = isset($_SESSION['admin_role']) && in_array($_SESSION['admin_role'], ['agent', 'staff']);
 if ($is_agent) {
-    // Optionally restrict agents from invoicing, or just let them invoice their clients
-    // Let's allow them for now but only for their assigned clients (handled in fetch)
+    // Restrict agents and staff from viewing/creating/approving invoices of unassigned clients
 }
 
 // Handle Invoice Generation & Emailing
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'generate_invoice') {
     $client_id = (int)$_POST['client_id'];
+    if ($is_agent) {
+        $check = $pdo->prepare("SELECT id FROM IFW_clients WHERE id = ? AND assigned_agent_id = ?");
+        $check->execute([$client_id, $_SESSION['admin_id']]);
+        if (!$check->fetch()) {
+            die("Unauthorized");
+        }
+    }
     $case_id = !empty($_POST['case_id']) ? (int)$_POST['case_id'] : null;
     
     // Generate Invoice Number
@@ -137,8 +143,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_status') {
+    $invoice_id = (int)$_POST['invoice_id'];
+    if ($is_agent) {
+        $check = $pdo->prepare("SELECT i.id FROM IFW_invoices i JOIN IFW_clients c ON i.client_id = c.id WHERE i.id = ? AND c.assigned_agent_id = ?");
+        $check->execute([$invoice_id, $_SESSION['admin_id']]);
+        if (!$check->fetch()) {
+            die("Unauthorized");
+        }
+    }
     $stmt = $pdo->prepare("UPDATE IFW_invoices SET status = ? WHERE id = ?");
-    $stmt->execute([$_POST['status'], (int)$_POST['invoice_id']]);
+    $stmt->execute([$_POST['status'], $invoice_id]);
     header("Location: invoices.php?status_updated=1");
     exit;
 }
@@ -153,6 +167,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
     $payment = $stmt->fetch();
     
     if ($payment) {
+        if ($is_agent) {
+            $check = $pdo->prepare("SELECT id FROM IFW_clients WHERE id = ? AND assigned_agent_id = ?");
+            $check->execute([$payment['client_id'], $_SESSION['admin_id']]);
+            if (!$check->fetch()) {
+                die("Unauthorized");
+            }
+        }
         $new_status = ($_POST['action'] === 'approve_payment') ? 'Confirmed' : 'Rejected';
         
         $update = $pdo->prepare("UPDATE IFW_invoice_payments SET status = ?, notes = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?");
@@ -162,8 +183,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
             $invoice_id = $payment['invoice_id'];
             $client_id = $payment['client_id'];
             
-            // Fetch invoice total amount & late fee accumulated
-            $stmtInv = $pdo->prepare("SELECT amount, total_amount, late_fee_accumulated FROM IFW_invoices WHERE id = ?");
+            // Fetch invoice total amount, late fee accumulated, and currency
+            $stmtInv = $pdo->prepare("SELECT amount, total_amount, late_fee_accumulated, currency FROM IFW_invoices WHERE id = ?");
             $stmtInv->execute([$invoice_id]);
             $inv = $stmtInv->fetch();
             
@@ -183,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
             
             // Client Notification
             $pdo->prepare("INSERT INTO IFW_notifications (client_id, type, title, body, icon, link) VALUES (?, 'invoice', 'Payment Confirmed', ?, 'check-circle', '/client/dashboard.php')")
-                ->execute([$client_id, "Your payment of " . number_format($payment['amount'], 2) . " USD has been verified & approved."]);
+                ->execute([$client_id, "Your payment of " . number_format($payment['amount'], 2) . " " . ($inv['currency'] ?? 'USD') . " has been verified & approved."]);
         } else {
             $client_id = $payment['client_id'];
             $pdo->prepare("INSERT INTO IFW_notifications (client_id, type, title, body, icon, link) VALUES (?, 'invoice', 'Payment Rejected', ?, 'times-circle', '/client/dashboard.php')")

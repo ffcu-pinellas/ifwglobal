@@ -1,8 +1,13 @@
-<?php
+ <?php
 // admin/settings.php
 require_once '../config.php';
 require_once '../includes/functions.php';
 require_admin_login();
+
+$user_role = $_SESSION['admin_role'] ?? 'viewer';
+if (!in_array($user_role, ['super_admin', 'superadmin', 'admin'])) {
+    die("Unauthorized access to settings.");
+}
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {

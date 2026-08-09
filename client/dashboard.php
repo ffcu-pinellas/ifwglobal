@@ -17,28 +17,7 @@ if (!isset($_SESSION['client_logged_in']) || $_SESSION['client_logged_in'] !== t
 $client_id = $_SESSION['client_portal_id'] ?? 0;
 $_SESSION['role'] = 'client';
 
-// Handle password change
 $pwd_msg = $pwd_error = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'change_password') {
-    $old = $_POST['old_password'] ?? '';
-    $new = $_POST['new_password'] ?? '';
-    $con = $_POST['confirm_password'] ?? '';
-    if (strlen($new) < 6) {
-        $pwd_error = 'Password must be at least 6 characters.';
-    } elseif ($new !== $con) {
-        $pwd_error = 'Passwords do not match.';
-    } else {
-        $s = $pdo->prepare("SELECT password_hash FROM IFW_clients WHERE id=?");
-        $s->execute([$client_id]);
-        $hash = $s->fetchColumn();
-        if ($hash && !password_verify($old, $hash)) {
-            $pwd_error = 'Current password is incorrect.';
-        } else {
-            $pdo->prepare("UPDATE IFW_clients SET password_hash=? WHERE id=?")->execute([password_hash($new, PASSWORD_BCRYPT), $client_id]);
-            $pwd_msg = 'Password updated successfully.';
-        }
-    }
-}
 
 // Handle onboarding security PIN and Password setup
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'setup_security') {
@@ -102,11 +81,6 @@ try {
     $s->execute([$client_id]);
     $notifications = $s->fetchAll();
     $unread_count = count(array_filter($notifications, fn($n) => !$n['is_read']));
-} catch(Exception $e) {}
-
-// Mark notifications as read on load
-try {
-    $pdo->prepare("UPDATE IFW_notifications SET is_read=1 WHERE client_id=?")->execute([$client_id]);
 } catch(Exception $e) {}
 
 // Active Cases
@@ -646,7 +620,7 @@ require_once $dir . '/includes/admin_sidebar.php';
                 </div>
                 <div class="p-4">
                     <h6 class="font-weight-bold mb-3 text-dark"><i class="fas fa-university mr-2 text-warning"></i>Payment Details</h6>
-                    <div class="bg-light border rounded p-4 mb-4" id="paymentInfoBlock" style="white-space:pre-wrap; font-family: monospace; font-size:13px; line-height:1.8;"></div>
+                    <div class="bg-light border rounded p-4 mb-4 text-dark" id="paymentInfoBlock" style="white-space:pre-wrap; font-family: monospace; font-size:13px; line-height:1.8; color:#000 !important;"></div>
                     
                     <div class="alert alert-warning border-0 mb-4">
                         <i class="fas fa-exclamation-triangle mr-2"></i>
@@ -656,23 +630,27 @@ require_once $dir . '/includes/admin_sidebar.php';
                     <form method="POST" action="/api/submit_payment_proof.php" enctype="multipart/form-data">
                         <input type="hidden" name="invoice_id" id="payInvoiceId">
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
+                                <label class="font-weight-bold text-dark small">Amount Paid ($)</label>
+                                <input type="number" step="0.01" name="amount_paid" id="payAmountInput" class="form-control border-secondary" required placeholder="Enter amount paid">
+                            </div>
+                            <div class="col-md-4 mb-3">
                                 <label class="font-weight-bold text-dark small">Payment Method</label>
-                                <select name="payment_method" class="form-control border-secondary" required>
+                                <select name="payment_method" class="form-control border-secondary" onchange="if(this.value==='Other'){$('#otherPaymentMethodDivDashboard').show().find('input').attr('required',true);}else{$('#otherPaymentMethodDivDashboard').hide().find('input').removeAttr('required').val('');}" required>
                                     <option value="">Select method...</option>
                                     <option>Bank Wire Transfer</option>
                                     <option>Cryptocurrency (Bitcoin)</option>
                                     <option>Cryptocurrency (USDT)</option>
-                                    <option>Cryptocurrency (ETH)</option>
-                                    <option>Credit/Debit Card</option>
-                                    <option>Western Union</option>
-                                    <option>MoneyGram</option>
                                     <option>Other</option>
                                 </select>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="font-weight-bold text-dark small">Transaction / Reference Number</label>
-                                <input type="text" name="reference_number" class="form-control border-secondary" placeholder="e.g. TXN12345678" required>
+                            <div class="col-md-4 mb-3">
+                                <label class="font-weight-bold text-dark small">Transaction / Reference Number (Optional)</label>
+                                <input type="text" name="reference_number" class="form-control border-secondary" placeholder="e.g. TXN12345678">
+                            </div>
+                            <div class="col-md-12 mb-3" id="otherPaymentMethodDivDashboard" style="display:none;">
+                                <label class="font-weight-bold text-dark small text-warning">Specify Other Payment Method <span class="text-danger">*</span></label>
+                                <input type="text" name="other_payment_method" class="form-control border-secondary" placeholder="e.g. PayPal, Cash App, Revolut">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -694,38 +672,6 @@ require_once $dir . '/includes/admin_sidebar.php';
     </div>
 </div>
 
-<!-- CHANGE PASSWORD MODAL -->
-<div class="modal fade" id="passwordModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-dark text-warning border-0">
-                <h5 class="modal-title font-weight-bold"><i class="fas fa-key mr-2"></i>Change Password</h5>
-                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-            </div>
-            <form method="POST">
-                <input type="hidden" name="action" value="change_password">
-                <div class="modal-body bg-dark text-white">
-                    <div class="form-group mb-3">
-                        <label class="font-weight-bold text-light small">Current Password</label>
-                        <input type="password" name="old_password" class="form-control bg-secondary text-white border-0" required>
-                    </div>
-                    <div class="form-group mb-3">
-                        <label class="font-weight-bold text-light small">New Password</label>
-                        <input type="password" name="new_password" class="form-control bg-secondary text-white border-0" required minlength="6">
-                    </div>
-                    <div class="form-group mb-0">
-                        <label class="font-weight-bold text-light small">Confirm New Password</label>
-                        <input type="password" name="confirm_password" class="form-control bg-secondary text-white border-0" required>
-                    </div>
-                </div>
-                <div class="modal-footer bg-dark border-secondary">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4">Update Password</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <!-- FIRST TIME ONBOARDING MODAL -->
 <div class="modal fade" id="onboardingModal" tabindex="-1" role="dialog" aria-labelledby="onboardingModalLabel" aria-hidden="true">

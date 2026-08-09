@@ -20,7 +20,14 @@ $method     = trim($_POST['payment_method'] ?? '');
 $ref_number = trim($_POST['reference_number'] ?? '');
 $notes      = trim($_POST['notes'] ?? '');
 
-if ($invoice_id <= 0 || empty($method) || empty($ref_number) || $amount_paid <= 0) {
+if ($method === 'Other') {
+    $other = trim($_POST['other_payment_method'] ?? '');
+    if (!empty($other)) {
+        $method = 'Other: ' . $other;
+    }
+}
+
+if ($invoice_id <= 0 || empty($method) || $amount_paid <= 0) {
     header("Location: /client/dashboard.php?error=missing_fields"); exit;
 }
 
@@ -32,7 +39,7 @@ if (!$chk->fetch()) { header("Location: /client/dashboard.php?error=not_found");
 // Handle file upload
 $proof_path = null;
 if (!empty($_FILES['proof_file']['name'])) {
-    $upload_dir = $dir . '/uploads/payment_proofs/';
+    $upload_dir = is_dir($dir . '/public') ? $dir . '/public/uploads/payment_proofs/' : $dir . '/uploads/payment_proofs/';
     if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
     
     $ext = strtolower(pathinfo($_FILES['proof_file']['name'], PATHINFO_EXTENSION));

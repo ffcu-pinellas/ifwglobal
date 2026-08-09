@@ -35,6 +35,18 @@ if (!$invoice) {
     die('<p style="font-family:sans-serif;padding:20px;">Invoice not found.</p>');
 }
 
+$user_role = $_SESSION['admin_role'] ?? 'viewer';
+$admin_id = $_SESSION['admin_id'];
+
+if (!in_array($user_role, ['super_admin', 'superadmin', 'admin'])) {
+    // Verify client assignment
+    $check = $pdo->prepare("SELECT id FROM IFW_clients WHERE id = ? AND assigned_agent_id = ?");
+    $check->execute([$invoice['client_id'], $admin_id]);
+    if (!$check->fetch()) {
+        die('<p style="font-family:sans-serif;padding:20px;color:red;">Unauthorized to view this invoice.</p>');
+    }
+}
+
 $items = [];
 try {
     $stmtItems = $pdo->prepare("SELECT * FROM IFW_invoice_items WHERE invoice_id = ?");

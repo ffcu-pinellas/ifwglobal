@@ -5,9 +5,17 @@ require_once '../includes/functions.php';
 require_admin_login();
 
 $admin_id = $_SESSION['admin_id'];
+$is_agent = isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'agent';
+$is_staff = isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'staff';
 
 // Handle Actions (Approve, Reject, Update Fields)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if (in_array($_POST['action'], ['add_field', 'edit_field', 'delete_field', 'toggle_required'])) {
+        if ($is_agent || $is_staff) {
+            die("Unauthorized action.");
+        }
+    }
+
     if ($_POST['action'] === 'approve_kyc' || $_POST['action'] === 'reject_kyc') {
         $sub_id = (int)$_POST['submission_id'];
         $status = $_POST['action'] === 'approve_kyc' ? 'Approved' : 'Rejected';
@@ -88,7 +96,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 // Fetch submissions
 $submissions = [];
 try {
-    $submissions = $pdo->query("SELECT s.*, c.first_name, c.last_name, c.email FROM IFW_kyc_submissions s JOIN IFW_clients c ON s.client_id = c.id ORDER BY s.submitted_at DESC")->fetchAll();
+    if ($is_agent || $is_staff) {
+        $stmt = $pdo->prepare("SELECT s.*, c.first_name, c.last_name, c.email FROM IFW_kyc_submissions s JOIN IFW_clients c ON s.client_id = c.id WHERE c.assigned_agent_id = ? ORDER BY s.submitted_at DESC");
+        $stmt->execute([$admin_id]);
+        $submissions = $stmt->fetchAll();
+    } else {
+        $submissions = $pdo->query("SELECT s.*, c.first_name, c.last_name, c.email FROM IFW_kyc_submissions s JOIN IFW_clients c ON s.client_id = c.id ORDER BY s.submitted_at DESC")->fetchAll();
+    }
 } catch (Exception $e) {}
 
 // Fetch fields
@@ -106,9 +120,11 @@ require_once '../includes/admin_sidebar.php';
         <h3 class="text-warning font-weight-bold mb-1"><i class="fas fa-id-card mr-2"></i>KYC / Identity Verification</h3>
         <p class="text-muted mb-0">Review submitted client documents and configure dynamic form fields.</p>
     </div>
+    <?php if (!$is_agent && !$is_staff): ?>
     <button type="button" class="btn btn-outline-warning font-weight-bold" data-toggle="modal" data-target="#fieldsModal">
         <i class="fas fa-sliders-h mr-1"></i> Configure KYC Form Fields
     </button>
+    <?php endif; ?>
 </div>
 
 <?php if(isset($_GET['success'])): ?>

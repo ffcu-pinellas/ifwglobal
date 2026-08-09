@@ -164,15 +164,21 @@
                 $(this).parent().attr("validation", "true");
         });
 
-        $('.SumoSelect > .optWrapper > .options').overlayScrollbars({});
+        if ($.fn.overlayScrollbars) {
+            $('.SumoSelect > .optWrapper > .options').overlayScrollbars({});
+        }
 
-        $('.custom-ranger').bootstrapSlider({
-            formatter: function (value) {
-                return 'Current value: ' + value;
-            }
-        });
+        if ($.fn.bootstrapSlider) {
+            $('.custom-ranger').bootstrapSlider({
+                formatter: function (value) {
+                    return 'Current value: ' + value;
+                }
+            });
+        }
 
-        $('.custom-color').colorPicker();
+        if ($.fn.colorPicker) {
+            $('.custom-color').colorPicker();
+        }
 
         $('.wizard').each(function () {
             var parent = $('.wizard');
