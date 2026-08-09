@@ -6,8 +6,6 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-?>
-require_once '../config.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -30,11 +28,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $allowed = ['pdf', 'doc', 'docx', 'jpg', 'png'];
         
         if (in_array($ext, $allowed)) {
-            $dir = '../uploads/vault/';
-            if (!is_dir($dir)) mkdir($dir, 0777, true);
+            // Dynamically resolve target folder to support both public and root setups
+            $base_dir = $dir;
+            $target_dir = is_dir($base_dir . '/public') ? $base_dir . '/public/uploads/vault/' : $base_dir . '/uploads/vault/';
+            if (!is_dir($target_dir)) {
+                mkdir($target_dir, 0777, true);
+            }
             
             $filename = uniqid('vault_') . '.' . $ext;
-            if (move_uploaded_file($file['tmp_name'], $dir . $filename)) {
+            if (move_uploaded_file($file['tmp_name'], $target_dir . $filename)) {
                 $path = 'uploads/vault/' . $filename;
                 
                 $stmt = $pdo->prepare("INSERT INTO IFW_documents (client_id, file_name, file_path, document_type, requires_signature) VALUES (?, ?, ?, ?, ?)");

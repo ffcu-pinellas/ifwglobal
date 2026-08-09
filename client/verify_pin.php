@@ -1,4 +1,5 @@
 <?php
+// public/client/verify_pin.php
 $dir = __DIR__;
 while (!file_exists($dir . '/config.php')) {
     $dir = dirname($dir);
@@ -6,9 +7,6 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-// client/verify_pin.php
-require_once '../config.php';
-require_once '../includes/functions.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -59,42 +57,115 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 .footer__address, .footer__details, address, .contact-details { display: none !important; visibility: hidden !important; }
 </style>
 <?php endif; ?>
-<style id='gdpr-global-suppress'>#gdpr-cookie-consent-bar, #gdpr-cookie-consent-show-again, #cookie_action_settings, .gdpr_action_button, .gdpr-modal, .cli-modal, #cliModal, [id*='gdpr'], [class*='gdpr-cookie'], [class*='cli-'] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important; }</style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enter PIN - IFW Global</title>
+    
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <style>
-        body { background: #1f1b1c; color: #fff; height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .login-box { background: #fff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 100%; max-width: 400px; color: #000; }
-        .btn-warning { background-color: #fecc56; border: none; font-weight: bold; }
-        .btn-warning:hover { background-color: #eda701; }
+        body {
+            background-color: #0d0d0e;
+            background-image: radial-gradient(circle at 50% 30%, rgba(254, 204, 86, 0.08) 0%, rgba(13, 13, 14, 0.95) 70%);
+            color: #ffffff;
+            font-family: 'Montserrat', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .auth-card {
+            background-color: #171719;
+            border: 1px solid rgba(254, 204, 86, 0.15);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+        .brand-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .brand-logo h3 {
+            color: #fecc56;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #fecc56 0%, #f1b834 100%);
+            border: none;
+            color: #000000;
+            font-weight: 600;
+            padding: 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #f1b834 0%, #d89e20 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(254, 204, 86, 0.25);
+            color: #000000;
+        }
+        .form-control {
+            background-color: #212124;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .form-control:focus {
+            background-color: #26262a;
+            border-color: #fecc56;
+            color: #ffffff;
+            box-shadow: 0 0 0 0.25rem rgba(254, 204, 86, 0.15);
+        }
+        .text-warning-custom {
+            color: #fecc56;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .text-warning-custom:hover {
+            color: #f1b834;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
-<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
-<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
-    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
-</div>
-<?php endif; ?>
 
-
-<div class="login-box text-center">
-    <h3 class="mb-4"><i class="bi bi-shield-lock-fill text-warning"></i> Enter Security PIN</h3>
-    <p class="text-muted mb-4">Please enter your 4-digit security PIN to continue.</p>
+<div class="auth-card text-center">
+    <div class="brand-logo">
+        <h3><i class="fas fa-shield-alt"></i> IFW GLOBAL</h3>
+    </div>
+    
+    <div class="mb-4">
+        <h5 class="fw-bold">Security PIN Required</h5>
+        <p class="text-muted small">Please enter your 4-digit security PIN to unlock your portal.</p>
+    </div>
     
     <?php if ($error): ?>
-        <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+        <div class="alert alert-danger border-0 text-center py-2 mb-3" style="font-size: 0.9rem; background-color: rgba(220, 53, 69, 0.15); color: #ea868f;">
+            <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
+        </div>
     <?php endif; ?>
 
-    <form method="POST" action="">
+    <form method="POST">
         <div class="mb-4">
-            <input type="password" class="form-control form-control-lg text-center fw-bold" id="pin" name="pin" placeholder="****" required maxlength="4" autofocus>
+            <input type="password" class="form-control form-control-lg text-center fw-bold fs-3 letter-spacing-5" name="pin" placeholder="****" required maxlength="4" autofocus>
         </div>
-        <button type="submit" class="btn btn-warning w-100 py-2">Unlock Portal</button>
+        <button type="submit" class="btn btn-warning w-100 py-3 font-weight-bold text-dark"><i class="fas fa-lock-open me-2"></i>Unlock Portal</button>
     </form>
-    <div class="mt-3">
-        <small class="text-muted"><a href="login.php" class="text-decoration-none">Back to Login</a></small>
+    
+    <div class="mt-4">
+        <a href="login.php" class="text-warning-custom small"><i class="fas fa-arrow-left me-1"></i>Back to Login</a>
     </div>
 </div>
 

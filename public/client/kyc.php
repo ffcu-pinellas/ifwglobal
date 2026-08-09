@@ -31,8 +31,10 @@ try {
 // Handle submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $kyc_data = [];
-    $upload_dir = $dir . '/uploads/kyc/';
-    if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+    $upload_dir = is_dir($dir . '/public') ? $dir . '/public/uploads/kyc/' : $dir . '/uploads/kyc/';
+    if (!is_dir($upload_dir)) {
+        mkdir($upload_dir, 0755, true);
+    }
 
     foreach ($fields as $field) {
         $name = $field['field_name'];

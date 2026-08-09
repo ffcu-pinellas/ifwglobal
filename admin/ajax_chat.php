@@ -60,7 +60,13 @@ if ($action === 'fetch_messages') {
         }
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM IFW_chat_messages WHERE client_id = ? AND id > ? ORDER BY created_at ASC");
+    $stmt = $pdo->prepare("
+        SELECT m.*, u.username AS sender_name, u.role AS sender_role
+        FROM IFW_chat_messages m
+        LEFT JOIN IFW_users u ON m.sender_id = u.id AND m.sender_type = 'admin'
+        WHERE m.client_id = ? AND m.id > ?
+        ORDER BY m.created_at ASC
+    ");
     $stmt->execute([$client_id, $last_id]);
     $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -86,8 +92,9 @@ if ($action === 'fetch_messages') {
 if ($action === 'send') {
     $client_id = (int)($_POST['client_id'] ?? 0);
     $message = trim($_POST['message'] ?? '');
+    $has_file = isset($_FILES['chat_file']) && $_FILES['chat_file']['error'] === UPLOAD_ERR_OK;
     
-    if ($message === '' || !$client_id) {
+    if (($message === '' && !$has_file) || !$client_id) {
         echo json_encode(['status' => 'error', 'message' => 'Invalid data']);
         exit;
     }
@@ -102,8 +109,42 @@ if ($action === 'send') {
         }
     }
 
-    $stmt = $pdo->prepare("INSERT INTO IFW_chat_messages (client_id, sender_type, sender_id, message) VALUES (?, 'admin', ?, ?)");
-    if ($stmt->execute([$client_id, $admin_id, $message])) {
+    $attachment_path = null;
+    $attachment_name = null;
+    $attachment_size = 0;
+    
+    if ($has_file) {
+        $file = $_FILES['chat_file'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowed = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'zip'];
+        
+        if (in_array($ext, $allowed)) {
+            $base_dir = dirname(__DIR__);
+            $target_dir = is_dir($base_dir . '/public') ? $base_dir . '/public/uploads/chat/' : $base_dir . '/uploads/chat/';
+            if (!is_dir($target_dir)) {
+                mkdir($target_dir, 0777, true);
+            }
+            
+            $filename = uniqid('chat_') . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $file['name']);
+            if (move_uploaded_file($file['tmp_name'], $target_dir . $filename)) {
+                $attachment_path = 'uploads/chat/' . $filename;
+                $attachment_name = $file['name'];
+                $attachment_size = $file['size'];
+                if (empty($message)) {
+                    $message = "Shared a file: " . $file['name'];
+                }
+            }
+        }
+    }
+
+    $stmt = $pdo->prepare("INSERT INTO IFW_chat_messages (client_id, sender_type, sender_id, message, attachment_path, attachment_name, attachment_size) VALUES (?, 'admin', ?, ?, ?, ?, ?)");
+    if ($stmt->execute([$client_id, $admin_id, $message, $attachment_path, $attachment_name, $attachment_size])) {
+        // Also insert a notification for client
+        try {
+            $stmt_notif = $pdo->prepare("INSERT INTO IFW_notifications (client_id, type, title, body, icon, link) VALUES (?, 'message', 'New Message from Support', ?, 'chat', '/client/chat.php')");
+            $stmt_notif->execute([$client_id, substr($message, 0, 100)]);
+        } catch(Exception $e) {}
+
         echo json_encode(['status' => 'success', 'inserted_id' => $pdo->lastInsertId()]);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Database error']);

@@ -53,6 +53,13 @@ if ($selected_id) {
             $timeline = $s->fetchAll();
         } catch(Exception $e) {}
         try {
+            $s = $pdo->prepare("SELECT * FROM IFW_documents WHERE client_id=? ORDER BY uploaded_at DESC");
+            $s->execute([$client_id]);
+            $vault_docs = $s->fetchAll();
+        } catch(Exception $e) {
+            $vault_docs = [];
+        }
+        try {
             $s = $pdo->prepare("SELECT * FROM IFW_case_ratings WHERE case_id=? AND client_id=?");
             $s->execute([$selected_id, $client_id]);
             $case_rating = $s->fetch();
@@ -66,8 +73,11 @@ require_once $dir . '/includes/admin_sidebar.php';
 ?>
 
 <style>
-.case-sidebar-item { cursor:pointer; border-left:3px solid transparent; transition:all .2s; }
-.case-sidebar-item:hover, .case-sidebar-item.active { border-left-color:#fecc56; background:#fffbf0; }
+.case-sidebar-item { cursor:pointer; border-left:3px solid transparent; transition:all .2s; color: #eee !important; }
+.case-sidebar-item:hover, .case-sidebar-item.active { border-left-color:#fecc56; background: rgba(254, 204, 86, 0.12); color: #fff !important; }
+.case-sidebar-item .text-dark { color: #fff !important; }
+.case-sidebar-item.active .text-dark { color: #fecc56 !important; }
+.case-sidebar-item .text-muted { color: #bbb !important; }
 .timeline { position:relative; padding-left:30px; }
 .timeline::before { content:''; position:absolute; left:10px; top:0; bottom:0; width:2px; background:linear-gradient(to bottom,#fecc56,#e0e0e0); }
 .timeline-item { position:relative; margin-bottom:24px; }
@@ -210,7 +220,7 @@ require_once $dir . '/includes/admin_sidebar.php';
 
         <!-- PROGRESS TIMELINE -->
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white border-bottom font-weight-bold py-3">
+            <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning">
                 <i class="fas fa-stream text-warning mr-2"></i>Investigation Timeline & Progress
             </div>
             <div class="card-body py-4">
@@ -224,17 +234,17 @@ require_once $dir . '/includes/admin_sidebar.php';
                         <?php foreach($timeline as $t): ?>
                         <div class="timeline-item">
                             <div class="timeline-dot <?= htmlspecialchars($t['status_color'] ?? 'warning') ?>"></div>
-                            <div class="card border-0 bg-light shadow-sm">
+                            <div class="card border-0 shadow-sm" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1) !important;">
                                 <div class="card-body py-3 px-4">
                                     <div class="d-flex justify-content-between align-items-start mb-1">
-                                        <h6 class="font-weight-bold mb-0 text-dark"><?= htmlspecialchars($t['milestone_title']) ?></h6>
-                                        <small class="text-muted ml-2 text-nowrap"><?= $t['milestone_date'] ? date('M j, Y', strtotime($t['milestone_date'])) : date('M j, Y', strtotime($t['created_at'])) ?></small>
+                                        <h6 class="font-weight-bold mb-0" style="color: #fecc56 !important;"><?= htmlspecialchars($t['milestone_title']) ?></h6>
+                                        <small class="text-muted ml-2 text-nowrap" style="color: #bbb !important;"><?= $t['milestone_date'] ? date('M j, Y', strtotime($t['milestone_date'])) : date('M j, Y', strtotime($t['created_at'])) ?></small>
                                     </div>
                                     <?php if (!empty($t['milestone_body'])): ?>
-                                        <p class="text-muted mb-0 small"><?= nl2br(htmlspecialchars($t['milestone_body'])) ?></p>
+                                        <p class="mb-0 small" style="color: #ddd !important;"><?= nl2br(htmlspecialchars($t['milestone_body'])) ?></p>
                                     <?php endif; ?>
                                     <?php if (!empty($t['added_by_name'])): ?>
-                                        <small class="text-muted d-block mt-2" style="font-size:10px;"><i class="fas fa-user-shield mr-1"></i><?= htmlspecialchars($t['added_by_name']) ?></small>
+                                        <small class="text-muted d-block mt-2" style="font-size:10px; color: #aaa !important;"><i class="fas fa-user-shield mr-1"></i><?= htmlspecialchars($t['added_by_name']) ?></small>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -243,7 +253,7 @@ require_once $dir . '/includes/admin_sidebar.php';
                         <!-- Current Status -->
                         <div class="timeline-item">
                             <div class="timeline-dot warning" style="animation: pulse 2s infinite;"></div>
-                            <div class="card border-warning bg-light shadow-sm">
+                            <div class="card border-warning shadow-sm" style="background: rgba(254, 204, 86, 0.08); border: 1px solid #fecc56 !important;">
                                 <div class="card-body py-2 px-4">
                                     <span class="text-warning font-weight-bold small"><i class="fas fa-circle mr-1"></i>Current Status: <?= htmlspecialchars(ucwords($active_case['status'] ?? 'Pending')) ?></span>
                                 </div>
@@ -254,10 +264,171 @@ require_once $dir . '/includes/admin_sidebar.php';
             </div>
         </div>
 
+        <!-- DOCUMENT VAULT & SECURE E-SIGNATURES -->
+        <div class="card shadow-sm border-0 mb-4 bg-dark text-white border-warning">
+            <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-folder-open mr-2"></i>Document Vault & e-Signatures</span>
+                <span class="badge badge-warning text-dark font-weight-bold"><?= count($vault_docs) ?> Files</span>
+            </div>
+            <div class="card-body">
+                <?php if (empty($vault_docs)): ?>
+                    <div class="text-center py-4">
+                        <i class="fas fa-file-pdf fa-3x text-muted mb-3 d-block"></i>
+                        <p class="text-muted small">No documents uploaded yet. Your investigator will upload agreements, NDAs, and reports here.</p>
+                    </div>
+                <?php else: ?>
+                    <p class="text-light small mb-3">Below are the files assigned to your profile. Documents requiring cryptographic signature can be e-signed immediately with your 4-digit security PIN.</p>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover table-striped mb-0" style="background:#111; font-size:13px;">
+                            <thead>
+                                <tr class="text-warning">
+                                    <th>File Name</th>
+                                    <th>Type</th>
+                                    <th>Verification Status</th>
+                                    <th class="text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach($vault_docs as $doc): ?>
+                                    <tr>
+                                        <td class="align-middle">
+                                            <?php if (!empty($doc['document_body'])): ?>
+                                                <a href="view_document.php?id=<?= $doc['id'] ?>" target="_blank" class="text-warning font-weight-bold text-decoration-none">
+                                                    <i class="fas fa-file-alt mr-1"></i> <?= htmlspecialchars($doc['file_name']) ?>
+                                                </a>
+                                            <?php else: ?>
+                                                <a href="<?= BASE_URL . '/' . htmlspecialchars($doc['file_path']) ?>" target="_blank" class="text-warning font-weight-bold text-decoration-none">
+                                                    <i class="fas fa-file-download mr-1"></i> <?= htmlspecialchars($doc['file_name']) ?>
+                                                </a>
+                                            <?php endif; ?>
+                                            <br><small class="text-muted"><?= date('M j, Y H:i', strtotime($doc['uploaded_at'])) ?></small>
+                                        </td>
+                                        <td class="align-middle">
+                                            <span class="badge badge-secondary"><?= htmlspecialchars($doc['document_type']) ?></span>
+                                        </td>
+                                        <td class="align-middle">
+                                            <?php if ($doc['requires_signature']): ?>
+                                                <?php if ($doc['is_signed']): ?>
+                                                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Cryptographically Signed</span>
+                                                <?php else: ?>
+                                                    <span class="badge badge-warning text-dark px-2 py-1"><i class="fas fa-signature mr-1"></i> Pending Signature</span>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <span class="badge badge-info px-2 py-1"><i class="fas fa-eye mr-1"></i> Reference Only</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="align-middle text-right">
+                                            <?php if (!empty($doc['document_body'])): ?>
+                                                <a href="view_document.php?id=<?= $doc['id'] ?>" target="_blank" class="btn btn-xs btn-outline-warning mr-1" title="View Document">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            <?php else: ?>
+                                                <a href="<?= BASE_URL . '/' . htmlspecialchars($doc['file_path']) ?>" target="_blank" class="btn btn-xs btn-outline-warning mr-1" title="Download">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                            <?php endif; ?>
+                                            <?php if ($doc['requires_signature'] && !$doc['is_signed']): ?>
+                                                <button type="button" class="btn btn-xs btn-warning text-dark font-weight-bold" onclick="openSigningModal(<?= $doc['id'] ?>, '<?= htmlspecialchars(addslashes($doc['file_name'])) ?>')">
+                                                    <i class="fas fa-pen mr-1"></i> Sign
+                                                </button>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Cryptographic Signing Modal -->
+        <div class="modal fade" id="signingModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content bg-dark text-white border-warning">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-warning font-weight-bold"><i class="fas fa-file-signature mr-2"></i>Secure e-Signature</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="signingForm">
+                        <div class="modal-body">
+                            <input type="hidden" name="document_id" id="signingDocId">
+                            <p class="small text-muted">You are signing: <strong class="text-light" id="signingDocName"></strong></p>
+                            
+                            <div class="form-group mb-3">
+                                <label class="font-weight-bold text-light small d-block">Enter 4-Digit Security PIN</label>
+                                <input type="password" name="pin" id="signingPin" class="form-control bg-black text-warning border-secondary text-center font-weight-bold font-large" maxlength="4" placeholder="Enter PIN" required pattern="\d{4}">
+                                <small class="text-muted mt-1 d-block" style="font-size:10px;">If you have not set a PIN yet, enter any 4-digit code to configure and save it as your security PIN.</small>
+                            </div>
+                            
+                            <div id="signingError" class="alert alert-danger py-2 small" style="display:none;"></div>
+                            <div id="signingSuccess" class="alert alert-success py-2 small" style="display:none;"></div>
+                        </div>
+                        <div class="modal-footer border-secondary">
+                            <button type="button" class="btn btn-secondary font-weight-bold btn-sm" data-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-warning font-weight-bold text-dark btn-sm"><i class="fas fa-check-double mr-1"></i>Sign Document</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        function openSigningModal(docId, docName) {
+            document.getElementById('signingDocId').value = docId;
+            document.getElementById('signingDocName').innerText = docName;
+            document.getElementById('signingPin').value = '';
+            document.getElementById('signingError').style.display = 'none';
+            document.getElementById('signingSuccess').style.display = 'none';
+            $('#signingModal').modal('show');
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById('signingForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const docId = document.getElementById('signingDocId').value;
+                const pin = document.getElementById('signingPin').value;
+                const errDiv = document.getElementById('signingError');
+                const succDiv = document.getElementById('signingSuccess');
+                
+                errDiv.style.display = 'none';
+                succDiv.style.display = 'none';
+                
+                const formData = new FormData();
+                formData.append('document_id', docId);
+                formData.append('pin', pin);
+                
+                fetch('/api/sign_document.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        succDiv.innerText = data.message;
+                        succDiv.style.display = 'block';
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        errDiv.innerText = data.message;
+                        errDiv.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    errDiv.innerText = 'An error occurred. Please try again.';
+                    errDiv.style.display = 'block';
+                });
+            });
+        });
+        </script>
+
         <!-- SATISFACTION RATING (if resolved/closed) -->
         <?php if (in_array(strtolower($active_case['status'] ?? ''), ['resolved','closed','completed'])): ?>
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white border-bottom font-weight-bold py-3">
+            <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning">
                 <i class="fas fa-star text-warning mr-2"></i>Rate Your Experience
             </div>
             <div class="card-body text-center py-4">

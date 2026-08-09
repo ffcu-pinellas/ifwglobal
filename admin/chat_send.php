@@ -39,8 +39,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     if ($client_id > 0 && (!empty($message) || $attachment_path)) {
-        $stmt = $pdo->prepare("INSERT INTO IFW_messages (client_id, sender, message_text, attachment_path) VALUES (?, 'admin', ?, ?)");
-        if ($stmt->execute([$client_id, $message, $attachment_path])) {
+        $admin_id = $_SESSION['admin_id'] ?? null;
+        $stmt = $pdo->prepare("INSERT INTO IFW_messages (client_id, sender, admin_id, message_text, attachment_path) VALUES (?, 'admin', ?, ?, ?)");
+        if ($stmt->execute([$client_id, $admin_id, $message, $attachment_path])) {
             
             // Check if client is online
             $stmt = $pdo->prepare("SELECT is_online, last_ping FROM IFW_chat_status WHERE user_type = 'client' AND user_id = ?");

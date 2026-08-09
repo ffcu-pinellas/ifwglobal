@@ -1,5 +1,5 @@
 <?php
-// public/client/chat.php
+// client/chat.php
 $dir = __DIR__;
 while (!file_exists($dir . '/config.php')) {
     $dir = dirname($dir);
@@ -23,35 +23,6 @@ $_SESSION['role'] = 'client';
 
 $chat_provider = isset($pdo) ? get_setting($pdo, 'chat_provider', 'internal') : 'internal';
 $tawk_property = isset($pdo) ? get_setting($pdo, 'tawkto_property_id', '') : '';
-
-// Handle Client Message Post (only for internal chat)
-if ($chat_provider === 'internal' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'send_message') {
-    $message = trim($_POST['message']);
-    if (!empty($message)) {
-        try {
-            $stmt = $pdo->prepare("INSERT INTO IFW_messages (client_id, sender, message_text) VALUES (?, 'client', ?)");
-            $stmt->execute([$client_id, $message]);
-            
-            // Mark all admin messages as read when client sends a reply
-            $pdo->prepare("UPDATE IFW_chat_messages SET is_read = 1 WHERE client_id = ? AND sender_type = 'admin'")->execute([$client_id]);
-        } catch (Exception $e) {}
-    }
-    header("Location: chat.php");
-    exit;
-}
-
-// Fetch Messages for internal chat
-$messages = [];
-if ($chat_provider === 'internal') {
-    try {
-        $stmt = $pdo->prepare("SELECT sender, message_text, attachment_path, created_at, is_read FROM IFW_messages WHERE client_id = ? ORDER BY created_at ASC");
-        $stmt->execute([$client_id]);
-        $messages = $stmt->fetchAll();
-        
-        // Mark admin messages as read upon viewing
-        $pdo->prepare("UPDATE IFW_chat_messages SET is_read = 1 WHERE client_id = ? AND sender_type = 'admin'")->execute([$client_id]);
-    } catch (Exception $e) {}
-}
 
 require_once $dir . '/includes/admin_header.php';
 require_once $dir . '/includes/admin_sidebar.php';
@@ -84,32 +55,23 @@ require_once $dir . '/includes/admin_sidebar.php';
                     <span><i class="fas fa-user-shield mr-2"></i>Internal Case Messaging Desk</span>
                     <span class="badge badge-success px-3 py-1"><i class="fas fa-lock mr-1"></i>256-Bit Encrypted</span>
                 </div>
-                <div class="card-body bg-dark text-white p-3 d-flex flex-column" style="min-height: 480px;">
-                    <div id="chatMessages" class="flex-grow-1 p-3 mb-3 border border-secondary rounded style-scroll-dark" style="height: 380px; overflow-y: auto; background-color: #121212;">
-                        <?php if (empty($messages)): ?>
-                            <div class="text-center text-muted py-5">
-                                <i class="fas fa-user-shield text-warning mb-3" style="font-size: 3.5rem;"></i>
-                                <h5>Connected to Recovery Team</h5>
-                                <p>Type your message below to send a direct update to your assigned case investigator.</p>
-                            </div>
-                        <?php else: ?>
-                            <?php foreach ($messages as $m): ?>
-                                <?php $isClient = ($m['sender'] === 'client'); ?>
-                                <div class="mb-3 d-flex flex-column <?= $isClient ? 'align-items-end' : 'align-items-start' ?>">
-                                    <div class="p-3 rounded shadow-sm <?= $isClient ? 'bg-warning text-dark font-weight-bold' : 'bg-secondary text-white' ?>" style="max-width: 80%; border-radius: 12px !important;">
-                                        <?= nl2br(htmlspecialchars($m['message_text'])) ?>
-                                    </div>
-                                    <small class="text-muted mt-1 px-1" style="font-size: 10px;">
-                                        <i class="fas fa-clock mr-1"></i><?= date('M j, g:i a', strtotime($m['created_at'])) ?> &bull; <strong><?= $isClient ? 'You' : 'Investigator' ?></strong>
-                                    </small>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                <div class="card-body bg-dark text-white p-3 d-flex flex-column" style="min-height: 520px;">
+                    <!-- Message Area -->
+                    <div id="chat-messages" class="flex-grow-1 p-3 mb-3 border border-secondary rounded overflow-auto d-flex flex-column" style="height: 380px; background-color: #0d0d0e; gap: 15px;">
+                        <div class="text-center p-4 text-muted"><i class="fas fa-spinner fa-spin text-warning"></i> Loading Secure Messaging Portal...</div>
                     </div>
 
-                    <form method="POST" class="d-flex align-items-center gap-2">
-                        <input type="hidden" name="action" value="send_message">
-                        <input type="text" name="message" class="form-control bg-dark text-white border-secondary p-3 mr-2" placeholder="Type your message to your case investigator..." required style="height: 48px;">
+                    <!-- Selected File Preview -->
+                    <div id="selected-file-preview" class="text-warning small mb-2 d-none" style="font-weight: 500;">
+                        <i class="fas fa-paperclip mr-1"></i> <span class="file-name"></span> 
+                        <a href="#" class="text-danger ml-2" onclick="clearSelectedFile(event)">&times; Remove Attachment</a>
+                    </div>
+
+                    <!-- Input Form -->
+                    <form id="chat-form" class="d-flex align-items-center" style="gap: 10px;" enctype="multipart/form-data">
+                        <input type="file" id="chat-file-input" name="chat_file" style="display:none;" onchange="handleChatFileSelect(this)">
+                        <button type="button" class="btn btn-outline-warning text-warning px-3" style="height: 48px;" onclick="document.getElementById('chat-file-input').click()" title="Share File/Document"><i class="fas fa-paperclip"></i></button>
+                        <input type="text" id="chat-input" class="form-control bg-dark text-white border-secondary p-3" placeholder="Type a secure message..." autocomplete="off" required style="height: 48px;">
                         <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4 shadow" style="height: 48px;">
                             <i class="fas fa-paper-plane mr-1"></i> Send
                         </button>
@@ -117,6 +79,155 @@ require_once $dir . '/includes/admin_sidebar.php';
                 </div>
             </div>
         </div>
+
+        <style>
+        .msg-bubble {
+            max-width: 70%; padding: 12px 18px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; position: relative;
+        }
+        .msg-client {
+            background: #fecc56; color: #000; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 500;
+        }
+        .msg-admin {
+            background: #222; color: #eee; align-self: flex-start; border-bottom-left-radius: 4px;
+        }
+        .msg-time { font-size: 0.7rem; margin-top: 5px; opacity: 0.7; text-align: right; }
+        .msg-client .msg-time { text-align: right; }
+        .msg-admin .msg-time { text-align: left; }
+        </style>
+
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let lastMsgId = 0;
+            let pollingInterval = null;
+
+            const elChatMessages = document.getElementById('chat-messages');
+            const elChatForm = document.getElementById('chat-form');
+            const elChatInput = document.getElementById('chat-input');
+
+            function fetchMessages(scrollDown = false) {
+                fetch(`ajax_chat.php?action=fetch&last_id=${lastMsgId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success' && data.messages.length > 0) {
+                        if (lastMsgId === 0) elChatMessages.innerHTML = '';
+
+                        let isScrolledToBottom = elChatMessages.scrollHeight - elChatMessages.clientHeight <= elChatMessages.scrollTop + 10;
+
+                        data.messages.forEach(m => {
+                            let div = document.createElement('div');
+                            let time = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                            div.className = 'msg-bubble ' + (m.sender_type === 'client' ? 'msg-client' : 'msg-admin');
+
+                            let senderLabel = "";
+                            if (m.sender_type === 'admin') {
+                                senderLabel = `<div class="msg-sender-name text-muted small mb-1" style="font-size: 10px; font-weight: bold; color: #fecc56 !important;"><i class="fas fa-user-shield mr-1"></i>${m.sender_name || 'Staff Member'} (${m.sender_role || 'Agent'})</div>`;
+                            } else {
+                                senderLabel = `<div class="msg-sender-name text-muted small mb-1" style="font-size: 10px; font-weight: bold; color: #17a2b8 !important;"><i class="fas fa-user-circle mr-1"></i>You</div>`;
+                            }
+
+                            let attachmentMarkup = "";
+                            if (m.attachment_path) {
+                                let filename = m.attachment_name || "Attachment";
+                                let fileicon = "fa-file";
+                                let ext = filename.split('.').pop().toLowerCase();
+                                if (['jpg','jpeg','png','gif'].includes(ext)) fileicon = "fa-file-image text-info";
+                                else if (ext === 'pdf') fileicon = "fa-file-pdf text-danger";
+                                else if (['doc','docx'].includes(ext)) fileicon = "fa-file-word text-primary";
+                                else if (ext === 'zip') fileicon = "fa-file-archive text-warning";
+                                
+                                attachmentMarkup = `
+                                    <div class="chat-attachment border border-secondary rounded p-2 bg-dark mt-2 d-flex align-items-center justify-content-between" style="min-width: 200px;">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas ${fileicon} fa-2x mr-2"></i>
+                                            <div class="text-left">
+                                                <span class="small font-weight-bold d-block text-white" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${filename}</span>
+                                                <span class="text-muted" style="font-size:9px;">${(m.attachment_size / 1024).toFixed(1)} KB</span>
+                                            </div>
+                                        </div>
+                                        <a href="../${m.attachment_path}" target="_blank" class="btn btn-sm btn-warning text-dark ml-2" download><i class="fas fa-download"></i></a>
+                                    </div>
+                                `;
+                            }
+
+                            div.innerHTML = `
+                                ${senderLabel}
+                                <div>${m.message.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>
+                                ${attachmentMarkup}
+                                <div class="msg-time">${time}</div>
+                            `;
+                            elChatMessages.appendChild(div);
+                            lastMsgId = m.id;
+                        });
+
+                        if (scrollDown || isScrolledToBottom) {
+                            elChatMessages.scrollTop = elChatMessages.scrollHeight;
+                        }
+                    } else if (data.status === 'success' && lastMsgId === 0) {
+                        elChatMessages.innerHTML = `
+                            <div class="text-center text-muted py-5 my-auto">
+                                <i class="fas fa-user-shield text-warning mb-3" style="font-size: 3.5rem;"></i>
+                                <h5>Connected to Recovery Team</h5>
+                                <p>Type your message below to send a direct update to your assigned case investigator.</p>
+                            </div>
+                        `;
+                    }
+                });
+            }
+
+            elChatForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                let msg = elChatInput.value.trim();
+                let fileInput = document.getElementById('chat-file-input');
+                let hasFile = fileInput && fileInput.files.length > 0;
+                
+                if (!msg && !hasFile) return;
+
+                let formData = new FormData();
+                formData.append('action', 'send');
+                formData.append('message', msg);
+                if (hasFile) {
+                    formData.append('chat_file', fileInput.files[0]);
+                }
+
+                elChatInput.value = '';
+                if (fileInput) fileInput.value = '';
+                document.getElementById('selected-file-preview').classList.add('d-none');
+                elChatInput.setAttribute('required', 'required');
+
+                fetch('ajax_chat.php', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        fetchMessages(true);
+                    }
+                });
+            });
+
+            window.handleChatFileSelect = function(input) {
+                let preview = document.getElementById('selected-file-preview');
+                let nameSpan = preview.querySelector('.file-name');
+                if (input.files && input.files[0]) {
+                    nameSpan.textContent = input.files[0].name;
+                    preview.classList.remove('d-none');
+                    elChatInput.removeAttribute('required');
+                } else {
+                    preview.classList.add('d-none');
+                    elChatInput.setAttribute('required', 'required');
+                }
+            };
+
+            window.clearSelectedFile = function(e) {
+                if (e) e.preventDefault();
+                let input = document.getElementById('chat-file-input');
+                if (input) input.value = '';
+                document.getElementById('selected-file-preview').classList.add('d-none');
+                elChatInput.setAttribute('required', 'required');
+            };
+
+            fetchMessages(true);
+            pollingInterval = setInterval(() => fetchMessages(false), 3000);
+        });
+        </script>
 
     <?php elseif ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
         <!-- TAWK.TO DIRECT EMBED -->
@@ -195,15 +306,5 @@ require_once $dir . '/includes/admin_sidebar.php';
         </div>
     <?php endif; ?>
 </div>
-
-<script>
-// Auto scroll to bottom of chat if internal chat
-document.addEventListener("DOMContentLoaded", function() {
-    var chatBox = document.getElementById("chatMessages");
-    if (chatBox) {
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-});
-</script>
 
 <?php require_once $dir . '/includes/admin_footer.php'; ?>

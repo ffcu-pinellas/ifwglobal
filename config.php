@@ -31,6 +31,33 @@ try {
     die("Database Connection failed: " . $e->getMessage());
 }
 
+// Self-healing database check
+try {
+    $pdo->query("SELECT country FROM IFW_clients LIMIT 1");
+} catch (PDOException $e) {
+    try { $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN country VARCHAR(100) NULL AFTER phone"); } catch (Exception $ex) {}
+}
+try {
+    $pdo->query("SELECT attachment_path FROM IFW_chat_messages LIMIT 1");
+} catch (PDOException $e) {
+    try {
+        $pdo->exec("ALTER TABLE IFW_chat_messages ADD COLUMN attachment_path VARCHAR(500) NULL AFTER message");
+        $pdo->exec("ALTER TABLE IFW_chat_messages ADD COLUMN attachment_name VARCHAR(255) NULL AFTER attachment_path");
+        $pdo->exec("ALTER TABLE IFW_chat_messages ADD COLUMN attachment_size INT DEFAULT 0 AFTER attachment_name");
+        $pdo->exec("ALTER TABLE IFW_chat_messages ADD COLUMN email_notified TINYINT(1) DEFAULT 0");
+    } catch (Exception $ex) {}
+}
+try {
+    $pdo->query("SELECT admin_id FROM IFW_messages LIMIT 1");
+} catch (PDOException $e) {
+    try { $pdo->exec("ALTER TABLE IFW_messages ADD COLUMN admin_id INT NULL AFTER sender"); } catch (Exception $ex) {}
+}
+try {
+    $pdo->query("SELECT late_fee_is_percentage FROM IFW_invoices LIMIT 1");
+} catch (PDOException $e) {
+    try { $pdo->exec("ALTER TABLE IFW_invoices ADD COLUMN late_fee_is_percentage TINYINT(1) DEFAULT 0 AFTER late_fee_amount"); } catch (Exception $ex) {}
+}
+
 // Base URL configuration (dynamic for Hostinger)
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
 $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';

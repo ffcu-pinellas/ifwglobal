@@ -151,9 +151,9 @@ $success_msg = $pdo->query("SELECT setting_value FROM IFW_form_settings WHERE se
                                                                 <label class="font-weight-bold text-light">Display Order</label>
                                                                 <input type="number" name="display_order" class="form-control bg-secondary text-white border-0" value="<?= $f['display_order'] ?>">
                                                             </div>
-                                                            <div class="form-check mb-3">
-                                                                <input class="form-check-input" type="checkbox" name="is_required" value="1" id="reqCheckEdit<?= $f['id'] ?>" <?= $f['is_required'] ? 'checked' : '' ?>>
-                                                                <label class="form-check-label text-light font-weight-bold" for="reqCheckEdit<?= $f['id'] ?>">Mandatory Field</label>
+                                                            <div class="mb-3 d-flex align-items-center" style="gap: 8px;">
+                                                                <input type="checkbox" name="is_required" value="1" id="reqCheckEdit<?= $f['id'] ?>" <?= $f['is_required'] ? 'checked' : '' ?> style="width: 18px; height: 18px; cursor: pointer; accent-color: #fecc56;">
+                                                                <label class="text-light font-weight-bold mb-0" for="reqCheckEdit<?= $f['id'] ?>" style="cursor: pointer;">Mandatory Field</label>
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer border-secondary">
@@ -209,9 +209,9 @@ $success_msg = $pdo->query("SELECT setting_value FROM IFW_form_settings WHERE se
                         <label class="font-weight-bold text-light">Display Order</label>
                         <input type="number" name="display_order" class="form-control bg-secondary text-white border-0" value="<?= count($fields) + 1 ?>">
                     </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" name="is_required" value="1" id="reqCheck" checked>
-                        <label class="form-check-label text-light font-weight-bold" for="reqCheck">Mandatory Field</label>
+                    <div class="mb-3 d-flex align-items-center" style="gap: 8px;">
+                        <input type="checkbox" name="is_required" value="1" id="reqCheck" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: #fecc56;">
+                        <label class="text-light font-weight-bold mb-0" for="reqCheck" style="cursor: pointer;">Mandatory Field</label>
                     </div>
                     <button type="submit" class="btn btn-warning font-weight-bold text-dark w-100">Add Field</button>
                 </form>

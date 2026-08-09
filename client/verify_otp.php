@@ -1,4 +1,5 @@
 <?php
+// public/client/verify_otp.php
 $dir = __DIR__;
 while (!file_exists($dir . '/config.php')) {
     $dir = dirname($dir);
@@ -6,9 +7,7 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-// client/verify_otp.php
-require_once '../config.php';
-require_once '../includes/functions.php';
+require_once $dir . '/includes/mailer.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -22,39 +21,36 @@ if (!isset($_SESSION['pending_client_id'])) {
 $error = '';
 $success = '';
 
-// Handle Resend Code
-if (isset($_GET['resend']) && $_GET['resend'] === '1') {
-    $otp = rand(100000, 999999);
-    $_SESSION['otp_code'] = $otp;
+// Handle Resend Request
+if (isset($_GET['action']) && $_GET['action'] === 'resend') {
+    $new_otp = rand(100000, 999999);
+    $_SESSION['otp_code'] = $new_otp;
     $_SESSION['otp_time'] = time();
-
-    require_once '../includes/mailer.php';
-    $to = $_SESSION['pending_client_email'];
+    
+    $email = $_SESSION['pending_client_email'];
     $name = $_SESSION['pending_client_name'];
-    $html = "<h2 style='color:#1f1b1c;'>IFW Global — New Verification Code</h2>
-             <p>Hello <strong>$name</strong>,</p>
-             <p>You requested a new verification code. Your new code is:</p>
-             <div style='background:#fecc56;padding:20px;text-align:center;border-radius:8px;margin:20px 0;'>
-                 <span style='font-size:2.5rem;font-weight:900;letter-spacing:12px;color:#000;'>$otp</span>
-             </div>
-             <p style='color:#888;font-size:12px;'>This code expires in 10 minutes. If you did not request this, please ignore this email.</p>";
-    send_html_email($to, "Your New IFW Global Verification Code", $html);
-    $success = "A new verification code has been sent to your email.";
+    
+    $subject = "Your New IFW Portal Verification Code";
+    $body = "Your new 6-digit verification code is: {$new_otp}\nThis code will expire in 10 minutes.";
+    
+    @send_html_email($email, $subject, "<h2>IFW Global Security Verification</h2><p>Hello {$name},</p><p>Your new 6-digit login verification code is: <strong style='font-size: 1.5rem; color: #0b2e59;'>{$new_otp}</strong></p><p>This code will expire in 10 minutes.</p>");
+    $success = "A new 6-digit verification code has been dispatched to your email.";
 }
 
+// Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $entered_otp = trim($_POST['otp'] ?? '');
 
     if (empty($entered_otp)) {
-        $error = "Please enter the 6-digit verification code sent to your email.";
-    } elseif (time() - ($_SESSION['otp_time'] ?? 0) > 600) {
-        $error = "Your code has expired. Please <a href='?resend=1' class='text-warning'>request a new code</a>.";
+        $error = "Please enter the 6-digit verification code.";
+    } elseif (time() - $_SESSION['otp_time'] > 600) {
+        $error = "The verification code has expired. Please request a new code below.";
     } elseif ($entered_otp == $_SESSION['otp_code']) {
-        // OTP is correct — check for PIN
+        // OTP is correct
         $stmt = $pdo->prepare("SELECT pin_hash FROM IFW_clients WHERE id = ?");
         $stmt->execute([$_SESSION['pending_client_id']]);
         $client = $stmt->fetch();
-
+        
         if (!empty($client['pin_hash'])) {
             header("Location: verify_pin.php");
             exit;
@@ -62,24 +58,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['client_logged_in'] = true;
             $_SESSION['client_portal_id'] = $_SESSION['pending_client_id'];
             $_SESSION['client_name'] = $_SESSION['pending_client_name'];
-            unset($_SESSION['pending_client_id'], $_SESSION['pending_client_email'], $_SESSION['pending_client_name'], $_SESSION['otp_code'], $_SESSION['otp_time']);
+            
+            unset($_SESSION['pending_client_id']);
+            unset($_SESSION['pending_client_email']);
+            unset($_SESSION['pending_client_name']);
+            unset($_SESSION['otp_code']);
+            unset($_SESSION['otp_time']);
+            
             header("Location: dashboard.php");
             exit;
         }
     } else {
-        $error = "Invalid code. Please check your email and try again.";
+        $error = "Invalid verification code. Please check your email and try again.";
     }
 }
-
-$masked_email = '';
-if (isset($_SESSION['pending_client_email'])) {
-    $e = $_SESSION['pending_client_email'];
-    $parts = explode('@', $e);
-    $masked_email = substr($parts[0], 0, 3) . str_repeat('*', max(strlen($parts[0]) - 3, 3)) . '@' . ($parts[1] ?? '');
-}
-
-$otp_age_seconds = isset($_SESSION['otp_time']) ? (time() - $_SESSION['otp_time']) : 0;
-$remaining = max(0, 600 - $otp_age_seconds);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -92,309 +84,124 @@ $remaining = max(0, 600 - $otp_age_seconds);
 <?php endif; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Verification — IFW Global Client Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Two-Factor Authentication - IFW Global Client Portal</title>
+    
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background: #0d0d0e;
-            background-image: radial-gradient(circle at 50% 20%, rgba(254,204,86,0.07) 0%, transparent 70%);
+            background-color: #0d0d0e;
+            background-image: radial-gradient(circle at 50% 30%, rgba(254, 204, 86, 0.08) 0%, rgba(13, 13, 14, 0.95) 70%);
+            color: #ffffff;
             font-family: 'Montserrat', sans-serif;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
         }
-        .otp-card {
-            background: #181516;
-            border: 1px solid rgba(254,204,86,0.25);
-            border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        .auth-card {
+            background-color: #171719;
+            border: 1px solid rgba(254, 204, 86, 0.15);
+            border-radius: 16px;
+            padding: 40px;
             width: 100%;
-            max-width: 460px;
-            padding: 44px 40px 36px;
-            position: relative;
-            overflow: hidden;
+            max-width: 485px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
         }
-        .otp-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #fecc56, #f3c14b, #fecc56);
-        }
-        .otp-card::after {
-            content: '';
-            position: absolute;
-            top: -80px; right: -80px;
-            width: 200px; height: 200px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(254,204,86,0.06), transparent 70%);
-            pointer-events: none;
-        }
-        .shield-icon {
-            width: 72px; height: 72px;
-            background: linear-gradient(135deg, rgba(254,204,86,0.15), rgba(254,204,86,0.05));
-            border: 2px solid rgba(254,204,86,0.3);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 22px;
-            position: relative;
-        }
-        .shield-icon i {
-            font-size: 28px;
-            color: #fecc56;
-        }
-        h2 {
-            color: #ffffff;
-            font-size: 22px;
-            font-weight: 700;
+        .brand-logo {
             text-align: center;
-            margin-bottom: 8px;
-            letter-spacing: -0.3px;
-        }
-        .subtitle {
-            color: #888;
-            font-size: 13px;
-            text-align: center;
-            line-height: 1.6;
             margin-bottom: 30px;
         }
-        .subtitle strong { color: #fecc56; font-weight: 600; }
-        .alert {
-            padding: 12px 16px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 22px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .alert-error {
-            background: rgba(220,53,69,0.12);
-            border: 1px solid rgba(220,53,69,0.3);
-            color: #ff6b7a;
-        }
-        .alert-success {
-            background: rgba(40,167,69,0.12);
-            border: 1px solid rgba(40,167,69,0.3);
-            color: #4cdc7a;
-        }
-        .otp-inputs {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 12px;
-        }
-        .otp-inputs input {
-            width: 50px; height: 58px;
-            background: #242021;
-            border: 2px solid #3d3738;
-            border-radius: 10px;
+        .brand-logo h3 {
             color: #fecc56;
-            font-size: 22px;
-            font-weight: 800;
-            text-align: center;
-            font-family: 'Montserrat', monospace;
-            transition: border-color 0.25s, box-shadow 0.25s;
-            caret-color: #fecc56;
-            outline: none;
-        }
-        .otp-inputs input:focus {
-            border-color: #fecc56;
-            box-shadow: 0 0 0 3px rgba(254,204,86,0.18);
-            background: #2c2829;
-        }
-        .otp-inputs input.filled {
-            border-color: rgba(254,204,86,0.5);
-        }
-        .timer-row {
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 24px;
-        }
-        .timer-row #timer { color: #fecc56; font-weight: 700; }
-        .timer-row #timer.expired { color: #ff6b7a; }
-        .btn-verify {
-            width: 100%;
-            background: linear-gradient(90deg, #fecc56, #f3c14b);
-            border: none;
-            color: #000;
             font-weight: 700;
-            padding: 14px;
-            border-radius: 10px;
-            font-size: 15px;
-            font-family: 'Montserrat', sans-serif;
-            cursor: pointer;
-            transition: all 0.3s;
-            letter-spacing: 0.3px;
-        }
-        .btn-verify:hover {
-            background: linear-gradient(90deg, #e5b443, #d9a732);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(254,204,86,0.25);
-        }
-        .btn-verify:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .bottom-links {
-            margin-top: 24px;
+            letter-spacing: 1.5px;
+            margin: 0;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
-        .bottom-links a {
-            color: #666;
-            font-size: 12px;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-        .bottom-links a:hover { color: #fecc56; }
-        .resend-btn {
-            background: none;
+        .btn-primary {
+            background: linear-gradient(135deg, #fecc56 0%, #f1b834 100%);
             border: none;
-            color: #fecc56;
-            font-size: 12px;
-            font-family: 'Montserrat', sans-serif;
+            color: #000000;
             font-weight: 600;
-            cursor: pointer;
-            text-decoration: underline;
-            padding: 0;
-        }
-        .resend-btn:disabled { color: #555; cursor: not-allowed; text-decoration: none; }
-        .security-note {
-            margin-top: 24px;
-            padding: 10px 14px;
-            background: rgba(254,204,86,0.06);
-            border: 1px solid rgba(254,204,86,0.15);
+            padding: 12px;
             border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 11px;
-            color: #888;
+            transition: all 0.3s ease;
         }
-        .security-note i { color: #fecc56; font-size: 12px; flex-shrink: 0; }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #f1b834 0%, #d89e20 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(254, 204, 86, 0.25);
+            color: #000000;
+        }
+        .form-control {
+            background-color: #212124;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .form-control:focus {
+            background-color: #26262a;
+            border-color: #fecc56;
+            color: #ffffff;
+            box-shadow: 0 0 0 0.25rem rgba(254, 204, 86, 0.15);
+        }
+        .text-warning-custom {
+            color: #fecc56;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .text-warning-custom:hover {
+            color: #f1b834;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
-<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
-<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
-    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
-</div>
-<?php endif; ?>
 
-<div class="otp-card">
-    <div class="shield-icon">
-        <i class="fas fa-shield-halved"></i>
+<div class="auth-card">
+    <div class="brand-logo">
+        <h3><i class="fas fa-shield-alt"></i> IFW GLOBAL</h3>
     </div>
     
-    <h2>Two-Factor Verification</h2>
-    <p class="subtitle">
-        We sent a 6-digit security code to<br>
-        <strong><?= htmlspecialchars($masked_email) ?></strong>
-    </p>
-
-    <?php if ($error): ?>
-        <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i><?= $error ?></div>
-    <?php endif; ?>
-    <?php if ($success): ?>
-        <div class="alert alert-success"><i class="fas fa-check-circle"></i><?= htmlspecialchars($success) ?></div>
-    <?php endif; ?>
-
-    <form id="otpForm" method="POST" action="">
-        <div class="otp-inputs" id="otpInputGroup">
-            <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" autocomplete="off" autofocus>
-            <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" autocomplete="off">
-            <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" autocomplete="off">
-            <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" autocomplete="off">
-            <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" autocomplete="off">
-            <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" autocomplete="off">
+    <div class="text-center mb-4">
+        <h5 class="fw-bold">Security Verification</h5>
+        <p class="text-muted small">We've dispatched a 6-digit verification code to your registered email address.</p>
+    </div>
+    
+    <?php if (!empty($error)): ?>
+        <div class="alert alert-danger border-0 text-center py-2 mb-3" style="font-size: 0.9rem; background-color: rgba(220, 53, 69, 0.15); color: #ea868f;">
+            <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
         </div>
-        <input type="hidden" name="otp" id="otpHidden">
-        
-        <div class="timer-row">
-            Code expires in <span id="timer"><?= sprintf('%d:%02d', floor($remaining/60), $remaining % 60) ?></span>
+    <?php endif; ?>
+    
+    <?php if (!empty($success)): ?>
+        <div class="alert alert-success border-0 text-center py-2 mb-3" style="font-size: 0.9rem; background-color: rgba(40, 167, 69, 0.15); color: #a3cfbb;">
+            <i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($success) ?>
+        </div>
+    <?php endif; ?>
+    
+    <form method="POST">
+        <div class="mb-4">
+            <label class="form-label small text-muted">Enter Verification Code</label>
+            <input type="text" name="otp" class="form-control text-center fs-4 fw-bold letter-spacing-5" maxlength="6" placeholder="000000" required autofocus>
         </div>
         
-        <button type="submit" class="btn-verify" id="verifyBtn" disabled>
-            <i class="fas fa-lock me-2"></i> Verify Identity
-        </button>
+        <button type="submit" class="btn btn-primary w-100 mb-3"><i class="fas fa-lock-open me-2"></i>Verify & Proceed</button>
     </form>
     
-    <div class="bottom-links">
-        <a href="login.php"><i class="fas fa-arrow-left" style="font-size:10px; margin-right:5px;"></i> Back to Login</a>
-        <form method="GET" action="" style="margin:0;">
-            <input type="hidden" name="resend" value="1">
-            <button type="submit" class="resend-btn" id="resendBtn">
-                <i class="fas fa-redo" style="font-size:10px; margin-right:4px;"></i> Resend Code
-            </button>
-        </form>
-    </div>
-    
-    <div class="security-note">
-        <i class="fas fa-lock"></i>
-        <span>256-Bit encrypted session. Never share this code with anyone, including IFW staff.</span>
+    <div class="text-center mt-3">
+        <p class="small text-muted mb-0">Didn't receive the code?</p>
+        <a href="verify_otp.php?action=resend" class="text-warning-custom small"><i class="fas fa-redo me-1"></i>Resend Code</a>
     </div>
 </div>
 
-<script>
-// OTP digit input logic
-var digits = document.querySelectorAll('.otp-digit');
-var hidden = document.getElementById('otpHidden');
-var btn = document.getElementById('verifyBtn');
-var remaining = <?= $remaining ?>;
-
-digits.forEach(function(input, i) {
-    input.addEventListener('input', function() {
-        this.value = this.value.replace(/[^0-9]/g, '').slice(-1);
-        if (this.value && digits[i+1]) digits[i+1].focus();
-        updateHidden();
-    });
-    input.addEventListener('keydown', function(e) {
-        if (e.key === 'Backspace' && !this.value && digits[i-1]) {
-            digits[i-1].focus();
-            digits[i-1].value = '';
-        }
-    });
-    input.addEventListener('paste', function(e) {
-        e.preventDefault();
-        var data = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
-        digits.forEach(function(d, idx) { d.value = data[idx] || ''; });
-        var last = digits[Math.min(data.length, 5)]; if(last) last.focus();
-        updateHidden();
-    });
-});
-
-function updateHidden() {
-    var val = '';
-    digits.forEach(function(d) { val += d.value; });
-    digits.forEach(function(d) { d.classList.toggle('filled', d.value !== ''); });
-    hidden.value = val;
-    btn.disabled = val.length !== 6;
-}
-
-// Countdown timer
-var timerEl = document.getElementById('timer');
-var interval = setInterval(function() {
-    remaining--;
-    if (remaining <= 0) {
-        clearInterval(interval);
-        timerEl.textContent = 'Expired';
-        timerEl.classList.add('expired');
-        btn.disabled = true;
-        btn.textContent = 'Code Expired — Resend';
-    } else {
-        var m = Math.floor(remaining/60), s = remaining % 60;
-        timerEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
-    }
-}, 1000);
-</script>
 </body>
 </html>

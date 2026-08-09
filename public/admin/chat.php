@@ -1,11 +1,7 @@
 <?php
-// public/admin/chat.php
-$dir = __DIR__;
-while (!file_exists($dir . '/config.php') && $dir !== dirname($dir)) {
-    $dir = dirname($dir);
-}
-require_once $dir . '/config.php';
-require_once $dir . '/includes/functions.php';
+// admin/chat.php
+require_once '../config.php';
+require_once '../includes/functions.php';
 require_admin_login();
 
 $chat_provider = get_setting($pdo, 'chat_provider', 'internal');
@@ -15,8 +11,8 @@ $custom_code   = get_setting($pdo, 'custom_chat_code', '');
 
 // If NOT internal, show a provider page instead of the internal chat
 if ($chat_provider !== 'internal') {
-    require_once $dir . '/includes/admin_header.php';
-    require_once $dir . '/includes/admin_sidebar.php';
+    require_once '../includes/admin_header.php';
+    require_once '../includes/admin_sidebar.php';
     ?>
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -58,12 +54,23 @@ if ($chat_provider !== 'internal') {
                     $chat_hash = $parts[1] ?? 'default';
                     $iframe_src = "https://tawk.to/chat/{$prop_id}/{$chat_hash}?pop=1";
                     ?>
-                    <div class="alert alert-info border-0 mb-3 bg-dark" style="border-left: 4px solid #fecc56 !important;">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        The Tawk.to widget appears to your clients on the public site. Use the embedded console below to respond to them, or open the full dashboard.
-                        <a href="https://dashboard.tawk.to" target="_blank" class="btn btn-sm btn-warning text-dark font-weight-bold ml-2">Open Full Tawk Dashboard <i class="fas fa-external-link-alt ml-1"></i></a>
+                    <div class="text-center py-5 text-muted bg-black rounded border border-secondary p-4">
+                        <div style="width:72px;height:72px;border-radius:50%;background:rgba(254, 204, 86, 0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                            <i class="fas fa-headset fa-3x text-warning"></i>
+                        </div>
+                        <h4 class="text-white font-weight-bold mb-3">Tawk.to Integration Active</h4>
+                        <p class="px-md-5 mb-4 text-light" style="max-width: 600px; margin: 0 auto; line-height: 1.6;">
+                            Your live chat communications are routed securely through Tawk.to. 
+                            To respond to client messages in real-time, please use the secure Tawk.to Admin Console.
+                        </p>
+                        <a href="https://dashboard.tawk.to" target="_blank" class="btn btn-warning text-dark font-weight-bold px-4 py-2 shadow-lg mb-3">
+                            <i class="fas fa-external-link-alt mr-2"></i> Open Tawk.to Agent Console
+                        </a>
+                        <div class="small text-muted mt-2">
+                            Property ID: <code class="text-warning"><?= htmlspecialchars($prop_id) ?></code> &bull; 
+                            Chat Hash: <code class="text-warning"><?= htmlspecialchars($chat_hash) ?></code>
+                        </div>
                     </div>
-                    <iframe src="<?= htmlspecialchars($iframe_src) ?>" style="width:100%; height:600px; border:none; border-radius:8px; background:#111;"></iframe>
                 <?php else: ?>
                     <div class="alert alert-warning font-weight-bold">
                         <i class="fas fa-exclamation-triangle mr-2"></i>
@@ -92,12 +99,12 @@ if ($chat_provider !== 'internal') {
     </div>
 
     <?php
-    require_once $dir . '/includes/admin_footer.php';
+    require_once '../includes/admin_footer.php';
     exit;
 }
 
 // If we reach here: provider = internal
-require_once $dir . '/includes/admin_header.php';
+require_once '../includes/admin_header.php';
 ?>
 <div class="container-fluid mt-4">
     <div class="row h-100" style="min-height: 75vh;">
@@ -127,8 +134,15 @@ require_once $dir . '/includes/admin_header.php';
                 </div>
             </div>
             <div id="chat-input-area" class="p-3 border-top border-secondary bg-black d-none">
-                <form id="chat-form" class="d-flex w-100" style="gap: 10px;">
+                <!-- Selected File Preview -->
+                <div id="selected-file-preview" class="text-warning small mb-2 d-none" style="font-weight: 500;">
+                    <i class="fas fa-paperclip mr-1"></i> <span class="file-name"></span> 
+                    <a href="#" class="text-danger ml-2" onclick="clearSelectedFile(event)">&times; Remove Attachment</a>
+                </div>
+                <form id="chat-form" class="d-flex w-100" style="gap: 10px;" enctype="multipart/form-data">
                     <input type="hidden" id="active-client-id" value="">
+                    <input type="file" id="chat-file-input" name="chat_file" style="display:none;" onchange="handleChatFileSelect(this)">
+                    <button type="button" class="btn btn-outline-warning text-warning px-3" onclick="document.getElementById('chat-file-input').click()" title="Share File/Document"><i class="fas fa-paperclip"></i></button>
                     <input type="text" id="chat-input" class="form-control bg-dark text-light border-secondary" placeholder="Type a secure message..." autocomplete="off" required>
                     <button type="submit" class="btn btn-warning px-4 font-weight-bold"><i class="fas fa-paper-plane"></i></button>
                 </form>
@@ -217,15 +231,15 @@ document.addEventListener('DOMContentLoaded', function() {
         elChatHeader.classList.add('d-flex');
         elChatInputArea.classList.remove('d-none');
         elViewClientBtn.href = `client_manager.php`;
-
+        
         elChatMessages.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin text-warning"></i></div>';
-
+        
         // Update UI selection
         document.querySelectorAll('.client-item').forEach(el => el.classList.remove('active'));
-
+        
         fetchClients(); // refresh list to clear badges
         fetchMessages(true);
-
+        
         if (pollingInterval) clearInterval(pollingInterval);
         pollingInterval = setInterval(() => fetchMessages(false), 3000);
     }
@@ -237,18 +251,55 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.status === 'success' && data.messages.length > 0) {
                 if (lastMsgId === 0) elChatMessages.innerHTML = ''; // clear loader
-
+                
                 let isScrolledToBottom = elChatMessages.scrollHeight - elChatMessages.clientHeight <= elChatMessages.scrollTop + 10;
-
+                
                 data.messages.forEach(m => {
                     let div = document.createElement('div');
                     let time = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     div.className = 'msg-bubble ' + (m.sender_type === 'admin' ? 'msg-admin' : 'msg-client');
-                    div.innerHTML = `<div>${m.message.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div><div class="msg-time">${time}</div>`;
+                    
+                    let senderLabel = "";
+                    if (m.sender_type === 'admin') {
+                        senderLabel = `<div class="msg-sender-name text-muted small mb-1" style="font-size: 10px; font-weight: bold; color: #fecc56 !important;"><i class="fas fa-user-shield mr-1"></i>${m.sender_name || 'Staff Member'} (${m.sender_role || 'Agent'})</div>`;
+                    } else {
+                        senderLabel = `<div class="msg-sender-name text-muted small mb-1" style="font-size: 10px; font-weight: bold; color: #17a2b8 !important;"><i class="fas fa-user-circle mr-1"></i>Client</div>`;
+                    }
+
+                    let attachmentMarkup = "";
+                    if (m.attachment_path) {
+                        let filename = m.attachment_name || "Attachment";
+                        let fileicon = "fa-file";
+                        let ext = filename.split('.').pop().toLowerCase();
+                        if (['jpg','jpeg','png','gif'].includes(ext)) fileicon = "fa-file-image text-info";
+                        else if (ext === 'pdf') fileicon = "fa-file-pdf text-danger";
+                        else if (['doc','docx'].includes(ext)) fileicon = "fa-file-word text-primary";
+                        else if (ext === 'zip') fileicon = "fa-file-archive text-warning";
+                        
+                        attachmentMarkup = `
+                            <div class="chat-attachment border border-secondary rounded p-2 bg-dark mt-2 d-flex align-items-center justify-content-between" style="min-width: 200px;">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas ${fileicon} fa-2x mr-2"></i>
+                                    <div class="text-left">
+                                        <span class="small font-weight-bold d-block text-white" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${filename}</span>
+                                        <span class="text-muted" style="font-size:9px;">${(m.attachment_size / 1024).toFixed(1)} KB</span>
+                                    </div>
+                                </div>
+                                <a href="../${m.attachment_path}" target="_blank" class="btn btn-sm btn-warning text-dark ml-2" download><i class="fas fa-download"></i></a>
+                            </div>
+                        `;
+                    }
+
+                    div.innerHTML = `
+                        ${senderLabel}
+                        <div>${m.message.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>
+                        ${attachmentMarkup}
+                        <div class="msg-time">${time}</div>
+                    `;
                     elChatMessages.appendChild(div);
                     lastMsgId = m.id;
                 });
-
+                
                 if (scrollDown || isScrolledToBottom) {
                     elChatMessages.scrollTop = elChatMessages.scrollHeight;
                 }
@@ -259,15 +310,25 @@ document.addEventListener('DOMContentLoaded', function() {
     elChatForm.addEventListener('submit', function(e) {
         e.preventDefault();
         let msg = elChatInput.value.trim();
-        if (!msg || !activeClientId) return;
-
+        let fileInput = document.getElementById('chat-file-input');
+        let hasFile = fileInput && fileInput.files.length > 0;
+        
+        if (!activeClientId) return;
+        if (!msg && !hasFile) return;
+        
         let formData = new FormData();
         formData.append('action', 'send');
         formData.append('client_id', activeClientId);
         formData.append('message', msg);
-
+        if (hasFile) {
+            formData.append('chat_file', fileInput.files[0]);
+        }
+        
         elChatInput.value = '';
-
+        if (fileInput) fileInput.value = '';
+        document.getElementById('selected-file-preview').classList.add('d-none');
+        elChatInput.setAttribute('required', 'required');
+        
         fetch('ajax_chat.php', { method: 'POST', body: formData })
         .then(r => r.json())
         .then(data => {
@@ -277,9 +338,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    window.handleChatFileSelect = function(input) {
+        let preview = document.getElementById('selected-file-preview');
+        let nameSpan = preview.querySelector('.file-name');
+        if (input.files && input.files[0]) {
+            nameSpan.textContent = input.files[0].name;
+            preview.classList.remove('d-none');
+            elChatInput.removeAttribute('required');
+        } else {
+            preview.classList.add('d-none');
+            elChatInput.setAttribute('required', 'required');
+        }
+    };
+
+    window.clearSelectedFile = function(e) {
+        if (e) e.preventDefault();
+        let input = document.getElementById('chat-file-input');
+        if (input) input.value = '';
+        document.getElementById('selected-file-preview').classList.add('d-none');
+        elChatInput.setAttribute('required', 'required');
+    };
+
     // Initial load
     fetchClients();
     setInterval(fetchClients, 10000); // Polling for new clients / global unread counts
 });
 </script>
-<?php require_once $dir . '/includes/admin_footer.php'; ?>
+<?php require_once '../includes/admin_footer.php'; ?>

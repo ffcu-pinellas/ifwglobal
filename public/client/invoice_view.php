@@ -61,7 +61,56 @@ try {
 } catch(Exception $e) {}
 
 // Late fee calculation
-$late_fee = $invoice['late_fee_accumulated'] ?? 0;
+$dynamic_late_fee = 0.00;
+$next_penalty_time = null;
+$time_remaining_sec = 0;
+
+if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled']) && $invoice['late_fee_amount'] > 0) {
+    $startDate = strtotime($invoice['late_fee_start_date'] ?? $invoice['due_date']);
+    $now = time();
+    $rate = $invoice['late_fee_amount'];
+    if (!empty($invoice['late_fee_is_percentage'])) {
+        $rate = ($invoice['late_fee_amount'] / 100) * $invoice['amount'];
+    }
+    
+    if ($now >= $startDate) {
+        $diff_sec = $now - $startDate;
+        $type = $invoice['late_fee_type'] ?? 'daily';
+        
+        if ($type === 'hourly') {
+            $intervals = floor($diff_sec / 3600);
+            $dynamic_late_fee = $intervals * $rate;
+            $next_penalty_time = $startDate + ($intervals + 1) * 3600;
+        } elseif ($type === 'daily') {
+            $intervals = floor($diff_sec / 86400);
+            $dynamic_late_fee = $intervals * $rate;
+            $next_penalty_time = $startDate + ($intervals + 1) * 86400;
+        } elseif ($type === 'weekly') {
+            $intervals = floor($diff_sec / (86400 * 7));
+            $dynamic_late_fee = $intervals * $rate;
+            $next_penalty_time = $startDate + ($intervals + 1) * (86400 * 7);
+        } else { // monthly
+            $intervals = floor($diff_sec / (86400 * 30));
+            $dynamic_late_fee = $intervals * $rate;
+            $next_penalty_time = $startDate + ($intervals + 1) * (86400 * 30);
+        }
+        $time_remaining_sec = max(0, $next_penalty_time - $now);
+    } else {
+        $next_penalty_time = $startDate;
+        $time_remaining_sec = $startDate - $now;
+    }
+    
+    // Save to DB if higher
+    if ($dynamic_late_fee > ($invoice['late_fee_accumulated'] ?? 0)) {
+        try {
+            $upd = $pdo->prepare("UPDATE IFW_invoices SET late_fee_accumulated = ? WHERE id = ?");
+            $upd->execute([$dynamic_late_fee, $invoice['id']]);
+            $invoice['late_fee_accumulated'] = $dynamic_late_fee;
+        } catch (Exception $e) {}
+    }
+}
+
+$late_fee = ($invoice['status'] === 'paid') ? ($invoice['late_fee_accumulated'] ?? 0) : max($dynamic_late_fee, $invoice['late_fee_accumulated'] ?? 0);
 $total_due = $invoice['amount'] + $late_fee;
 
 // Global payment info fallback
@@ -72,7 +121,7 @@ $app_name = get_setting($pdo, 'app_name', 'IFW Global');
 $company_address = get_setting($pdo, 'company_address', '');
 $company_email   = get_setting($pdo, 'contact_email', '');
 $company_phone   = get_setting($pdo, 'contact_phone', '');
-$logo_url        = get_setting($pdo, 'logo_url', '/assets/logo.png');
+$logo_url        = get_setting($pdo, 'logo_url', '/admin_assets/img/logo/logo.svg');
 
 $is_print = isset($_GET['print']);
 
@@ -104,6 +153,71 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
 <!-- INVOICE DOCUMENT -->
 <div class="card border-0 shadow <?= $is_print ? '' : 'mb-4' ?>" id="invoiceDoc" style="<?= $is_print ? 'box-shadow:none!important;' : '' ?>">
     <div class="card-body p-5">
+        <?php if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled'])): ?>
+            <!-- LATE FEE URGENCY TICKER -->
+            <div class="alert alert-danger border-0 mb-4 p-4 shadow-sm" style="border-left: 5px solid #dc3545 !important; background: #fff5f5; color: #721c24;">
+                <div class="d-flex align-items-center justify-content-between flex-wrap">
+                    <div>
+                        <h5 class="alert-heading font-weight-bold mb-1 text-danger">
+                            <i class="fas fa-exclamation-triangle mr-2 text-danger"></i> 
+                            Overdue Penalty / Penalty Interest Active
+                        </h5>
+                        <p class="mb-0 text-dark font-weight-bold" style="font-size: 14px;">
+                            An automated late fee penalty of 
+                            <?php if (!empty($invoice['late_fee_is_percentage'])): ?>
+                                <span class="text-danger font-weight-bold"><?= number_format($invoice['late_fee_amount'], 2) ?>%</span> of total ($<?= number_format(($invoice['late_fee_amount'] / 100) * $invoice['amount'], 2) ?> <?= htmlspecialchars($invoice['currency']) ?>)
+                            <?php else: ?>
+                                <span class="text-danger font-weight-bold">$<?= number_format($invoice['late_fee_amount'], 2) ?> <?= htmlspecialchars($invoice['currency']) ?></span>
+                            <?php endif; ?>
+                            is being charged <span class="badge badge-danger"><?= htmlspecialchars($invoice['late_fee_type']) ?></span>.
+                        </p>
+                        <?php if ($late_fee > 0): ?>
+                            <p class="mb-0 text-muted small mt-1">
+                                Current Accumulated Overdue Fees: <strong class="text-danger">$<?= number_format($late_fee, 2) ?> <?= htmlspecialchars($invoice['currency']) ?></strong>
+                            </p>
+                        <?php endif; ?>
+                    </div>
+                    <div class="text-right mt-2 mt-md-0" style="min-width: 250px;">
+                        <span class="small font-weight-bold text-uppercase d-block text-muted">Next penalty increment in:</span>
+                        <div id="penaltyCountdown" class="font-weight-bold text-danger mt-1" style="font-size: 1.5rem; letter-spacing: 1px; font-family: monospace;">
+                            00h 00m 00s
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+                (function() {
+                    let secondsLeft = <?= (int)$time_remaining_sec ?>;
+                    const display = document.getElementById('penaltyCountdown');
+                    
+                    function updateTicker() {
+                        if (secondsLeft <= 0) {
+                            display.innerHTML = "PENALTY PENDING REFRESH";
+                            setTimeout(() => { window.location.reload(); }, 3000);
+                            return;
+                        }
+                        
+                        let hours = Math.floor(secondsLeft / 3600);
+                        let minutes = Math.floor((secondsLeft % 3600) / 60);
+                        let secs = Math.floor(secondsLeft % 60);
+                        
+                        let displayStr = "";
+                        if (hours > 0) {
+                            displayStr += hours.toString().padStart(2, '0') + "h ";
+                        }
+                        displayStr += minutes.toString().padStart(2, '0') + "m ";
+                        displayStr += secs.toString().padStart(2, '0') + "s";
+                        
+                        display.innerHTML = displayStr;
+                        secondsLeft--;
+                    }
+                    
+                    updateTicker();
+                    setInterval(updateTicker, 1000);
+                })();
+            </script>
+        <?php endif; ?>
 
         <!-- INVOICE HEADER -->
         <div class="row mb-5">
@@ -293,7 +407,11 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                     <form method="POST" action="/api/submit_payment_proof.php" enctype="multipart/form-data">
                         <input type="hidden" name="invoice_id" id="payInvoiceId">
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
+                                <label class="font-weight-bold small">Amount Paid ($)</label>
+                                <input type="number" step="0.01" name="amount_paid" id="payAmountInput" class="form-control" required placeholder="Amount paid">
+                            </div>
+                            <div class="col-md-4 mb-3">
                                 <label class="font-weight-bold small">Payment Method</label>
                                 <select name="payment_method" class="form-control" required>
                                     <option value="">Select...</option>
@@ -306,7 +424,7 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                                     <option>Other</option>
                                 </select>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label class="font-weight-bold small">Transaction / Reference No.</label>
                                 <input type="text" name="reference_number" class="form-control" placeholder="e.g. TXN12345678" required>
                             </div>
@@ -333,7 +451,9 @@ function showPayModal(invoiceId, ref, amount, payInfo) {
     document.getElementById('payInvoiceId').value = invoiceId;
     document.getElementById('payInvoiceRef').textContent = ref;
     document.getElementById('payAmount').textContent = '$' + parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits:2});
+    document.getElementById('payAmountInput').value = parseFloat(amount).toFixed(2);
     document.getElementById('payInfoBlock').textContent = payInfo || 'Contact your investigator for payment details.';
+    $('#payNowModal').modal('show');
 }
 </script>
 <?php endif; ?>

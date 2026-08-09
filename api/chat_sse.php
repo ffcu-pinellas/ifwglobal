@@ -6,8 +6,6 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-?>
-require_once '../config.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -24,12 +22,13 @@ header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
 header('Connection: keep-alive');
 
-// Only send updates if there's a change
-$last_id = isset($_SERVER["HTTP_LAST_EVENT_ID"]) ? intval($_SERVER["HTTP_LAST_EVENT_ID"]) : 0;
-
 while (true) {
     // Fetch all messages for this client
-    $stmt = $pdo->prepare("SELECT id, sender, message_text, attachment_path, created_at, is_read FROM IFW_messages WHERE client_id = ? ORDER BY created_at ASC");
+    $stmt = $pdo->prepare("SELECT m.id, m.sender, m.message_text, m.attachment_path, m.created_at, m.is_read, u.username AS admin_name, u.role AS admin_role 
+                           FROM IFW_messages m 
+                           LEFT JOIN IFW_users u ON m.admin_id = u.id 
+                           WHERE m.client_id = ? 
+                           ORDER BY m.created_at ASC");
     $stmt->execute([$client_id]);
     $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -42,3 +41,4 @@ while (true) {
     if (connection_aborted()) break;
     sleep(2);
 }
+?>

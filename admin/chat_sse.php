@@ -40,7 +40,11 @@ while (true) {
         break;
     }
     
-    $stmt = $pdo->prepare("SELECT * FROM IFW_messages WHERE client_id = ? AND id > ? ORDER BY id ASC");
+    $stmt = $pdo->prepare("SELECT m.*, u.username AS admin_name, u.role AS admin_role 
+                           FROM IFW_messages m 
+                           LEFT JOIN IFW_users u ON m.admin_id = u.id 
+                           WHERE m.client_id = ? AND m.id > ? 
+                           ORDER BY m.id ASC");
     $stmt->execute([$client_id, $last_id]);
     $new_messages = $stmt->fetchAll();
     
