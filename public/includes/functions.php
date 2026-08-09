@@ -165,14 +165,15 @@ function require_permission($permission_name) {
     }
 }
 
-/**
- * Log an action to the audit logs
- *
- * @param PDO $pdo
- * @param int|null $user_id (Admin or Agent ID)
- * @param string $action Short action name
- * @param string $details Detailed description
- */
+function log_audit_action($pdo, $user_id, $action, $details = '') {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+    try {
+        $stmt = $pdo->prepare("INSERT INTO IFW_audit_logs (user_id, action, details, ip_address) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$user_id, $action, $details, $ip]);
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
 }
 
 /**
