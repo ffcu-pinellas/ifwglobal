@@ -1,5 +1,8 @@
 <?php
 // includes/functions.php
+if (file_exists(__DIR__ . '/mailer.php')) {
+    require_once __DIR__ . '/mailer.php';
+}
 
 /**
  * Fetch a site setting by key

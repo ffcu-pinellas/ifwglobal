@@ -7,6 +7,9 @@ while (!file_exists($dir . '/config.php') && $dir !== dirname($dir)) {
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
 require_once $dir . '/includes/currency_helper.php';
+if (file_exists($dir . '/includes/mailer.php')) {
+    require_once $dir . '/includes/mailer.php';
+}
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -338,8 +341,10 @@ if ($active_penalty_invoices > 0 && $primary_penalty_invoice && !empty($client['
                      <p>This is an automated formal notice regarding your invoice <strong>{$inv_ref}</strong> which has accumulated late fee penalty interest.</p>
                      <p><strong>Total Balance Due:</strong> " . htmlspecialchars($primary_penalty_invoice['currency']) . " " . number_format($primary_penalty_invoice['balance_due'], 2) . "<br>
                      <strong>Accumulated Late Fees:</strong> " . htmlspecialchars($primary_penalty_invoice['currency']) . " " . number_format($primary_penalty_invoice['late_fee'], 2) . "</p>
-                     <p>Please log in to your <a href='" . BASE_URL . "/client/login.php'>IFW Global Client Portal</a> to settle your outstanding balance immediately and stop further interest accumulation.</p>";
-            send_html_email($client['email'], $subject, $body);
+                     <p>Please log in to your <a href='" . BASE_URL . "/client/login.php'>IFW Global Client Portal</a> to settle your outstanding balance immediately.</p>";
+            if (function_exists('send_html_email')) {
+                send_html_email($client['email'], $subject, $body);
+            }
             $pdo->prepare("UPDATE IFW_invoices SET last_reminder_sent = NOW() WHERE id = ?")->execute([$primary_penalty_invoice['id']]);
         } catch(Exception $ex) {}
     }
