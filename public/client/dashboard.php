@@ -9,7 +9,8 @@ require_once $dir . '/includes/functions.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!isset($_SESSION['client_logged_in']) || $_SESSION['client_logged_in'] !== true) {
+if (!isset($_SESSION['client_logged_in']) || $_SESSION['client_logged_in'] !== true || empty($_SESSION['client_portal_id'])) {
+    unset($_SESSION['client_logged_in'], $_SESSION['client_portal_id'], $_SESSION['client_name'], $_SESSION['role']);
     header("Location: /client/login.php");
     exit;
 }
@@ -77,7 +78,11 @@ try {
     $client = $s->fetch();
 } catch(Exception $e) {}
 
-if (!$client) { header("Location: /client/login.php"); exit; }
+if (!$client) { 
+    unset($_SESSION['client_logged_in'], $_SESSION['client_portal_id'], $_SESSION['client_name'], $_SESSION['role']);
+    header("Location: /client/login.php"); 
+    exit; 
+}
 $_SESSION['user_name'] = $client['first_name'];
 
 // KYC status from IFW_kyc_submissions

@@ -6,17 +6,26 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-// client/login.php
-require_once '../config.php';
-require_once '../includes/functions.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (isset($_SESSION['client_logged_in']) && $_SESSION['client_logged_in'] === true) {
-    header("Location: dashboard.php");
-    exit;
+if (!empty($_SESSION['client_logged_in']) && !empty($_SESSION['client_portal_id'])) {
+    try {
+        $chk = $pdo->prepare("SELECT id FROM IFW_clients WHERE id = ?");
+        $chk->execute([$_SESSION['client_portal_id']]);
+        if ($chk->fetch()) {
+            header("Location: dashboard.php");
+            exit;
+        } else {
+            unset($_SESSION['client_logged_in'], $_SESSION['client_portal_id'], $_SESSION['client_name']);
+        }
+    } catch(Exception $e) {
+        unset($_SESSION['client_logged_in'], $_SESSION['client_portal_id'], $_SESSION['client_name']);
+    }
+} else {
+    unset($_SESSION['client_logged_in']);
 }
 
 $error = '';

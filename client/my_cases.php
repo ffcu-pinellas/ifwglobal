@@ -1,4 +1,4 @@
-<?php
+ <?php
 // public/client/my_cases.php
 $dir = __DIR__;
 while (!file_exists($dir . '/config.php') && $dir !== dirname($dir)) {
