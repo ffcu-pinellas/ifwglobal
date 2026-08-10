@@ -48,6 +48,11 @@ try {
     try { $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN address TEXT NULL AFTER dob"); } catch (Exception $ex) {}
 }
 try {
+    $pdo->query("SELECT preferred_currency FROM IFW_clients LIMIT 1");
+} catch (PDOException $e) {
+    try { $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN preferred_currency VARCHAR(10) DEFAULT 'USD'"); } catch (Exception $ex) {}
+}
+try {
     $pdo->query("SELECT attachment_path FROM IFW_chat_messages LIMIT 1");
 } catch (PDOException $e) {
     try {
@@ -87,10 +92,16 @@ try {
     } catch (Exception $ex) {}
 }
 
-// Base URL configuration (dynamic for Hostinger)
+// Base URL configuration (dynamic for Hostinger and localhost subdirectories)
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
 $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
-define('BASE_URL', $protocol . $host);
+$script_dirname = dirname($_SERVER['SCRIPT_NAME']);
+$script_dirname = str_replace('\\', '/', $script_dirname);
+// Remove /admin or /client from the end of the script_dirname if present
+$script_dirname = preg_replace('#/(admin|client)$#', '', $script_dirname);
+if ($script_dirname === '/') $script_dirname = '';
+
+define('BASE_URL', $protocol . $host . $script_dirname);
 // Secure session settings (recommendation for production)
 // ini_set('session.cookie_httponly', 1);
 // ini_set('session.cookie_secure', 1); // Only over HTTPS

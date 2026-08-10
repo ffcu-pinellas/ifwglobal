@@ -83,14 +83,15 @@ $base_amount = ($invoice['total_amount'] > 0) ? (float)$invoice['total_amount'] 
 $subtotal_amount = ($invoice['subtotal'] > 0) ? (float)$invoice['subtotal'] : (float)$invoice['amount'];
 
 if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled']) && $invoice['late_fee_amount'] > 0) {
-    $startDate = strtotime($invoice['late_fee_start_date'] ?? $invoice['due_date']);
+    $raw_start_date = !empty($invoice['late_fee_start_date']) ? $invoice['late_fee_start_date'] : (!empty($invoice['due_date']) ? $invoice['due_date'] : null);
+    $startDate = $raw_start_date ? strtotime($raw_start_date) : 0;
     $now = time();
     $rate = $invoice['late_fee_amount'];
     if (!empty($invoice['late_fee_is_percentage'])) {
         $rate = ($invoice['late_fee_amount'] / 100) * $base_amount;
     }
     
-    if ($now >= $startDate) {
+    if ($startDate > 0 && $now >= $startDate) {
         $diff_sec = $now - $startDate;
         $type = $invoice['late_fee_type'] ?? 'daily';
         

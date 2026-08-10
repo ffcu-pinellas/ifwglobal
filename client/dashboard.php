@@ -229,14 +229,15 @@ try {
         $time_remaining_sec = 0;
 
         if (strtolower($inv['status']) !== 'paid' && !empty($inv['late_fee_enabled']) && $inv['late_fee_amount'] > 0) {
-            $startDate = strtotime($inv['late_fee_start_date'] ?? $inv['due_date']);
+            $raw_start_date = !empty($inv['late_fee_start_date']) ? $inv['late_fee_start_date'] : (!empty($inv['due_date']) ? $inv['due_date'] : null);
+            $startDate = $raw_start_date ? strtotime($raw_start_date) : 0;
             $now = time();
             $fee_rate = floatval($inv['late_fee_amount']);
             if (!empty($inv['late_fee_is_percentage'])) {
                 $fee_rate = ($fee_rate / 100) * $base_amount;
             }
             
-            if ($now >= $startDate) {
+            if ($startDate > 0 && $now >= $startDate) {
                 $diff_sec = $now - $startDate;
                 $type = $inv['late_fee_type'] ?? 'daily';
                 if ($type === 'hourly') {
@@ -257,7 +258,7 @@ try {
                     $next_penalty_time = $startDate + ($intervals + 1) * (86400 * 30);
                 }
                 $time_remaining_sec = max(0, $next_penalty_time - $now);
-            } else {
+            } elseif ($startDate > 0) {
                 $next_penalty_time = $startDate;
                 $time_remaining_sec = max(0, $startDate - $now);
             }
@@ -323,7 +324,8 @@ try {
 if ($active_penalty_invoices > 0 && $primary_penalty_invoice && !empty($client['email'])) {
     $should_send_email = true;
     if (!empty($primary_penalty_invoice['last_reminder_sent'])) {
-        if (time() - strtotime($primary_penalty_invoice['last_reminder_sent']) < 86400) {
+        $last_sent_ts = strtotime($primary_penalty_invoice['last_reminder_sent']);
+        if ($last_sent_ts && (time() - $last_sent_ts) < 86400) {
             $should_send_email = false;
         }
     }

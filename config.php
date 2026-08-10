@@ -48,6 +48,11 @@ try {
     try { $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN address TEXT NULL AFTER dob"); } catch (Exception $ex) {}
 }
 try {
+    $pdo->query("SELECT preferred_currency FROM IFW_clients LIMIT 1");
+} catch (PDOException $e) {
+    try { $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN preferred_currency VARCHAR(10) DEFAULT 'USD'"); } catch (Exception $ex) {}
+}
+try {
     $pdo->query("SELECT attachment_path FROM IFW_chat_messages LIMIT 1");
 } catch (PDOException $e) {
     try {
