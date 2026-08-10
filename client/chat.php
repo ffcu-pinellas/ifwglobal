@@ -48,16 +48,24 @@ require_once $dir . '/includes/admin_sidebar.php';
 
 <div class="row">
     <?php if ($chat_provider === 'internal'): ?>
-        <!-- INTERNAL SECURE CHAT -->
-        <div class="col-lg-8 mx-auto mb-4">
+        <!-- INTERNAL SECURE CHAT (FULL WIDTH) -->
+        <div class="col-12 mb-4">
             <div class="card shadow-lg bg-dark border-secondary">
-                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center">
-                    <span><i class="fas fa-user-shield mr-2"></i>Internal Case Messaging Desk</span>
-                    <span class="badge badge-success px-3 py-1"><i class="fas fa-lock mr-1"></i>256-Bit Encrypted</span>
+                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center mr-3 font-weight-bold" style="width: 38px; height: 38px; font-size: 1.1rem;">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <span class="text-warning font-weight-bold" style="font-size: 1.05rem;">Case Investigation & Legal Support Desk</span>
+                            <div class="text-muted small" style="font-size: 11px;"><span class="text-success mr-1">●</span> Active Live Channel &bull; Direct Case Line</div>
+                        </div>
+                    </div>
+                    <span class="badge badge-success px-3 py-2" style="font-size: 12px;"><i class="fas fa-lock mr-1"></i>256-Bit Encrypted</span>
                 </div>
-                <div class="card-body bg-dark text-white p-3 d-flex flex-column" style="min-height: 520px;">
+                <div class="card-body bg-dark text-white p-3 d-flex flex-column" style="min-height: 580px;">
                     <!-- Message Area -->
-                    <div id="chat-messages" class="flex-grow-1 p-3 mb-3 border border-secondary rounded overflow-auto d-flex flex-column" style="height: 380px; background-color: #0d0d0e; gap: 15px;">
+                    <div id="chat-messages" class="flex-grow-1 p-3 mb-3 border border-secondary rounded overflow-auto d-flex flex-column" style="min-height: 460px; height: 60vh; max-height: 720px; background-color: #0d0d0e; gap: 15px;">
                         <div class="text-center p-4 text-muted"><i class="fas fa-spinner fa-spin text-warning"></i> Loading Secure Messaging Portal...</div>
                     </div>
 
@@ -71,7 +79,7 @@ require_once $dir . '/includes/admin_sidebar.php';
                     <form id="chat-form" class="d-flex flex-wrap align-items-center mt-2" style="gap: 10px;" enctype="multipart/form-data">
                         <input type="file" id="chat-file-input" name="chat_file" style="display:none;" onchange="handleChatFileSelect(this)">
                         <button type="button" class="btn btn-outline-warning text-warning px-3 flex-shrink-0" style="height: 48px;" onclick="document.getElementById('chat-file-input').click()" title="Share File/Document"><i class="fas fa-paperclip"></i></button>
-                        <input type="text" id="chat-input" class="form-control bg-dark text-white border-secondary p-3 flex-grow-1" placeholder="Type a secure message..." autocomplete="off" required style="height: 48px; min-width: 150px;">
+                        <input type="text" id="chat-input" class="form-control bg-dark text-white border-secondary p-3 flex-grow-1" placeholder="Type your secure message to your assigned investigator..." autocomplete="off" required style="height: 48px; min-width: 180px;">
                         <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4 shadow flex-shrink-0" style="height: 48px;">
                             <i class="fas fa-paper-plane mr-1"></i> Send
                         </button>
@@ -82,7 +90,7 @@ require_once $dir . '/includes/admin_sidebar.php';
 
         <style>
         .chat-container {
-            display: flex; flex-direction: column; height: 600px;
+            display: flex; flex-direction: column; height: 650px;
         }
         #chat-messages {
             flex-grow: 1; overflow-y: auto; padding: 20px; background-color: #0a0a0a; border-radius: 8px;
@@ -95,13 +103,13 @@ require_once $dir . '/includes/admin_sidebar.php';
             background: #fecc56; color: #000; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 500;
         }
         .msg-admin {
-            background: #2a2a2a; color: #f8f9fa; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #444;
+            background: #222226; color: #f8f9fa; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #444; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
-        .msg-time { font-size: 0.7rem; margin-top: 5px; opacity: 0.7; }
-        .msg-client .msg-time { text-align: right; }
-        .msg-admin .msg-time { text-align: left; }
-        .msg-sender-name { font-size: 0.75rem; font-weight: bold; margin-bottom: 4px; }
-        .msg-client .msg-sender-name { color: #856404; text-align: right; }
+        .msg-time { font-size: 0.72rem; margin-top: 5px; opacity: 0.75; }
+        .msg-client .msg-time { text-align: right; color: #333; }
+        .msg-admin .msg-time { text-align: left; color: #aaa; }
+        .msg-sender-name { font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
+        .msg-client .msg-sender-name { color: #5a4200; text-align: right; }
         .msg-admin .msg-sender-name { color: #fecc56; text-align: left; }
         </style>
 
@@ -264,7 +272,7 @@ require_once $dir . '/includes/admin_sidebar.php';
 
     <?php elseif ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
         <!-- TAWK.TO DIRECT EMBED -->
-        <div class="col-lg-8 mx-auto mb-4">
+        <div class="col-12 mb-4">
             <div class="card shadow-lg bg-dark border-secondary">
                 <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-headset mr-2"></i>Live 24/7 Support Desk</span>
@@ -304,7 +312,7 @@ require_once $dir . '/includes/admin_sidebar.php';
 
     <?php elseif ($chat_provider === 'manychat'): ?>
         <!-- MANYCHAT CONSOLE -->
-        <div class="col-lg-8 mx-auto mb-4">
+        <div class="col-12 mb-4">
             <div class="card shadow-lg bg-dark border-secondary">
                 <div class="card-header bg-dark border-secondary text-warning font-weight-bold">
                     <i class="fas fa-headset mr-2"></i>ManyChat Virtual Assistant
@@ -322,7 +330,7 @@ require_once $dir . '/includes/admin_sidebar.php';
 
     <?php else: ?>
         <!-- CUSTOM EMBED / FALLBACK -->
-        <div class="col-lg-8 mx-auto mb-4">
+        <div class="col-12 mb-4">
             <div class="card shadow-lg bg-dark border-secondary">
                 <div class="card-header bg-dark border-secondary text-warning font-weight-bold">
                     <i class="fas fa-comments mr-2"></i>Custom Integration Support

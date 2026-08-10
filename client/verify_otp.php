@@ -172,34 +172,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
     
     <div class="text-center mb-4">
-        <h5 class="fw-bold">Security Verification</h5>
-        <p class="text-muted small">We've dispatched a 6-digit verification code to your registered email address.</p>
+        <h5 class="fw-bold text-white mb-2">Security Verification</h5>
+        <p class="text-white small mb-0" style="color: #ffffff !important; font-size: 0.95rem; line-height: 1.5; opacity: 0.95;">We've sent a 6-digit verification code to your registered email address.</p>
     </div>
     
     <?php if (!empty($error)): ?>
-        <div class="alert alert-danger border-0 text-center py-2 mb-3" style="font-size: 0.9rem; background-color: rgba(220, 53, 69, 0.15); color: #ea868f;">
+        <div class="alert alert-danger border-0 text-center py-2 mb-3" style="font-size: 0.9rem; background-color: rgba(220, 53, 69, 0.2); color: #ff99a8;">
             <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
         </div>
     <?php endif; ?>
     
     <?php if (!empty($success)): ?>
-        <div class="alert alert-success border-0 text-center py-2 mb-3" style="font-size: 0.9rem; background-color: rgba(40, 167, 69, 0.15); color: #a3cfbb;">
+        <div class="alert alert-success border-0 text-center py-2 mb-3" style="font-size: 0.9rem; background-color: rgba(40, 167, 69, 0.2); color: #a3cfbb;">
             <i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($success) ?>
         </div>
     <?php endif; ?>
     
     <form method="POST">
         <div class="mb-4">
-            <label class="form-label small text-muted">Enter Verification Code</label>
-            <input type="text" name="otp" class="form-control text-center fs-4 fw-bold letter-spacing-5" maxlength="6" placeholder="000000" required autofocus>
+            <label class="form-label text-white fw-bold d-block text-center mb-2" style="color: #ffffff !important; font-size: 0.95rem; letter-spacing: 0.5px;">Enter Verification Code</label>
+            <input type="text" name="otp" class="form-control text-center fs-4 fw-bold letter-spacing-5 bg-dark text-white border-secondary" maxlength="6" placeholder="000000" required autofocus style="height: 52px; font-size: 1.5rem !important; color: #fecc56 !important; border-color: #555 !important;">
         </div>
         
-        <button type="submit" class="btn btn-primary w-100 mb-3"><i class="fas fa-lock-open me-2"></i>Verify & Proceed</button>
+        <button type="submit" class="btn btn-primary w-100 mb-3 fw-bold py-2 shadow"><i class="fas fa-lock-open me-2"></i>Verify & Proceed</button>
     </form>
     
     <div class="text-center mt-3">
-        <p class="small text-muted mb-0">Didn't receive the code?</p>
-        <a href="verify_otp.php?action=resend" class="text-warning-custom small"><i class="fas fa-redo me-1"></i>Resend Code</a>
+        <p class="small text-white-50 mb-1">Didn't receive the code?</p>
+        <a href="verify_otp.php?action=resend" class="text-warning-custom small fw-bold"><i class="fas fa-redo me-1"></i>Resend Code</a>
     </div>
 </div>
 

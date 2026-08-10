@@ -27,8 +27,28 @@ if ($action === 'fetch') {
 
     $stmt = $pdo->prepare("
         SELECT m.*, 
-               CASE WHEN m.sender_type = 'admin' THEN COALESCE(NULLIF(u.full_name, ''), u.username) ELSE CONCAT(c.first_name, ' ', c.last_name) END AS sender_name, 
-               CASE WHEN m.sender_type = 'admin' THEN u.role ELSE 'Client' END AS sender_role
+               CASE 
+                   WHEN m.sender_type = 'admin' THEN 
+                       CASE 
+                           WHEN u.full_name IS NOT NULL AND u.full_name != '' AND u.full_name != 'admin' THEN u.full_name
+                           WHEN u.username = 'Gary009' THEN 'Gary Livingston'
+                           WHEN u.username = 'admin' THEN 'IFW Case Management Desk'
+                           ELSE COALESCE(NULLIF(u.full_name, ''), u.username, 'IFW Legal & Forensic Team')
+                       END
+                   ELSE CONCAT(c.first_name, ' ', c.last_name) 
+               END AS sender_name, 
+               CASE 
+                   WHEN m.sender_type = 'admin' THEN 
+                       CASE 
+                           WHEN u.role = 'superadmin' THEN 'Senior Case Supervisor'
+                           WHEN u.role = 'admin' THEN 'Case Supervisor'
+                           WHEN u.role = 'agent' OR u.role = 'investigator' THEN 'Senior Investigator'
+                           WHEN u.role = 'staff' THEN 'Case Officer'
+                           WHEN u.role IS NOT NULL AND u.role != '' THEN u.role
+                           ELSE 'Senior Case Officer'
+                       END
+                   ELSE 'Client' 
+               END AS sender_role
         FROM IFW_chat_messages m
         LEFT JOIN IFW_users u ON m.sender_id = u.id AND m.sender_type = 'admin'
         LEFT JOIN IFW_clients c ON m.client_id = c.id AND m.sender_type = 'client'

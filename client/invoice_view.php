@@ -122,7 +122,18 @@ if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled']) && $in
 }
 
 $late_fee = ($invoice['status'] === 'paid') ? ($invoice['late_fee_accumulated'] ?? 0) : max($dynamic_late_fee, $invoice['late_fee_accumulated'] ?? 0);
-$total_due = $base_amount + $late_fee;
+$total_billed = $base_amount + $late_fee;
+
+// Confirmed payments deduction
+$total_paid = 0.00;
+try {
+    $stmtP = $pdo->prepare("SELECT SUM(amount) FROM IFW_invoice_payments WHERE invoice_id = ? AND status = 'Confirmed'");
+    $stmtP->execute([$id]);
+    $total_paid = floatval($stmtP->fetchColumn() ?: 0.00);
+} catch (Exception $e) {}
+
+$balance_due = max(0, $total_billed - $total_paid);
+$total_due = $balance_due;
 
 // Global payment info fallback
 $global_payment = get_setting($pdo, 'bank_details', '');
@@ -149,11 +160,11 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
         <div>
             <a href="/client/dashboard.php" class="btn btn-sm btn-outline-dark font-weight-bold mr-2"><i class="fas fa-arrow-left mr-1"></i> Back</a>
             <button onclick="window.print()" class="btn btn-sm btn-outline-secondary font-weight-bold mr-2"><i class="fas fa-print mr-1"></i> Print</button>
-            <?php if ($invoice['status'] !== 'paid'): ?>
-                <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark"
-                    onclick="showPayModal(<?= $invoice['id'] ?>, '#INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?>', <?= $total_due ?>, <?= htmlspecialchars(json_encode($payment_info)) ?>)"
+            <?php if ($balance_due > 0 && $invoice['status'] !== 'paid'): ?>
+                <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark shadow-sm"
+                    onclick="showPayModal(<?= $invoice['id'] ?>, '#INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?>', <?= $balance_due ?>, '<?= htmlspecialchars($invoice['currency'] ?? 'USD') ?>', <?= htmlspecialchars(json_encode($payment_info)) ?>)"
                     data-toggle="modal" data-target="#payNowModal">
-                    <i class="fas fa-credit-card mr-1"></i> Pay Now
+                    <i class="fas fa-credit-card mr-1"></i> Pay Balance Due (<?= $symbol ?><?= number_format($balance_due, 2) ?>)
                 </button>
             <?php endif; ?>
         </div>
@@ -176,15 +187,15 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                         <p class="mb-0 text-dark font-weight-bold" style="font-size: 14px;">
                             An automated late fee penalty of 
                             <?php if (!empty($invoice['late_fee_is_percentage'])): ?>
-                                <span class="text-danger font-weight-bold"><?= number_format($invoice['late_fee_amount'], 2) ?>%</span> of total ($<?= number_format(($invoice['late_fee_amount'] / 100) * $invoice['amount'], 2) ?> <?= htmlspecialchars($invoice['currency']) ?>)
+                                <span class="text-danger font-weight-bold"><?= number_format($invoice['late_fee_amount'], 2) ?>%</span> of total (<?= $symbol ?><?= number_format(($invoice['late_fee_amount'] / 100) * $base_amount, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?>)
                             <?php else: ?>
-                                <span class="text-danger font-weight-bold">$<?= number_format($invoice['late_fee_amount'], 2) ?> <?= htmlspecialchars($invoice['currency']) ?></span>
+                                <span class="text-danger font-weight-bold"><?= $symbol ?><?= number_format($invoice['late_fee_amount'], 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></span>
                             <?php endif; ?>
                             is being charged <span class="badge badge-danger"><?= htmlspecialchars($invoice['late_fee_type']) ?></span>.
                         </p>
                         <?php if ($late_fee > 0): ?>
                             <p class="mb-0 text-muted small mt-1">
-                                Current Accumulated Overdue Fees: <strong class="text-danger">$<?= number_format($late_fee, 2) ?> <?= htmlspecialchars($invoice['currency']) ?></strong>
+                                Current Accumulated Overdue Fees: <strong class="text-danger"><?= $symbol ?><?= number_format($late_fee, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></strong>
                             </p>
                         <?php endif; ?>
                     </div>
@@ -337,13 +348,23 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                 <?php endif; ?>
                 <?php if ($late_fee > 0): ?>
                 <tr class="bg-light">
-                    <td colspan="4" class="text-right text-danger font-weight-bold">Late Fee</td>
+                    <td colspan="4" class="text-right text-danger font-weight-bold">Late Fee Penalty Interest</td>
                     <td class="text-right text-danger font-weight-bold">+<?= $symbol ?><?= number_format($late_fee, 2) ?></td>
                 </tr>
                 <?php endif; ?>
+                <tr class="bg-light">
+                    <td colspan="4" class="text-right font-weight-bold">Total Invoiced Amount</td>
+                    <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($total_billed, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
+                </tr>
+                <?php if ($total_paid > 0): ?>
+                <tr class="bg-light">
+                    <td colspan="4" class="text-right text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i>Less Verified Payments Received</td>
+                    <td class="text-right text-success font-weight-bold">-<?= $symbol ?><?= number_format($total_paid, 2) ?></td>
+                </tr>
+                <?php endif; ?>
                 <tr style="background:#1a1a1a; color:#fecc56;">
-                    <td colspan="4" class="text-right font-weight-bold" style="font-size:1.1rem;">TOTAL DUE</td>
-                    <td class="text-right font-weight-bold" style="font-size:1.2rem;"><?= $symbol ?><?= number_format($total_due, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
+                    <td colspan="4" class="text-right font-weight-bold" style="font-size:1.1rem;">REMAINING BALANCE DUE</td>
+                    <td class="text-right font-weight-bold" style="font-size:1.25rem; color:#fecc56;"><?= $symbol ?><?= number_format($balance_due, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
                 </tr>
             </tfoot>
         </table>
@@ -399,55 +420,56 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
 <!-- PAY NOW MODAL -->
 <div class="modal fade" id="payNowModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-warning border-0 py-3">
+        <div class="modal-content border-0 shadow-lg bg-dark text-white">
+            <div class="modal-header bg-dark text-warning border-secondary py-3">
                 <h5 class="modal-title font-weight-bold"><i class="fas fa-credit-card mr-2"></i>Submit Payment — <span id="payInvoiceRef"></span></h5>
                 <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body p-0">
-                <div class="bg-dark text-white p-4 border-bottom border-secondary">
+                <div class="bg-black text-white p-4 border-bottom border-secondary">
                     <div class="text-warning font-weight-bold" style="font-size:1.8rem;" id="payAmount"></div>
-                    <div class="text-muted small">Total amount due</div>
+                    <div class="text-muted small">Remaining Balance Due</div>
                 </div>
-                <div class="p-4">
-                    <h6 class="font-weight-bold mb-3"><i class="fas fa-university text-warning mr-2"></i>Payment Details</h6>
-                    <div class="bg-light p-3 rounded border mb-4 text-dark" id="payInfoBlock" style="white-space:pre-wrap; font-family:monospace; font-size:13px; line-height:1.8; color:#000 !important;"></div>
-                    <div class="alert alert-warning border-0 mb-4 small">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>After paying, upload your payment receipt below for verification.
+                <div class="p-4 bg-dark">
+                    <h6 class="font-weight-bold mb-3 text-warning"><i class="fas fa-university mr-2"></i>Payment Instructions & Accounts</h6>
+                    <div class="bg-black border border-secondary rounded p-4 mb-4 text-light" id="payInfoBlock" style="white-space:pre-wrap; font-family:monospace; font-size:13px; line-height:1.8;"></div>
+                    <div class="alert alert-warning border-0 mb-4 small text-dark">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>After paying, upload your payment receipt/proof below for verification.
                     </div>
                     <form method="POST" action="/api/submit_payment_proof.php" enctype="multipart/form-data">
                         <input type="hidden" name="invoice_id" id="payInvoiceId">
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold small">Amount Paid ($)</label>
-                                <input type="number" step="0.01" name="amount_paid" id="payAmountInput" class="form-control" required placeholder="Amount paid">
+                                <label class="font-weight-bold small text-light">Amount Paid (<span id="payModalCurr">USD</span>)</label>
+                                <input type="number" step="0.01" name="amount_paid" id="payAmountInput" class="form-control bg-black text-white border-secondary" required placeholder="Amount paid">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold small">Payment Method</label>
-                                <select name="payment_method" class="form-control" onchange="if(this.value==='Other'){$('#otherPaymentMethodDiv').show().find('input').attr('required',true);}else{$('#otherPaymentMethodDiv').hide().find('input').removeAttr('required').val('');}" required>
+                                <label class="font-weight-bold small text-light">Payment Method</label>
+                                <select name="payment_method" class="form-control bg-black text-white border-secondary" onchange="if(this.value==='Other'){$('#otherPaymentMethodDiv').show().find('input').attr('required',true);}else{$('#otherPaymentMethodDiv').hide().find('input').removeAttr('required').val('');}" required>
                                     <option value="">Select...</option>
                                     <option>Bank Wire Transfer</option>
                                     <option>Cryptocurrency (Bitcoin)</option>
                                     <option>Cryptocurrency (USDT)</option>
+                                    <option>Credit / Debit Card</option>
                                     <option>Other</option>
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold small">Transaction / Reference No. (Optional)</label>
-                                <input type="text" name="reference_number" class="form-control" placeholder="e.g. TXN12345678">
+                                <label class="font-weight-bold small text-light">Transaction / Reference No. (Optional)</label>
+                                <input type="text" name="reference_number" class="form-control bg-black text-white border-secondary" placeholder="e.g. TXN12345678">
                             </div>
                             <div class="col-md-12 mb-3" id="otherPaymentMethodDiv" style="display:none;">
                                 <label class="font-weight-bold small text-warning">Specify Other Payment Method <span class="text-danger">*</span></label>
-                                <input type="text" name="other_payment_method" class="form-control" placeholder="e.g. PayPal, Cash App, Revolut">
+                                <input type="text" name="other_payment_method" class="form-control bg-black text-white border-secondary" placeholder="e.g. PayPal, Cash App, Revolut">
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="font-weight-bold small">Upload Payment Proof / Receipt</label>
-                            <input type="file" name="proof_file" class="form-control-file border p-2 rounded w-100" accept=".jpg,.jpeg,.png,.pdf" required>
+                            <label class="font-weight-bold small text-light">Upload Payment Proof / Receipt</label>
+                            <input type="file" name="proof_file" class="form-control-file border border-secondary p-2 rounded w-100 bg-black text-white" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" required>
                         </div>
                         <div class="mb-3">
-                            <label class="font-weight-bold small">Notes (Optional)</label>
-                            <textarea name="notes" class="form-control" rows="2" placeholder="Any additional information..."></textarea>
+                            <label class="font-weight-bold small text-light">Notes (Optional)</label>
+                            <textarea name="notes" class="form-control bg-black text-white border-secondary" rows="2" placeholder="Any additional information..."></textarea>
                         </div>
                         <button type="submit" class="btn btn-warning btn-block font-weight-bold py-3 text-dark shadow">
                             <i class="fas fa-paper-plane mr-2"></i>Submit Payment Proof
@@ -459,10 +481,12 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
     </div>
 </div>
 <script>
-function showPayModal(invoiceId, ref, amount, payInfo) {
+function showPayModal(invoiceId, ref, amount, currency, payInfo) {
+    currency = currency || 'USD';
     document.getElementById('payInvoiceId').value = invoiceId;
     document.getElementById('payInvoiceRef').textContent = ref;
-    document.getElementById('payAmount').textContent = '$' + parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits:2});
+    document.getElementById('payModalCurr').textContent = currency;
+    document.getElementById('payAmount').textContent = currency + ' ' + parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits:2});
     document.getElementById('payAmountInput').value = parseFloat(amount).toFixed(2);
     document.getElementById('payInfoBlock').textContent = payInfo || 'Contact your investigator for payment details.';
     $('#payNowModal').modal('show');

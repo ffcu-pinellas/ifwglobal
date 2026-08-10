@@ -28,7 +28,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
 // Fetch all cases
 $cases = [];
 try {
-    $s = $pdo->prepare("SELECT ca.*, u.username AS agent_name, u.email AS agent_email 
+    $s = $pdo->prepare("SELECT ca.*, 
+        COALESCE(NULLIF(u.full_name, ''), u.username) AS agent_name, 
+        u.role AS agent_role,
+        u.email AS agent_email,
+        u.phone AS agent_phone
         FROM IFW_cases ca 
         LEFT JOIN IFW_users u ON ca.attorney_id = u.id 
         WHERE ca.client_id=? ORDER BY ca.created_at DESC");

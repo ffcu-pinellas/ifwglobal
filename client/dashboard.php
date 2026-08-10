@@ -53,10 +53,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'setup
     }
 }
 
-// Fetch client + agent
+// Self-healing database check
+try {
+    $pdo->exec("UPDATE IFW_invoices SET amount = total_amount WHERE (amount IS NULL OR amount = 0) AND total_amount > 0");
+    $pdo->exec("UPDATE IFW_invoices SET total_amount = amount WHERE (total_amount IS NULL OR total_amount = 0) AND amount > 0");
+} catch(Exception $e) {}
+
+// Fetch client + assigned agent
 $client = null;
 try {
-    $s = $pdo->prepare("SELECT c.*, u.username AS agent_name, u.email AS agent_email FROM IFW_clients c LEFT JOIN IFW_users u ON c.assigned_agent_id=u.id WHERE c.id=?");
+    $s = $pdo->prepare("
+        SELECT c.*, 
+               COALESCE(NULLIF(u.full_name, ''), u.username) AS agent_name, 
+               u.username AS agent_username,
+               u.role AS agent_role, 
+               u.email AS agent_email,
+               u.phone AS agent_phone
+        FROM IFW_clients c 
+        LEFT JOIN IFW_users u ON c.assigned_agent_id = u.id 
+        WHERE c.id = ?
+    ");
     $s->execute([$client_id]);
     $client = $s->fetch();
 } catch(Exception $e) {}
@@ -83,13 +99,20 @@ try {
     $unread_count = count(array_filter($notifications, fn($n) => !$n['is_read']));
 } catch(Exception $e) {}
 
-// Active Cases
+// Active Cases with Investigator info
 $cases = [];
 try {
-    $s = $pdo->prepare("SELECT ca.*, u.username AS agent_name 
+    $s = $pdo->prepare("
+        SELECT ca.*, 
+               COALESCE(NULLIF(u.full_name, ''), u.username) AS agent_name,
+               u.username AS agent_username,
+               u.role AS agent_role,
+               u.email AS agent_email,
+               u.phone AS agent_phone
         FROM IFW_cases ca 
         LEFT JOIN IFW_users u ON ca.attorney_id = u.id 
-        WHERE ca.client_id=? ORDER BY ca.created_at DESC");
+        WHERE ca.client_id=? ORDER BY ca.created_at DESC
+    ");
     $s->execute([$client_id]);
     $cases = $s->fetchAll();
 } catch(Exception $e) {}
@@ -97,13 +120,190 @@ try {
 // Latest case
 $latest_case = $cases[0] ?? null;
 
-// Invoices
+// Fallback assigned agent from case if not directly on client
+if (empty($client['agent_name']) && $latest_case && !empty($latest_case['agent_name'])) {
+    $client['agent_name'] = $latest_case['agent_name'];
+    $client['agent_username'] = $latest_case['agent_username'];
+    $client['agent_role'] = $latest_case['agent_role'];
+    $client['agent_email'] = $latest_case['agent_email'];
+    $client['agent_phone'] = $latest_case['agent_phone'] ?? '';
+}
+
+// Format Agent display info
+$agent_name_display = !empty($client['agent_name']) && $client['agent_name'] !== 'admin' ? $client['agent_name'] : ($client['agent_username'] === 'Gary009' ? 'Gary Livingston' : null);
+$agent_role_display = !empty($client['agent_role']) ? ucwords(str_replace('_', ' ', $client['agent_role'])) : 'Senior Investigator';
+if (in_array(strtolower($agent_role_display), ['agent', 'staff', 'admin'])) $agent_role_display = 'Senior Investigator';
+
+// Exchange rates for multi-currency conversion to USD
+$exchange_rates = [
+    'USD' => 1.0,
+    'EUR' => 1.08,
+    'GBP' => 1.28,
+    'AUD' => 0.65,
+    'CAD' => 0.73,
+    'CHF' => 1.12,
+    'BTC' => 65000.0,
+    'ETH' => 3500.0,
+    'USDT' => 1.0,
+    'BUSD' => 1.0
+];
+
+// Invoices & Calculations
 $invoices = [];
+$total_invoiced_usd = 0.00;
+$total_outstanding_usd = 0.00;
+$active_penalty_invoices = 0;
+$total_accumulated_penalty_usd = 0.00;
+$primary_penalty_invoice = null;
+
 try {
-    $s = $pdo->prepare("SELECT * FROM IFW_invoices WHERE client_id=? ORDER BY issue_date DESC LIMIT 10");
+    $s = $pdo->prepare("SELECT * FROM IFW_invoices WHERE client_id=? ORDER BY issue_date DESC, id DESC LIMIT 20");
     $s->execute([$client_id]);
-    $invoices = $s->fetchAll();
+    $raw_invoices = $s->fetchAll();
+
+    foreach ($raw_invoices as $inv) {
+        $curr = !empty($inv['currency']) ? strtoupper($inv['currency']) : 'USD';
+        $rate = $exchange_rates[$curr] ?? 1.0;
+
+        // Base amount
+        $base_amount = floatval($inv['total_amount'] > 0 ? $inv['total_amount'] : ($inv['amount'] > 0 ? $inv['amount'] : ($inv['subtotal'] > 0 ? $inv['subtotal'] : 0)));
+
+        // Description resolution
+        $desc = trim($inv['description'] ?? '');
+        if (empty($desc)) {
+            try {
+                $stmtDesc = $pdo->prepare("SELECT description FROM IFW_invoice_items WHERE invoice_id = ? ORDER BY id ASC LIMIT 1");
+                $stmtDesc->execute([$inv['id']]);
+                $item_desc = $stmtDesc->fetchColumn();
+                if (!empty($item_desc)) $desc = $item_desc;
+            } catch(Exception $ex) {}
+        }
+        if (empty($desc)) {
+            $desc = !empty($inv['notes']) ? substr($inv['notes'], 0, 50) : 'Professional Legal & Forensic Services';
+        }
+        $inv['display_description'] = $desc;
+        $inv['base_amount'] = $base_amount;
+        $inv['currency'] = $curr;
+
+        // Dynamic late fee calculation
+        $dynamic_late_fee = 0.00;
+        $next_penalty_time = null;
+        $time_remaining_sec = 0;
+
+        if (strtolower($inv['status']) !== 'paid' && !empty($inv['late_fee_enabled']) && $inv['late_fee_amount'] > 0) {
+            $startDate = strtotime($inv['late_fee_start_date'] ?? $inv['due_date']);
+            $now = time();
+            $fee_rate = floatval($inv['late_fee_amount']);
+            if (!empty($inv['late_fee_is_percentage'])) {
+                $fee_rate = ($fee_rate / 100) * $base_amount;
+            }
+            
+            if ($now >= $startDate) {
+                $diff_sec = $now - $startDate;
+                $type = $inv['late_fee_type'] ?? 'daily';
+                if ($type === 'hourly') {
+                    $intervals = floor($diff_sec / 3600);
+                    $dynamic_late_fee = $intervals * $fee_rate;
+                    $next_penalty_time = $startDate + ($intervals + 1) * 3600;
+                } elseif ($type === 'daily') {
+                    $intervals = floor($diff_sec / 86400);
+                    $dynamic_late_fee = $intervals * $fee_rate;
+                    $next_penalty_time = $startDate + ($intervals + 1) * 86400;
+                } elseif ($type === 'weekly') {
+                    $intervals = floor($diff_sec / (86400 * 7));
+                    $dynamic_late_fee = $intervals * $fee_rate;
+                    $next_penalty_time = $startDate + ($intervals + 1) * (86400 * 7);
+                } else { // monthly
+                    $intervals = floor($diff_sec / (86400 * 30));
+                    $dynamic_late_fee = $intervals * $fee_rate;
+                    $next_penalty_time = $startDate + ($intervals + 1) * (86400 * 30);
+                }
+                $time_remaining_sec = max(0, $next_penalty_time - $now);
+            } else {
+                $next_penalty_time = $startDate;
+                $time_remaining_sec = max(0, $startDate - $now);
+            }
+
+            if ($dynamic_late_fee > ($inv['late_fee_accumulated'] ?? 0)) {
+                try {
+                    $pdo->prepare("UPDATE IFW_invoices SET late_fee_accumulated = ? WHERE id = ?")->execute([$dynamic_late_fee, $inv['id']]);
+                    $inv['late_fee_accumulated'] = $dynamic_late_fee;
+                } catch(Exception $ex) {}
+            }
+        }
+
+        $late_fee = (strtolower($inv['status']) === 'paid') ? ($inv['late_fee_accumulated'] ?? 0) : max($dynamic_late_fee, $inv['late_fee_accumulated'] ?? 0);
+        $inv['late_fee'] = $late_fee;
+        $inv['next_penalty_time'] = $next_penalty_time;
+        $inv['time_remaining_sec'] = $time_remaining_sec;
+
+        $total_billed = $base_amount + $late_fee;
+        $inv['total_billed'] = $total_billed;
+
+        // Confirmed payments deduction
+        $total_paid = 0.00;
+        try {
+            $stmtP = $pdo->prepare("SELECT SUM(amount) FROM IFW_invoice_payments WHERE invoice_id = ? AND status = 'Confirmed'");
+            $stmtP->execute([$inv['id']]);
+            $total_paid = floatval($stmtP->fetchColumn() ?: 0.00);
+        } catch(Exception $ex) {}
+        $inv['total_paid'] = $total_paid;
+
+        $balance_due = max(0, $total_billed - $total_paid);
+        $inv['balance_due'] = $balance_due;
+
+        // Clean status
+        $is_overdue = !empty($inv['due_date']) && strtotime($inv['due_date']) < time() && $balance_due > 0;
+        if ($total_billed > 0 && $total_paid >= $total_billed) {
+            $status_clean = 'Paid';
+        } elseif ($total_paid > 0 && $balance_due > 0) {
+            $status_clean = 'Partial';
+        } elseif ($is_overdue || strtolower($inv['status']) === 'overdue') {
+            $status_clean = 'Overdue';
+        } else {
+            $status_clean = 'Unpaid';
+        }
+        $inv['effective_status'] = $status_clean;
+
+        // Totals in USD
+        $total_invoiced_usd += ($total_billed * $rate);
+        $total_outstanding_usd += ($balance_due * $rate);
+
+        if ($late_fee > 0 || (!empty($inv['late_fee_enabled']) && $balance_due > 0)) {
+            $active_penalty_invoices++;
+            $total_accumulated_penalty_usd += ($late_fee * $rate);
+            if (!$primary_penalty_invoice) {
+                $primary_penalty_invoice = $inv;
+            }
+        }
+
+        $invoices[] = $inv;
+    }
 } catch(Exception $e) {}
+
+// Automated Overdue Email Reminder (Throttle to once every 24h per invoice)
+if ($active_penalty_invoices > 0 && $primary_penalty_invoice && !empty($client['email'])) {
+    $should_send_email = true;
+    if (!empty($primary_penalty_invoice['last_reminder_sent'])) {
+        if (time() - strtotime($primary_penalty_invoice['last_reminder_sent']) < 86400) {
+            $should_send_email = false;
+        }
+    }
+    if ($should_send_email) {
+        try {
+            $inv_ref = $primary_penalty_invoice['invoice_number'] ?? '#INV-' . str_pad($primary_penalty_invoice['id'], 5, '0', STR_PAD_LEFT);
+            $subject = "Urgent Overdue Penalty Notice - Invoice {$inv_ref}";
+            $body = "<h2>Overdue Penalty & Interest Notice</h2>
+                     <p>Dear " . htmlspecialchars($client['first_name']) . ",</p>
+                     <p>This is an automated formal notice regarding your invoice <strong>{$inv_ref}</strong> which has accumulated late fee penalty interest.</p>
+                     <p><strong>Total Balance Due:</strong> " . htmlspecialchars($primary_penalty_invoice['currency']) . " " . number_format($primary_penalty_invoice['balance_due'], 2) . "<br>
+                     <strong>Accumulated Late Fees:</strong> " . htmlspecialchars($primary_penalty_invoice['currency']) . " " . number_format($primary_penalty_invoice['late_fee'], 2) . "</p>
+                     <p>Please log in to your <a href='" . BASE_URL . "/client/login.php'>IFW Global Client Portal</a> to settle your outstanding balance immediately and stop further interest accumulation.</p>";
+            send_html_email($client['email'], $subject, $body);
+            $pdo->prepare("UPDATE IFW_invoices SET last_reminder_sent = NOW() WHERE id = ?")->execute([$primary_penalty_invoice['id']]);
+        } catch(Exception $ex) {}
+    }
+}
 
 // Payment info (global fallback)
 $global_payment_info = get_setting($pdo, 'payment_instructions', '');
@@ -166,7 +366,12 @@ require_once $dir . '/includes/admin_sidebar.php';
     <div class="col-md-3 mb-3">
         <div class="stat-mini bg-dark shadow-sm" style="color:#fecc56;">
             <div class="text-muted small text-uppercase mb-1" style="font-size:11px; color:#aaa !important;">Total Invoiced</div>
-            <div style="font-size:2rem;"><?= number_format(array_sum(array_column($invoices,'amount')),0) ?> USD</div>
+            <div style="font-size:1.8rem; font-weight: 700;"><?= number_format($total_invoiced_usd, 2) ?> USD</div>
+            <?php if ($total_outstanding_usd > 0): ?>
+                <div class="text-danger small font-weight-bold" style="font-size:11px;">Due: <?= number_format($total_outstanding_usd, 2) ?> USD</div>
+            <?php else: ?>
+                <div class="text-success small font-weight-bold" style="font-size:11px;">All settled</div>
+            <?php endif; ?>
         </div>
     </div>
     <div class="col-md-3 mb-3">
@@ -188,9 +393,18 @@ require_once $dir . '/includes/admin_sidebar.php';
     <div class="col-md-3 mb-3">
         <div class="stat-mini bg-dark shadow-sm" style="color:#fecc56;">
             <div class="text-muted small text-uppercase mb-1" style="font-size:11px; color:#aaa !important;">Assigned Agent</div>
-            <div style="font-size:1rem; font-weight:700; margin-top:6px; color:#fff;">
-                <?= htmlspecialchars($client['agent_name'] ?? 'Being Assigned') ?>
-            </div>
+            <?php if ($agent_name_display): ?>
+                <div style="font-size:1.15rem; font-weight:700; margin-top:3px; color:#fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?= htmlspecialchars($agent_name_display) ?>">
+                    <?= htmlspecialchars($agent_name_display) ?>
+                </div>
+                <div class="text-warning small font-weight-bold" style="font-size:11px;">
+                    <i class="fas fa-user-shield mr-1"></i><?= htmlspecialchars($agent_role_display) ?>
+                </div>
+            <?php else: ?>
+                <div style="font-size:1.1rem; font-weight:700; margin-top:6px; color:#aaa;">
+                    Being Assigned
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -199,35 +413,6 @@ require_once $dir . '/includes/admin_sidebar.php';
     <!-- LEFT COLUMN -->
     <div class="col-lg-8">
         
-        <!-- LATE FEE ALERT BANNER -->
-        <?php
-        $active_penalty_invoices = 0;
-        $total_accumulated_penalty = 0;
-        foreach ($invoices as $inv) {
-            $lf = 0;
-            if (!empty($inv['late_fee_enabled']) && $inv['status'] !== 'paid') {
-                $lf = $inv['late_fee_accumulated'] ?? 0;
-            }
-            if ($lf > 0) {
-                $active_penalty_invoices++;
-                $total_accumulated_penalty += $lf;
-            }
-        }
-        ?>
-        <?php if ($active_penalty_invoices > 0): ?>
-            <div class="alert alert-danger border-0 mb-4 p-3 shadow-sm" style="border-left: 5px solid #dc3545 !important; background: #fff5f5; color: #721c24;">
-                <h6 class="alert-heading font-weight-bold mb-1 text-danger">
-                    <i class="fas fa-exclamation-triangle mr-2 text-danger"></i> 
-                    ⚠️ Overdue Penalty & Interest Active
-                </h6>
-                <p class="mb-0 text-dark small">
-                    You have <strong><?= $active_penalty_invoices ?></strong> overdue invoice(s) with active late fees. 
-                    Total accumulated penalty interest: <strong class="text-danger"><?= number_format($total_accumulated_penalty, 2) ?> USD</strong>. 
-                    Please pay promptly to halt further interest accumulation.
-                </p>
-            </div>
-        <?php endif; ?>
-
         <!-- KYC BANNER -->
         <?php if ($kyc_status !== 'approved'): ?>
         <div class="card shadow-sm border-0 mb-4 kyc-banner <?= $kyc_status ?>">
@@ -297,7 +482,7 @@ require_once $dir . '/includes/admin_sidebar.php';
                                     <div class="text-muted" style="font-size:11px;">
                                         <i class="fas fa-calendar-alt mr-1"></i> Opened <?= date('M j, Y', strtotime($case['created_at'])) ?>
                                         <?php if (!empty($case['agent_name'])): ?>
-                                            &bull; <i class="fas fa-user-tie mr-1"></i> <?= htmlspecialchars($case['agent_name']) ?>
+                                            &bull; <i class="fas fa-user-shield mr-1 text-warning"></i> <?= htmlspecialchars($case['agent_name']) ?> <span class="badge badge-warning text-dark ml-1" style="font-size:9px;"><?= htmlspecialchars(ucwords(str_replace('_', ' ', $case['agent_role'] ?? 'Investigator'))) ?></span>
                                         <?php endif; ?>
                                         <?php if (!empty($case['amount_lost']) && $case['amount_lost'] > 0): ?>
                                             &bull; <i class="fas fa-dollar-sign mr-1"></i> Loss: <?= number_format($case['amount_lost'],2) ?>
@@ -320,10 +505,65 @@ require_once $dir . '/includes/admin_sidebar.php';
             </div>
         </div>
 
-        <!-- INVOICES -->
+        <!-- OVERDUE PENALTY TICKER -->
+        <?php if ($active_penalty_invoices > 0 && $primary_penalty_invoice): ?>
+            <div class="alert alert-danger border-0 mb-4 p-4 shadow-sm" style="border-left: 5px solid #dc3545 !important; background: #fff5f5; color: #721c24;">
+                <div class="d-flex align-items-center justify-content-between flex-wrap">
+                    <div>
+                        <h5 class="alert-heading font-weight-bold mb-1 text-danger">
+                            <i class="fas fa-exclamation-triangle mr-2 text-danger"></i> 
+                            Overdue Penalty / Penalty Interest Active
+                        </h5>
+                        <p class="mb-0 text-dark font-weight-bold" style="font-size: 14px;">
+                            An automated late fee penalty of 
+                            <?php if (!empty($primary_penalty_invoice['late_fee_is_percentage'])): ?>
+                                <span class="text-danger font-weight-bold"><?= number_format($primary_penalty_invoice['late_fee_amount'], 2) ?>%</span> of total (<?= htmlspecialchars($primary_penalty_invoice['currency']) ?> <?= number_format(($primary_penalty_invoice['late_fee_amount'] / 100) * $primary_penalty_invoice['base_amount'], 2) ?>)
+                            <?php else: ?>
+                                <span class="text-danger font-weight-bold"><?= htmlspecialchars($primary_penalty_invoice['currency']) ?> <?= number_format($primary_penalty_invoice['late_fee_amount'], 2) ?></span>
+                            <?php endif; ?>
+                            is being charged <span class="badge badge-danger"><?= htmlspecialchars($primary_penalty_invoice['late_fee_type'] ?? 'daily') ?></span>.
+                        </p>
+                        <p class="mb-0 text-muted small mt-1">
+                            Total Accumulated Overdue Fees: <strong class="text-danger"><?= number_format($total_accumulated_penalty_usd, 2) ?> USD</strong> across <?= $active_penalty_invoices ?> invoice(s).
+                        </p>
+                    </div>
+                    <div class="text-right mt-2 mt-md-0" style="min-width: 240px;">
+                        <span class="small font-weight-bold text-uppercase d-block text-muted">Next penalty increment in:</span>
+                        <div id="dashPenaltyCountdown" class="font-weight-bold text-danger mt-1" style="font-size: 1.4rem; letter-spacing: 1px; font-family: monospace;">
+                            00h 00m 00s
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+            (function() {
+                var remainingSec = <?= (int)($primary_penalty_invoice['time_remaining_sec'] ?? 0) ?>;
+                function updateCountdown() {
+                    if (remainingSec <= 0) {
+                        document.getElementById('dashPenaltyCountdown').innerHTML = "INCREMENTING NOW";
+                        return;
+                    }
+                    var h = Math.floor(remainingSec / 3600);
+                    var m = Math.floor((remainingSec % 3600) / 60);
+                    var s = remainingSec % 60;
+                    document.getElementById('dashPenaltyCountdown').innerHTML = 
+                        (h < 10 ? '0' : '') + h + 'h ' + 
+                        (m < 10 ? '0' : '') + m + 'm ' + 
+                        (s < 10 ? '0' : '') + s + 's';
+                    remainingSec--;
+                }
+                updateCountdown();
+                setInterval(updateCountdown, 1000);
+            })();
+            </script>
+        <?php endif; ?>
+
+        <!-- BILLING & INVOICES -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-dark border-bottom py-3 d-flex justify-content-between align-items-center text-warning">
                 <h5 class="mb-0 font-weight-bold"><i class="fas fa-file-invoice-dollar text-warning mr-2"></i>Billing & Invoices</h5>
+                <span class="badge badge-warning text-dark font-weight-bold px-3 py-1"><?= count($invoices) ?> Total Invoices</span>
             </div>
             <?php if (empty($invoices)): ?>
                 <div class="card-body text-center py-5">
@@ -337,7 +577,7 @@ require_once $dir . '/includes/admin_sidebar.php';
                             <tr style="font-size:12px;" class="text-uppercase text-muted">
                                 <th>Invoice</th>
                                 <th>Description</th>
-                                <th>Amount</th>
+                                <th>Amount & Balance</th>
                                 <th>Due Date</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -345,57 +585,56 @@ require_once $dir . '/includes/admin_sidebar.php';
                         </thead>
                         <tbody>
                             <?php foreach($invoices as $inv): ?>
-                            <?php
-                                $late_fee = 0;
-                                if (!empty($inv['late_fee_enabled']) && $inv['status'] !== 'paid') {
-                                    $late_fee = $inv['late_fee_accumulated'] ?? 0;
-                                }
-                                $total_due = $inv['amount'] + $late_fee;
-                            ?>
                             <tr>
                                 <td>
-                                    <strong>#INV-<?= str_pad($inv['id'], 5,'0', STR_PAD_LEFT) ?></strong><br>
+                                    <strong class="text-dark"><?= htmlspecialchars($inv['invoice_number'] ?? '#INV-' . str_pad($inv['id'], 5, '0', STR_PAD_LEFT)) ?></strong><br>
                                     <small class="text-muted"><?= date('M j, Y', strtotime($inv['issue_date'] ?? $inv['created_at'])) ?></small>
                                 </td>
                                 <td>
-                                    <span class="text-dark"><?= htmlspecialchars(substr($inv['description'] ?? 'Professional Services', 0, 50)) ?></span>
-                                    <?php if ($late_fee > 0): ?>
-                                        <br><small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i>Late fee: +<?= number_format($late_fee,2) ?> <?= htmlspecialchars($inv['currency'] ?? 'USD') ?></small>
+                                    <span class="text-dark font-weight-bold"><?= htmlspecialchars($inv['display_description']) ?></span>
+                                    <?php if ($inv['late_fee'] > 0): ?>
+                                        <br><small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i>Late fee: +<?= htmlspecialchars($inv['currency']) ?> <?= number_format($inv['late_fee'], 2) ?></small>
                                     <?php endif; ?>
                                 </td>
-                                <td class="font-weight-bold">
-                                    <?= htmlspecialchars($inv['currency'] ?? 'USD') ?> <?= number_format($total_due, 2) ?>
-                                    <?php if ($late_fee > 0): ?>
-                                        <br><small class="text-muted" style="font-size:10px;">Base: <?= htmlspecialchars($inv['currency'] ?? 'USD') ?> <?= number_format($inv['amount'],2) ?></small>
+                                <td>
+                                    <strong class="text-dark" style="font-size: 1.05rem;"><?= htmlspecialchars($inv['currency']) ?> <?= number_format($inv['total_billed'], 2) ?></strong>
+                                    <?php if ($inv['total_paid'] > 0): ?>
+                                        <br><small class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i>Paid: <?= htmlspecialchars($inv['currency']) ?> <?= number_format($inv['total_paid'], 2) ?></small>
+                                        <?php if ($inv['balance_due'] > 0): ?>
+                                            <br><span class="badge badge-warning text-dark font-weight-bold">Due: <?= htmlspecialchars($inv['currency']) ?> <?= number_format($inv['balance_due'], 2) ?></span>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
                                 <td>
                                     <?php if ($inv['due_date']): ?>
-                                        <?php $is_overdue = strtotime($inv['due_date']) < time() && $inv['status'] !== 'paid'; ?>
-                                        <span class="<?= $is_overdue ? 'text-danger font-weight-bold' : 'text-dark' ?>">
+                                        <?php $is_over = strtotime($inv['due_date']) < time() && $inv['balance_due'] > 0; ?>
+                                        <span class="<?= $is_over ? 'text-danger font-weight-bold' : 'text-dark' ?>">
                                             <?= date('M j, Y', strtotime($inv['due_date'])) ?>
-                                            <?= $is_overdue ? '<br><small class="text-danger">OVERDUE</small>' : '' ?>
+                                            <?= $is_over ? '<br><span class="badge badge-danger" style="font-size:9px;">OVERDUE</span>' : '' ?>
                                         </span>
                                     <?php else: ?>
                                         <span class="text-muted">—</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <?php $st = strtolower($inv['status'] ?? 'unpaid'); ?>
-                                    <span class="invoice-status-<?= $st ?>">
-                                        <?php if($st==='paid'): ?><i class="fas fa-check-circle mr-1"></i>Paid
-                                        <?php elseif($st==='partial'): ?><i class="fas fa-adjust mr-1"></i>Partial
-                                        <?php elseif($st==='overdue'): ?><i class="fas fa-exclamation-circle mr-1"></i>Overdue
-                                        <?php else: ?><i class="fas fa-clock mr-1"></i>Unpaid<?php endif; ?>
-                                    </span>
+                                    <?php $st = $inv['effective_status']; ?>
+                                    <?php if($st === 'Paid'): ?>
+                                        <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i>Paid</span>
+                                    <?php elseif($st === 'Partial'): ?>
+                                        <span class="badge badge-warning text-dark px-2 py-1"><i class="fas fa-adjust mr-1"></i>Partial Paid</span>
+                                    <?php elseif($st === 'Overdue'): ?>
+                                        <span class="badge badge-danger px-2 py-1"><i class="fas fa-exclamation-circle mr-1"></i>Overdue</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-secondary px-2 py-1"><i class="fas fa-clock mr-1"></i>Unpaid</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <a href="/client/invoice_view.php?id=<?= $inv['id'] ?>" class="btn btn-sm btn-outline-secondary mr-1" title="View Invoice">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <?php if ($inv['status'] !== 'paid'): ?>
+                                    <?php if ($inv['balance_due'] > 0): ?>
                                         <button type="button" class="btn btn-sm pay-btn" 
-                                            onclick="showPayModal(<?= $inv['id'] ?>, '<?= htmlspecialchars(addslashes('#INV-'.str_pad($inv['id'],5,'0',STR_PAD_LEFT))) ?>', <?= $total_due ?>, <?= htmlspecialchars(json_encode($inv['payment_info'] ?? $global_payment_info)) ?>)">
+                                            onclick="showPayModal(<?= $inv['id'] ?>, '<?= htmlspecialchars(addslashes($inv['invoice_number'] ?? '#INV-'.str_pad($inv['id'],5,'0',STR_PAD_LEFT))) ?>', <?= $inv['balance_due'] ?>, '<?= htmlspecialchars($inv['currency']) ?>', <?= htmlspecialchars(json_encode($inv['payment_info'] ?? $global_payment_info)) ?>)">
                                             <i class="fas fa-credit-card mr-1"></i> Pay
                                         </button>
                                     <?php endif; ?>
@@ -435,7 +674,7 @@ require_once $dir . '/includes/admin_sidebar.php';
                              <?php foreach($proofs as $pr): ?>
                                  <tr>
                                      <td><span class="text-muted small"><?= date('M j, Y', strtotime($pr['created_at'])) ?></span></td>
-                                     <td><strong><?= htmlspecialchars($pr['invoice_number']) ?></strong></td>
+                                     <td><strong><?= htmlspecialchars($pr['invoice_number'] ?? '#INV-' . $pr['invoice_id']) ?></strong></td>
                                      <td><strong class="text-success"><?= htmlspecialchars($pr['currency'] ?? 'USD') ?> <?= number_format($pr['amount'], 2) ?></strong></td>
                                      <td><span class="badge badge-info"><?= htmlspecialchars($pr['payment_method']) ?></span><br><small class="text-muted">Ref: <?= htmlspecialchars($pr['reference_number']) ?></small></td>
                                      <td>
@@ -485,7 +724,10 @@ require_once $dir . '/includes/admin_sidebar.php';
                 <?php if (!empty($latest_case['agent_name'])): ?>
                 <div class="mb-3">
                     <div class="text-muted small text-uppercase mb-1" style="font-size:10px;">Assigned Investigator</div>
-                    <div class="font-weight-bold"><i class="fas fa-user-tie mr-1 text-warning"></i><?= htmlspecialchars($latest_case['agent_name']) ?></div>
+                    <div class="font-weight-bold">
+                        <i class="fas fa-user-shield mr-1 text-warning"></i><?= htmlspecialchars($latest_case['agent_name']) ?>
+                        <span class="badge badge-warning text-dark ml-1" style="font-size:9px;"><?= htmlspecialchars(ucwords(str_replace('_', ' ', $latest_case['agent_role'] ?? 'Senior Investigator'))) ?></span>
+                    </div>
                 </div>
                 <?php endif; ?>
                 <?php if (!empty($latest_case['amount_lost']) && $latest_case['amount_lost'] > 0): ?>
@@ -508,20 +750,29 @@ require_once $dir . '/includes/admin_sidebar.php';
         <?php endif; ?>
 
         <!-- ASSIGNED INVESTIGATOR -->
-        <div class="card shadow-sm border-0 mb-4">
+        <div class="card shadow-sm border-0 mb-4 bg-dark text-white border-warning">
+            <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning">
+                <i class="fas fa-user-shield mr-2"></i>Your Assigned Investigator
+            </div>
             <div class="card-body text-center py-4">
-                <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#fecc56,#f0a500);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
-                    <i class="fas fa-user-shield fa-2x text-dark"></i>
+                <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#fecc56,#f0a500);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 4px 15px rgba(254,204,86,0.3);">
+                    <i class="fas fa-user-tie fa-2x text-dark"></i>
                 </div>
-                <h6 class="font-weight-bold mb-1">Your Investigator</h6>
-                <?php if ($client['agent_name']): ?>
-                    <p class="text-dark font-weight-bold mb-1"><?= htmlspecialchars($client['agent_name']) ?></p>
-                    <p class="text-muted small mb-0"><i class="fas fa-envelope mr-1"></i><?= htmlspecialchars($client['agent_email'] ?? '') ?></p>
+                <?php if ($agent_name_display): ?>
+                    <h5 class="font-weight-bold mb-1 text-white"><?= htmlspecialchars($agent_name_display) ?></h5>
+                    <span class="badge badge-warning text-dark font-weight-bold px-3 py-1 mb-2"><?= htmlspecialchars($agent_role_display) ?></span>
+                    <p class="text-muted small mb-3"><i class="fas fa-envelope mr-1"></i><?= htmlspecialchars($client['agent_email'] ?? 'investigations@ifwglobal.com') ?></p>
+                    <a href="chat.php" class="btn btn-warning btn-sm btn-block font-weight-bold text-dark shadow-sm">
+                        <i class="fas fa-comments mr-1"></i> Direct Message Investigator
+                    </a>
                 <?php else: ?>
-                    <p class="text-muted small mb-2">An investigator will be assigned shortly.</p>
+                    <h6 class="font-weight-bold mb-1 text-white">Pending Assignment</h6>
+                    <p class="text-muted small mb-2">A certified forensic investigator will be assigned to your case shortly.</p>
                     <span class="badge badge-warning text-dark">Pending Assignment</span>
                 <?php endif; ?>
             </div>
+        </div>
+
         <!-- PORTAL SECURITY PIN -->
         <div class="card shadow-sm border-0 mb-4 bg-dark text-white border-warning">
             <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning">
@@ -553,20 +804,20 @@ require_once $dir . '/includes/admin_sidebar.php';
         </div>
 
         <!-- PAYMENT INFORMATION -->
-        <div class="card shadow-sm border-0 mb-4">
+        <div class="card shadow-sm border-0 mb-4 bg-dark text-white">
             <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning">
                 <i class="fas fa-university text-warning mr-2"></i>Payment Information
             </div>
             <div class="card-body">
                 <?php if (!empty($bank_details) || !empty($global_payment_info)): ?>
                     <?php if (!empty($global_payment_info)): ?>
-                        <div class="alert alert-light border mb-3 small">
-                            <strong class="d-block mb-1 text-dark"><i class="fas fa-info-circle text-warning mr-1"></i> Instructions</strong>
+                        <div class="alert alert-dark border border-secondary mb-3 small text-light">
+                            <strong class="d-block mb-1 text-warning"><i class="fas fa-info-circle mr-1"></i> Instructions</strong>
                             <?= nl2br(htmlspecialchars($global_payment_info)) ?>
                         </div>
                     <?php endif; ?>
                     <?php if (!empty($bank_details)): ?>
-                        <div class="bg-light p-3 rounded border small" style="white-space:pre-wrap; font-family: monospace; font-size:12px;">
+                        <div class="bg-black p-3 rounded border border-secondary small text-light" style="white-space:pre-wrap; font-family: monospace; font-size:12px;">
                             <?= htmlspecialchars($bank_details) ?>
                         </div>
                     <?php endif; ?>
@@ -581,16 +832,16 @@ require_once $dir . '/includes/admin_sidebar.php';
 <!-- PAY NOW MODAL -->
 <div class="modal fade" id="payNowModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-warning border-0 py-3">
+        <div class="modal-content border-0 shadow-lg bg-dark text-white">
+            <div class="modal-header bg-dark text-warning border-secondary py-3">
                 <h5 class="modal-title font-weight-bold"><i class="fas fa-credit-card mr-2"></i>Make Payment — <span id="payInvoiceRef"></span></h5>
                 <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body p-0">
-                <div class="bg-dark text-white p-4 border-bottom border-secondary">
+                <div class="bg-black text-white p-4 border-bottom border-secondary">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-muted small text-uppercase" style="font-size:10px;">Amount Due</div>
+                            <div class="text-muted small text-uppercase" style="font-size:10px;">Balance Due</div>
                             <div class="font-weight-bold text-warning" style="font-size:2rem;" id="payAmount"></div>
                         </div>
                         <div class="text-right">
@@ -598,49 +849,50 @@ require_once $dir . '/includes/admin_sidebar.php';
                         </div>
                     </div>
                 </div>
-                <div class="p-4">
-                    <h6 class="font-weight-bold mb-3 text-dark"><i class="fas fa-university mr-2 text-warning"></i>Payment Details</h6>
-                    <div class="bg-light border rounded p-4 mb-4 text-dark" id="paymentInfoBlock" style="white-space:pre-wrap; font-family: monospace; font-size:13px; line-height:1.8; color:#000 !important;"></div>
+                <div class="p-4 bg-dark">
+                    <h6 class="font-weight-bold mb-3 text-warning"><i class="fas fa-university mr-2"></i>Payment Instructions & Accounts</h6>
+                    <div class="bg-black border border-secondary rounded p-4 mb-4 text-light" id="paymentInfoBlock" style="white-space:pre-wrap; font-family: monospace; font-size:13px; line-height:1.8;"></div>
                     
-                    <div class="alert alert-warning border-0 mb-4">
+                    <div class="alert alert-warning border-0 mb-4 text-dark">
                         <i class="fas fa-exclamation-triangle mr-2"></i>
-                        <strong>Important:</strong> After making payment, please upload your payment proof below so we can verify and update your invoice status.
+                        <strong>Important:</strong> After sending your payment, please submit your transaction reference and upload the receipt/proof below for admin verification.
                     </div>
 
                     <form method="POST" action="/api/submit_payment_proof.php" enctype="multipart/form-data">
                         <input type="hidden" name="invoice_id" id="payInvoiceId">
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold text-dark small">Amount Paid ($)</label>
-                                <input type="number" step="0.01" name="amount_paid" id="payAmountInput" class="form-control border-secondary" required placeholder="Enter amount paid">
+                                <label class="font-weight-bold text-light small">Amount Paid (<span id="payCurrencyLabel">USD</span>)</label>
+                                <input type="number" step="0.01" name="amount_paid" id="payAmountInput" class="form-control bg-black text-white border-secondary" required placeholder="Enter amount paid">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold text-dark small">Payment Method</label>
-                                <select name="payment_method" class="form-control border-secondary" onchange="if(this.value==='Other'){$('#otherPaymentMethodDivDashboard').show().find('input').attr('required',true);}else{$('#otherPaymentMethodDivDashboard').hide().find('input').removeAttr('required').val('');}" required>
+                                <label class="font-weight-bold text-light small">Payment Method</label>
+                                <select name="payment_method" class="form-control bg-black text-white border-secondary" onchange="if(this.value==='Other'){$('#otherPaymentMethodDivDashboard').show().find('input').attr('required',true);}else{$('#otherPaymentMethodDivDashboard').hide().find('input').removeAttr('required').val('');}" required>
                                     <option value="">Select method...</option>
                                     <option>Bank Wire Transfer</option>
                                     <option>Cryptocurrency (Bitcoin)</option>
                                     <option>Cryptocurrency (USDT)</option>
+                                    <option>Credit / Debit Card</option>
                                     <option>Other</option>
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold text-dark small">Transaction / Reference Number (Optional)</label>
-                                <input type="text" name="reference_number" class="form-control border-secondary" placeholder="e.g. TXN12345678">
+                                <label class="font-weight-bold text-light small">Reference / TXID (Optional)</label>
+                                <input type="text" name="reference_number" class="form-control bg-black text-white border-secondary" placeholder="e.g. TXN12345678">
                             </div>
                             <div class="col-md-12 mb-3" id="otherPaymentMethodDivDashboard" style="display:none;">
-                                <label class="font-weight-bold text-dark small text-warning">Specify Other Payment Method <span class="text-danger">*</span></label>
-                                <input type="text" name="other_payment_method" class="form-control border-secondary" placeholder="e.g. PayPal, Cash App, Revolut">
+                                <label class="font-weight-bold text-warning small">Specify Other Payment Method <span class="text-danger">*</span></label>
+                                <input type="text" name="other_payment_method" class="form-control bg-black text-white border-secondary" placeholder="e.g. PayPal, Revolut, CashApp">
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="font-weight-bold text-dark small">Upload Payment Receipt / Proof</label>
-                            <input type="file" name="proof_file" class="form-control-file border p-2 rounded w-100" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" required>
+                            <label class="font-weight-bold text-light small">Upload Payment Receipt / Proof</label>
+                            <input type="file" name="proof_file" class="form-control-file border border-secondary p-2 rounded w-100 bg-black text-white" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" required>
                             <small class="text-muted">Accepted: JPG, PNG, PDF, DOC (Max 10MB)</small>
                         </div>
                         <div class="mb-3">
-                            <label class="font-weight-bold text-dark small">Additional Notes (Optional)</label>
-                            <textarea name="notes" class="form-control border-secondary" rows="2" placeholder="Any additional notes about your payment..."></textarea>
+                            <label class="font-weight-bold text-light small">Additional Notes (Optional)</label>
+                            <textarea name="notes" class="form-control bg-black text-white border-secondary" rows="2" placeholder="Any additional notes about your payment transaction..."></textarea>
                         </div>
                         <button type="submit" class="btn pay-btn btn-block font-weight-bold py-3 shadow-lg">
                             <i class="fas fa-paper-plane mr-2"></i> Submit Payment Proof for Verification
@@ -652,7 +904,6 @@ require_once $dir . '/includes/admin_sidebar.php';
     </div>
 </div>
 
-
 <!-- FIRST TIME ONBOARDING MODAL -->
 <div class="modal fade" id="onboardingModal" tabindex="-1" role="dialog" aria-labelledby="onboardingModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -663,7 +914,7 @@ require_once $dir . '/includes/admin_sidebar.php';
       <form method="POST">
         <input type="hidden" name="action" value="setup_security">
         <div class="modal-body">
-            <p class="small text-muted mb-3">For your security, you must change your temporary password and configure a 4-digit Security PIN before accessing the dashboard for total security and privacy .</p>
+            <p class="small text-muted mb-3">For your security, you must change your temporary password and configure a 4-digit Security PIN before accessing the dashboard.</p>
             
             <div class="form-group mb-3">
                 <label class="text-white font-weight-bold small">New Password</label>
@@ -690,11 +941,13 @@ require_once $dir . '/includes/admin_sidebar.php';
 </div>
 
 <script>
-function showPayModal(invoiceId, ref, amount, paymentInfo) {
+function showPayModal(invoiceId, ref, balanceDue, currency, paymentInfo) {
+    currency = currency || 'USD';
     document.getElementById('payInvoiceId').value = invoiceId;
     document.getElementById('payInvoiceRef').textContent = ref;
-    document.getElementById('payAmount').textContent = '$' + parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2});
-    document.getElementById('payAmountInput').value = parseFloat(amount).toFixed(2);
+    document.getElementById('payCurrencyLabel').textContent = currency;
+    document.getElementById('payAmount').textContent = currency + ' ' + parseFloat(balanceDue).toLocaleString('en-US', {minimumFractionDigits: 2});
+    document.getElementById('payAmountInput').value = parseFloat(balanceDue).toFixed(2);
     document.getElementById('paymentInfoBlock').textContent = paymentInfo || 'Please contact your assigned investigator for payment details.';
     $('#payNowModal').modal('show');
 }

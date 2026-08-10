@@ -43,11 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 $cases = [];
 try {
     if ($is_agent) {
-        $stmt = $pdo->prepare("SELECT c.*, cl.first_name, cl.last_name, u.username as attorney_name FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id LEFT JOIN IFW_users u ON c.attorney_id = u.id WHERE c.attorney_id = ? OR cl.assigned_agent_id = ? ORDER BY c.created_at DESC");
+        $stmt = $pdo->prepare("SELECT c.*, cl.first_name, cl.last_name, COALESCE(NULLIF(u.full_name, ''), u.username) as attorney_name, u.role as attorney_role FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id LEFT JOIN IFW_users u ON c.attorney_id = u.id WHERE c.attorney_id = ? OR cl.assigned_agent_id = ? ORDER BY c.created_at DESC");
         $stmt->execute([$admin_id, $admin_id]);
         $cases = $stmt->fetchAll();
     } else {
-        $cases = $pdo->query("SELECT c.*, cl.first_name, cl.last_name, u.username as attorney_name FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id LEFT JOIN IFW_users u ON c.attorney_id = u.id ORDER BY c.created_at DESC")->fetchAll();
+        $cases = $pdo->query("SELECT c.*, cl.first_name, cl.last_name, COALESCE(NULLIF(u.full_name, ''), u.username) as attorney_name, u.role as attorney_role FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id LEFT JOIN IFW_users u ON c.attorney_id = u.id ORDER BY c.created_at DESC")->fetchAll();
     }
 } catch (Exception $e) {}
 
@@ -62,7 +62,7 @@ try {
     } else {
         $clients = $pdo->query("SELECT id, first_name, last_name, email FROM IFW_clients ORDER BY first_name")->fetchAll();
     }
-    $attorneys = $pdo->query("SELECT id, username, role FROM IFW_users WHERE role != 'superadmin' ORDER BY username")->fetchAll();
+    $attorneys = $pdo->query("SELECT id, username, full_name, role FROM IFW_users WHERE role != 'superadmin' ORDER BY username")->fetchAll();
 } catch (Exception $e) {}
 
 require_once '../includes/admin_header.php';
@@ -197,7 +197,7 @@ require_once '../includes/admin_sidebar.php';
                     <select name="attorney_id" class="form-control bg-dark text-white border-secondary">
                         <option value="">Unassigned</option>
                         <?php foreach($attorneys as $a): ?>
-                            <option value="<?= $a['id'] ?>"><?= htmlspecialchars($a['username']) ?> (<?= htmlspecialchars(ucfirst($a['role'])) ?>)</option>
+                            <option value="<?= $a['id'] ?>"><?= htmlspecialchars(!empty($a['full_name']) ? $a['full_name'] : $a['username']) ?> (<?= htmlspecialchars(ucwords(str_replace('_', ' ', $a['role']))) ?>)</option>
                         <?php endforeach; ?>
                     </select>
                 </div>
