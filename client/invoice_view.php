@@ -6,12 +6,18 @@ while (!file_exists($dir . '/config.php') && $dir !== dirname($dir)) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
+require_once $dir . '/includes/currency_helper.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['client_logged_in'])) { header("Location: /client/login.php"); exit; }
+if (!isset($_SESSION['client_logged_in']) || empty($_SESSION['client_portal_id'])) { 
+    unset($_SESSION['client_logged_in'], $_SESSION['client_portal_id']);
+    header("Location: /client/login.php"); 
+    exit; 
+}
 
-$client_id = $_SESSION['client_portal_id'];
+$client_id = (int)$_SESSION['client_portal_id'];
 $_SESSION['role'] = 'client';
+$client_currency = get_client_currency($pdo, $client_id);
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if (!$id) { header("Location: /client/dashboard.php"); exit; }
@@ -162,7 +168,7 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
             <button onclick="window.print()" class="btn btn-sm btn-outline-secondary font-weight-bold mr-2"><i class="fas fa-print mr-1"></i> Print</button>
             <?php if ($balance_due > 0 && $invoice['status'] !== 'paid'): ?>
                 <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark shadow-sm"
-                    onclick="showPayModal(<?= $invoice['id'] ?>, '#INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?>', <?= $balance_due ?>, '<?= htmlspecialchars($invoice['currency'] ?? 'USD') ?>', <?= htmlspecialchars(json_encode($payment_info)) ?>)"
+                    onclick="showPayModal(<?= $invoice['id'] ?>, '#INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?>', <?= $balance_due ?>, '<?= htmlspecialchars($invoice['currency'] ?? 'USD') ?>', <?= htmlspecialchars(json_encode($payment_info)) ?>, '<?= htmlspecialchars($client_currency) ?>', <?= convert_currency($balance_due, $invoice['currency'] ?? 'USD', $client_currency) ?>)"
                     data-toggle="modal" data-target="#payNowModal">
                     <i class="fas fa-credit-card mr-1"></i> Pay Balance Due (<?= $symbol ?><?= number_format($balance_due, 2) ?>)
                 </button>
@@ -369,6 +375,25 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
             </tfoot>
         </table>
 
+        <?php if (($invoice['currency'] ?? 'USD') !== $client_currency): ?>
+        <div class="card border-0 mb-4 shadow-sm" style="background:#171719; border-left:4px solid #fecc56 !important;">
+            <div class="card-body py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                        <h6 class="font-weight-bold text-warning mb-1"><i class="fas fa-globe mr-2"></i>Estimated Value in Your Preferred Currency (<?= htmlspecialchars($client_currency) ?>)</h6>
+                        <p class="text-muted small mb-0"><?= get_currency_disclaimer($invoice['currency'] ?? 'USD', $client_currency) ?></p>
+                    </div>
+                    <div class="text-right mt-2 mt-md-0">
+                        <span class="text-muted small text-uppercase font-weight-bold">Balance Due in <?= htmlspecialchars($client_currency) ?>:</span>
+                        <div class="text-warning font-weight-bold" style="font-size:1.35rem;">
+                            <?= format_currency(convert_currency($balance_due, $invoice['currency'] ?? 'USD', $client_currency), $client_currency) ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- INSTALMENTS -->
         <?php if (!empty($instalments)): ?>
         <div class="mb-5">
@@ -481,12 +506,18 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
     </div>
 </div>
 <script>
-function showPayModal(invoiceId, ref, amount, currency, payInfo) {
+function showPayModal(invoiceId, ref, amount, currency, payInfo, prefCurrency, prefBalance) {
     currency = currency || 'USD';
+    prefCurrency = prefCurrency || currency;
     document.getElementById('payInvoiceId').value = invoiceId;
     document.getElementById('payInvoiceRef').textContent = ref;
     document.getElementById('payModalCurr').textContent = currency;
-    document.getElementById('payAmount').textContent = currency + ' ' + parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits:2});
+    
+    var disp = currency + ' ' + parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits:2});
+    if (prefCurrency && prefCurrency !== currency && prefBalance) {
+        disp += ' <span style="font-size:1.05rem; color:#fecc56; font-weight:normal; display:block; margin-top:2px;">(≈ ' + prefCurrency + ' ' + parseFloat(prefBalance).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' preferred eqv)</span>';
+    }
+    document.getElementById('payAmount').innerHTML = disp;
     document.getElementById('payAmountInput').value = parseFloat(amount).toFixed(2);
     document.getElementById('payInfoBlock').textContent = payInfo || 'Contact your investigator for payment details.';
     $('#payNowModal').modal('show');

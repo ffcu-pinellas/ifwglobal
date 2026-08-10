@@ -6,12 +6,18 @@ while (!file_exists($dir . '/config.php') && $dir !== dirname($dir)) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
+require_once $dir . '/includes/currency_helper.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['client_logged_in'])) { header("Location: /client/login.php"); exit; }
+if (!isset($_SESSION['client_logged_in']) || empty($_SESSION['client_portal_id'])) { 
+    unset($_SESSION['client_logged_in'], $_SESSION['client_portal_id']);
+    header("Location: /client/login.php"); 
+    exit; 
+}
 
-$client_id = $_SESSION['client_portal_id'];
+$client_id = (int)$_SESSION['client_portal_id'];
 $_SESSION['role'] = 'client';
+$client_currency = get_client_currency($pdo, $client_id);
 
 // Submit satisfaction rating
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submit_rating') {
@@ -201,15 +207,33 @@ require_once $dir . '/includes/admin_sidebar.php';
                     </div>
                     <?php endif; ?>
                     <?php if (!empty($active_case['amount_lost']) && $active_case['amount_lost'] > 0): ?>
+                    <?php
+                    $c_curr = !empty($active_case['currency']) ? strtoupper($active_case['currency']) : 'USD';
+                    $loss_pref = convert_currency($active_case['amount_lost'], $c_curr, $client_currency);
+                    ?>
                     <div class="col-6 col-md-3 mb-3">
                         <div class="text-muted small text-uppercase mb-1" style="font-size:10px;">Reported Loss</div>
-                        <div class="font-weight-bold text-danger">$<?= number_format($active_case['amount_lost'],2) ?> <?= $active_case['currency'] ?? 'USD' ?></div>
+                        <div class="font-weight-bold text-danger">
+                            <?= htmlspecialchars($c_curr) ?> <?= number_format($active_case['amount_lost'],2) ?>
+                            <?php if ($c_curr !== $client_currency): ?>
+                                <br><small class="text-light" style="font-size:11px;">(≈ <?= format_currency($loss_pref, $client_currency) ?>)</small>
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <?php endif; ?>
                     <?php if (!empty($active_case['amount_recovered']) && $active_case['amount_recovered'] > 0): ?>
+                    <?php
+                    $c_curr = !empty($active_case['currency']) ? strtoupper($active_case['currency']) : 'USD';
+                    $rec_pref = convert_currency($active_case['amount_recovered'], $c_curr, $client_currency);
+                    ?>
                     <div class="col-6 col-md-3 mb-3">
                         <div class="text-muted small text-uppercase mb-1" style="font-size:10px;">Recovered</div>
-                        <div class="font-weight-bold text-success">$<?= number_format($active_case['amount_recovered'],2) ?></div>
+                        <div class="font-weight-bold text-success">
+                            <?= htmlspecialchars($c_curr) ?> <?= number_format($active_case['amount_recovered'],2) ?>
+                            <?php if ($c_curr !== $client_currency): ?>
+                                <br><small class="text-light" style="font-size:11px;">(≈ <?= format_currency($rec_pref, $client_currency) ?>)</small>
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <?php endif; ?>
                     <?php if (!empty($active_case['court_date'])): ?>

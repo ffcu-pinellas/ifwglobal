@@ -1,5 +1,6 @@
 <?php
 // includes/admin_header.php
+require_once __DIR__ . '/currency_helper.php';
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -249,7 +250,32 @@ if (isset($pdo)) {
                     </li>
                 </ul>
 
-                <ul class="navbar-nav ml-auto mr-3">
+                <ul class="navbar-nav ml-auto mr-3 align-items-center">
+                    <!-- Global Currency Switcher -->
+                    <li class="nav-item dropdown mr-3 align-self-center">
+                        <?php
+                        $active_portal_currency = get_client_currency($pdo, $_SESSION['client_portal_id'] ?? null);
+                        $avail_currencies = get_available_currencies();
+                        $curr_meta = $avail_currencies[$active_portal_currency] ?? $avail_currencies['USD'];
+                        ?>
+                        <a class="nav-link dropdown-toggle btn btn-sm btn-outline-warning text-warning d-flex align-items-center py-1 px-2 font-weight-bold shadow-sm" href="javascript:void(0);" id="portalCurrencyDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 20px; font-size: 11px; letter-spacing: 0.5px; border-color: rgba(254,204,86,0.6);">
+                            <span class="mr-1" style="font-size: 13px;"><?= $curr_meta['flag'] ?></span>
+                            <span><?= $curr_meta['code'] ?> (<?= $curr_meta['symbol'] ?>)</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary p-1" aria-labelledby="portalCurrencyDropdown" style="min-width: 250px; max-height: 380px; overflow-y: auto; font-size: 12px;">
+                            <div class="dropdown-header text-warning small font-weight-bold px-2 py-1 text-uppercase" style="letter-spacing:1px; font-size: 10px;">
+                                <i class="fas fa-globe mr-1"></i> Display Currency
+                            </div>
+                            <div class="dropdown-divider border-secondary my-1"></div>
+                            <?php foreach ($avail_currencies as $cCode => $cMeta): ?>
+                                <a class="dropdown-item text-white py-1 px-2 d-flex justify-content-between align-items-center rounded <?= $cCode === $active_portal_currency ? 'bg-secondary font-weight-bold text-warning' : '' ?>" href="javascript:void(0);" onclick="changePortalCurrency('<?= $cCode ?>');">
+                                    <span><?= $cMeta['flag'] ?> <strong class="ml-1"><?= $cMeta['code'] ?></strong> <small class="text-muted ml-1">(<?= $cMeta['name'] ?>)</small></span>
+                                    <span class="badge badge-dark border border-secondary text-warning ml-2"><?= $cMeta['symbol'] ?></span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </li>
+
                     <!-- Notification Bell Dropdown -->
                     <li class="nav-item dropdown mr-3 align-self-center">
                         <a class="nav-link dropdown-toggle no-caret position-relative" href="javascript:void(0);" id="notificationDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding: 4px;">
@@ -322,6 +348,17 @@ if (isset($pdo)) {
             </nav>
         </div>
         <script>
+        function changePortalCurrency(curr) {
+            fetch('/api/set_currency.php?currency=' + encodeURIComponent(curr))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                location.reload();
+            })
+            .catch(function(err) {
+                location.reload();
+            });
+        }
+
         function markAllNotificationsRead() {
             fetch('/api/mark_notifications_read.php')
             .then(response => response.json())

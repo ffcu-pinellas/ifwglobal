@@ -46,28 +46,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } elseif (time() - $_SESSION['otp_time'] > 600) {
         $error = "The verification code has expired. Please request a new code below.";
     } elseif ($entered_otp == $_SESSION['otp_code']) {
-        // OTP is correct
-        $stmt = $pdo->prepare("SELECT pin_hash FROM IFW_clients WHERE id = ?");
-        $stmt->execute([$_SESSION['pending_client_id']]);
-        $client = $stmt->fetch();
+        // OTP is verified successfully -> authenticate client
+        $_SESSION['client_logged_in'] = true;
+        $_SESSION['client_portal_id'] = (int)$_SESSION['pending_client_id'];
+        $_SESSION['client_name'] = $_SESSION['pending_client_name'];
+        $_SESSION['role'] = 'client';
         
-        if (!empty($client['pin_hash'])) {
-            header("Location: verify_pin.php");
-            exit;
-        } else {
-            $_SESSION['client_logged_in'] = true;
-            $_SESSION['client_portal_id'] = $_SESSION['pending_client_id'];
-            $_SESSION['client_name'] = $_SESSION['pending_client_name'];
-            
-            unset($_SESSION['pending_client_id']);
-            unset($_SESSION['pending_client_email']);
-            unset($_SESSION['pending_client_name']);
-            unset($_SESSION['otp_code']);
-            unset($_SESSION['otp_time']);
-            
-            header("Location: dashboard.php");
-            exit;
-        }
+        unset($_SESSION['pending_client_id']);
+        unset($_SESSION['pending_client_email']);
+        unset($_SESSION['pending_client_name']);
+        unset($_SESSION['otp_code']);
+        unset($_SESSION['otp_time']);
+        
+        header("Location: dashboard.php");
+        exit;
     } else {
         $error = "Invalid verification code. Please check your email and try again.";
     }

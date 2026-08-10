@@ -6,6 +6,7 @@ while (!file_exists($dir . '/config.php') && $dir !== dirname($dir)) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
+require_once $dir . '/includes/currency_helper.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -15,8 +16,9 @@ if (!isset($_SESSION['client_logged_in']) || $_SESSION['client_logged_in'] !== t
     exit;
 }
 
-$client_id = $_SESSION['client_portal_id'] ?? 0;
+$client_id = (int)($_SESSION['client_portal_id'] ?? 0);
 $_SESSION['role'] = 'client';
+$client_currency = get_client_currency($pdo, $client_id);
 
 $pwd_msg = $pwd_error = '';
 
@@ -58,22 +60,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'setup
 try {
     $pdo->exec("UPDATE IFW_invoices SET amount = total_amount WHERE (amount IS NULL OR amount = 0) AND total_amount > 0");
     $pdo->exec("UPDATE IFW_invoices SET total_amount = amount WHERE (total_amount IS NULL OR total_amount = 0) AND amount > 0");
+    $pdo->exec("ALTER TABLE IFW_users ADD COLUMN full_name VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_users ADD COLUMN phone VARCHAR(50) NULL");
+    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN preferred_currency VARCHAR(10) DEFAULT 'USD'");
 } catch(Exception $e) {}
 
-// Fetch client + assigned agent
+// Fetch client directly (fail-safe)
 $client = null;
 try {
-    $s = $pdo->prepare("
-        SELECT c.*, 
-               COALESCE(NULLIF(u.full_name, ''), u.username) AS agent_name, 
-               u.username AS agent_username,
-               u.role AS agent_role, 
-               u.email AS agent_email,
-               u.phone AS agent_phone
-        FROM IFW_clients c 
-        LEFT JOIN IFW_users u ON c.assigned_agent_id = u.id 
-        WHERE c.id = ?
-    ");
+    $s = $pdo->prepare("SELECT * FROM IFW_clients WHERE id = ?");
     $s->execute([$client_id]);
     $client = $s->fetch();
 } catch(Exception $e) {}
@@ -83,7 +78,45 @@ if (!$client) {
     header("Location: /client/login.php"); 
     exit; 
 }
-$_SESSION['user_name'] = $client['first_name'];
+$_SESSION['user_name'] = $client['first_name'] ?? 'Client';
+
+// Resolve assigned agent details safely
+$agent_name_display = '';
+$agent_role_display = 'Senior Investigator';
+$client['agent_email'] = '';
+$client['agent_phone'] = '';
+
+if (!empty($client['assigned_agent_id'])) {
+    try {
+        $sa = $pdo->prepare("SELECT * FROM IFW_users WHERE id = ?");
+        $sa->execute([$client['assigned_agent_id']]);
+        $ag = $sa->fetch();
+        if ($ag) {
+            $agent_name_display = !empty($ag['full_name']) ? $ag['full_name'] : $ag['username'];
+            $agent_role_display = !empty($ag['role']) ? ucwords(str_replace('_', ' ', $ag['role'])) : 'Senior Investigator';
+            $client['agent_email'] = $ag['email'] ?? '';
+            $client['agent_phone'] = $ag['phone'] ?? '';
+        }
+    } catch(Exception $e) {}
+}
+
+// Fallback to case investigator if client has no assigned_agent_id
+if (empty($agent_name_display)) {
+    try {
+        $sc = $pdo->prepare("SELECT ca.attorney_id, u.* FROM IFW_cases ca JOIN IFW_users u ON ca.attorney_id = u.id WHERE ca.client_id = ? AND ca.attorney_id IS NOT NULL LIMIT 1");
+        $sc->execute([$client_id]);
+        $agCase = $sc->fetch();
+        if ($agCase) {
+            $agent_name_display = !empty($agCase['full_name']) ? $agCase['full_name'] : $agCase['username'];
+            $agent_role_display = !empty($agCase['role']) ? ucwords(str_replace('_', ' ', $agCase['role'])) : 'Senior Investigator';
+            $client['agent_email'] = $agCase['email'] ?? '';
+            $client['agent_phone'] = $agCase['phone'] ?? '';
+        }
+    } catch(Exception $e) {}
+}
+
+$client['agent_name'] = $agent_name_display;
+$client['agent_role'] = $agent_role_display;
 
 // KYC status from IFW_kyc_submissions
 $kyc_status = null; $kyc_record = null;
@@ -370,10 +403,21 @@ require_once $dir . '/includes/admin_sidebar.php';
     </div>
     <div class="col-md-3 mb-3">
         <div class="stat-mini bg-dark shadow-sm" style="color:#fecc56;">
-            <div class="text-muted small text-uppercase mb-1" style="font-size:11px; color:#aaa !important;">Total Invoiced</div>
-            <div style="font-size:1.8rem; font-weight: 700;"><?= number_format($total_invoiced_usd, 2) ?> USD</div>
+            <div class="text-muted small text-uppercase mb-1" style="font-size:11px; color:#aaa !important;">
+                Total Invoiced (<?= htmlspecialchars($client_currency) ?>)
+            </div>
+            <?php
+            $total_inv_display = convert_currency($total_invoiced_usd, 'USD', $client_currency);
+            $total_due_display = convert_currency($total_outstanding_usd, 'USD', $client_currency);
+            ?>
+            <div style="font-size:1.7rem; font-weight: 700;"><?= format_currency($total_inv_display, $client_currency) ?></div>
             <?php if ($total_outstanding_usd > 0): ?>
-                <div class="text-danger small font-weight-bold" style="font-size:11px;">Due: <?= number_format($total_outstanding_usd, 2) ?> USD</div>
+                <div class="text-danger small font-weight-bold" style="font-size:11px;">
+                    Due: <?= format_currency($total_due_display, $client_currency) ?>
+                    <?php if ($client_currency !== 'USD'): ?>
+                        <span class="text-muted" style="font-size:10px;">($<?= number_format($total_outstanding_usd, 2) ?> USD)</span>
+                    <?php endif; ?>
+                </div>
             <?php else: ?>
                 <div class="text-success small font-weight-bold" style="font-size:11px;">All settled</div>
             <?php endif; ?>
@@ -570,6 +614,11 @@ require_once $dir . '/includes/admin_sidebar.php';
                 <h5 class="mb-0 font-weight-bold"><i class="fas fa-file-invoice-dollar text-warning mr-2"></i>Billing & Invoices</h5>
                 <span class="badge badge-warning text-dark font-weight-bold px-3 py-1"><?= count($invoices) ?> Total Invoices</span>
             </div>
+            <div class="alert alert-dark border-0 border-bottom border-secondary mb-0 py-2 px-3 small text-light d-flex align-items-center justify-content-between flex-wrap" style="font-size:11.5px; background:#18181b;">
+                <div>
+                    <i class="fas fa-globe text-warning mr-1"></i> <strong>Multi-Currency Notice:</strong> All invoices are settled in their primary invoiced currency. Displayed <strong><?= htmlspecialchars($client_currency) ?></strong> values are approximate benchmark conversions.
+                </div>
+            </div>
             <?php if (empty($invoices)): ?>
                 <div class="card-body text-center py-5">
                     <i class="fas fa-receipt fa-3x text-muted mb-3 d-block"></i>
@@ -590,6 +639,12 @@ require_once $dir . '/includes/admin_sidebar.php';
                         </thead>
                         <tbody>
                             <?php foreach($invoices as $inv): ?>
+                            <?php
+                            $inv_curr = $inv['currency'] ?? 'USD';
+                            $is_diff_curr = ($inv_curr !== $client_currency);
+                            $total_billed_pref = convert_currency($inv['total_billed'], $inv_curr, $client_currency);
+                            $balance_due_pref = convert_currency($inv['balance_due'], $inv_curr, $client_currency);
+                            ?>
                             <tr>
                                 <td>
                                     <strong class="text-dark"><?= htmlspecialchars($inv['invoice_number'] ?? '#INV-' . str_pad($inv['id'], 5, '0', STR_PAD_LEFT)) ?></strong><br>
@@ -598,15 +653,21 @@ require_once $dir . '/includes/admin_sidebar.php';
                                 <td>
                                     <span class="text-dark font-weight-bold"><?= htmlspecialchars($inv['display_description']) ?></span>
                                     <?php if ($inv['late_fee'] > 0): ?>
-                                        <br><small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i>Late fee: +<?= htmlspecialchars($inv['currency']) ?> <?= number_format($inv['late_fee'], 2) ?></small>
+                                        <br><small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i>Late fee: +<?= htmlspecialchars($inv_curr) ?> <?= number_format($inv['late_fee'], 2) ?></small>
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <strong class="text-dark" style="font-size: 1.05rem;"><?= htmlspecialchars($inv['currency']) ?> <?= number_format($inv['total_billed'], 2) ?></strong>
+                                    <strong class="text-dark" style="font-size: 1.05rem;"><?= htmlspecialchars($inv_curr) ?> <?= number_format($inv['total_billed'], 2) ?></strong>
+                                    <?php if ($is_diff_curr): ?>
+                                        <br><span class="text-muted small font-weight-bold" style="font-size:11px;">≈ <?= format_currency($total_billed_pref, $client_currency) ?></span>
+                                    <?php endif; ?>
                                     <?php if ($inv['total_paid'] > 0): ?>
-                                        <br><small class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i>Paid: <?= htmlspecialchars($inv['currency']) ?> <?= number_format($inv['total_paid'], 2) ?></small>
-                                        <?php if ($inv['balance_due'] > 0): ?>
-                                            <br><span class="badge badge-warning text-dark font-weight-bold">Due: <?= htmlspecialchars($inv['currency']) ?> <?= number_format($inv['balance_due'], 2) ?></span>
+                                        <br><small class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i>Paid: <?= htmlspecialchars($inv_curr) ?> <?= number_format($inv['total_paid'], 2) ?></small>
+                                    <?php endif; ?>
+                                    <?php if ($inv['balance_due'] > 0): ?>
+                                        <br><span class="badge badge-warning text-dark font-weight-bold mt-1">Due: <?= htmlspecialchars($inv_curr) ?> <?= number_format($inv['balance_due'], 2) ?></span>
+                                        <?php if ($is_diff_curr): ?>
+                                            <span class="text-danger d-block font-weight-bold" style="font-size:10px;">(≈ <?= format_currency($balance_due_pref, $client_currency) ?>)</span>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
@@ -639,7 +700,7 @@ require_once $dir . '/includes/admin_sidebar.php';
                                     </a>
                                     <?php if ($inv['balance_due'] > 0): ?>
                                         <button type="button" class="btn btn-sm pay-btn" 
-                                            onclick="showPayModal(<?= $inv['id'] ?>, '<?= htmlspecialchars(addslashes($inv['invoice_number'] ?? '#INV-'.str_pad($inv['id'],5,'0',STR_PAD_LEFT))) ?>', <?= $inv['balance_due'] ?>, '<?= htmlspecialchars($inv['currency']) ?>', <?= htmlspecialchars(json_encode($inv['payment_info'] ?? $global_payment_info)) ?>)">
+                                            onclick="showPayModal(<?= $inv['id'] ?>, '<?= htmlspecialchars(addslashes($inv['invoice_number'] ?? '#INV-'.str_pad($inv['id'],5,'0',STR_PAD_LEFT))) ?>', <?= $inv['balance_due'] ?>, '<?= htmlspecialchars($inv_curr) ?>', <?= htmlspecialchars(json_encode($inv['payment_info'] ?? $global_payment_info)) ?>, '<?= htmlspecialchars($client_currency) ?>', <?= $balance_due_pref ?>)">
                                             <i class="fas fa-credit-card mr-1"></i> Pay
                                         </button>
                                     <?php endif; ?>
@@ -946,12 +1007,18 @@ require_once $dir . '/includes/admin_sidebar.php';
 </div>
 
 <script>
-function showPayModal(invoiceId, ref, balanceDue, currency, paymentInfo) {
+function showPayModal(invoiceId, ref, balanceDue, currency, paymentInfo, prefCurrency, prefBalance) {
     currency = currency || 'USD';
+    prefCurrency = prefCurrency || currency;
     document.getElementById('payInvoiceId').value = invoiceId;
     document.getElementById('payInvoiceRef').textContent = ref;
     document.getElementById('payCurrencyLabel').textContent = currency;
-    document.getElementById('payAmount').textContent = currency + ' ' + parseFloat(balanceDue).toLocaleString('en-US', {minimumFractionDigits: 2});
+    
+    var disp = currency + ' ' + parseFloat(balanceDue).toLocaleString('en-US', {minimumFractionDigits: 2});
+    if (prefCurrency && prefCurrency !== currency && prefBalance) {
+        disp += ' <span style="font-size:1.1rem; color:#fecc56; font-weight:normal; display:block; margin-top:2px;">(≈ ' + prefCurrency + ' ' + parseFloat(prefBalance).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' preferred eqv)</span>';
+    }
+    document.getElementById('payAmount').innerHTML = disp;
     document.getElementById('payAmountInput').value = parseFloat(balanceDue).toFixed(2);
     document.getElementById('paymentInfoBlock').textContent = paymentInfo || 'Please contact your assigned investigator for payment details.';
     $('#payNowModal').modal('show');
