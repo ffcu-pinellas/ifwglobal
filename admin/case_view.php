@@ -39,19 +39,45 @@ try {
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS amount_recovered DECIMAL(15,2) DEFAULT 0.00");
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS forensic_analyst_id INT NULL");
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS legal_counsel_id INT NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_1_title VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_2_title VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_3_title VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_4_title VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_5_title VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS flow_node_1 VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS flow_node_2 VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS flow_node_3 VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS flow_node_4 VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_lifecycle_bar INT DEFAULT 1");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_flow_visualizer INT DEFAULT 1");
 } catch(Exception $e) {}
 
 // Handle Case Lifecycle & Details Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_case_stage') {
     $new_status = trim($_POST['status'] ?? 'Active');
     $stage = max(1, min(5, (int)($_POST['lifecycle_stage'] ?? 1)));
-    $stage_percent = [1 => 20, 2 => 40, 3 => 60, 4 => 85, 5 => 100][$stage] ?? ($stage * 20);
+    $custom_percent = isset($_POST['progress_percent']) && $_POST['progress_percent'] !== '' ? (int)$_POST['progress_percent'] : null;
+    $default_percent = [1 => 20, 2 => 40, 3 => 60, 4 => 85, 5 => 100][$stage] ?? ($stage * 20);
+    $stage_percent = $custom_percent !== null ? max(0, min(100, $custom_percent)) : $default_percent;
     $amount_lost = floatval($_POST['amount_lost'] ?? 0);
     $amount_recovered = floatval($_POST['amount_recovered'] ?? 0);
-    $attorney_id = !empty($_POST['attorney_id']) ? (int)$_POST['attorney_id'] : null;
     
-    $stmt = $pdo->prepare("UPDATE IFW_cases SET status = ?, lifecycle_stage = ?, progress_percent = ?, amount_lost = ?, amount_recovered = ?, attorney_id = ? WHERE id = ?");
-    $stmt->execute([$new_status, $stage, $stage_percent, $amount_lost, $amount_recovered, $attorney_id, $case_id]);
+    $stage_1_title = trim($_POST['stage_1_title'] ?? '');
+    $stage_2_title = trim($_POST['stage_2_title'] ?? '');
+    $stage_3_title = trim($_POST['stage_3_title'] ?? '');
+    $stage_4_title = trim($_POST['stage_4_title'] ?? '');
+    $stage_5_title = trim($_POST['stage_5_title'] ?? '');
+
+    $flow_node_1 = trim($_POST['flow_node_1'] ?? '');
+    $flow_node_2 = trim($_POST['flow_node_2'] ?? '');
+    $flow_node_3 = trim($_POST['flow_node_3'] ?? '');
+    $flow_node_4 = trim($_POST['flow_node_4'] ?? '');
+
+    $show_lifecycle_bar = isset($_POST['show_lifecycle_bar']) ? (int)$_POST['show_lifecycle_bar'] : 1;
+    $show_flow_visualizer = isset($_POST['show_flow_visualizer']) ? (int)$_POST['show_flow_visualizer'] : 1;
+
+    $stmt = $pdo->prepare("UPDATE IFW_cases SET status = ?, lifecycle_stage = ?, progress_percent = ?, amount_lost = ?, amount_recovered = ?, stage_1_title = ?, stage_2_title = ?, stage_3_title = ?, stage_4_title = ?, stage_5_title = ?, flow_node_1 = ?, flow_node_2 = ?, flow_node_3 = ?, flow_node_4 = ?, show_lifecycle_bar = ?, show_flow_visualizer = ? WHERE id = ?");
+    $stmt->execute([$new_status, $stage, $stage_percent, $amount_lost, $amount_recovered, $stage_1_title, $stage_2_title, $stage_3_title, $stage_4_title, $stage_5_title, $flow_node_1, $flow_node_2, $flow_node_3, $flow_node_4, $show_lifecycle_bar, $show_flow_visualizer, $case_id]);
     
     if (function_exists('log_audit_action')) {
         log_audit_action($pdo, $_SESSION['admin_id'], 'Case Progress Update', "Updated Case #{$case['case_number']} to Stage {$stage} ({$new_status})", 'admin');
@@ -61,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $stmt = $pdo->prepare("SELECT c.*, cl.first_name, cl.last_name, cl.email as client_email, cl.phone as client_phone FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id WHERE c.id = ?");
     $stmt->execute([$case_id]);
     $case = $stmt->fetch();
-    $success = "Investigation lifecycle stage and case details saved successfully.";
+    $success = "Investigation lifecycle stage, custom milestones, and recovery flow saved successfully.";
 }
 
 // Handle Notes Submission
@@ -244,7 +270,7 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
         <div class="card border-0 shadow-sm mb-4 bg-dark text-white border-warning">
             <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3">
                 <span><i class="fas fa-stream mr-2"></i>Investigation & Asset Recovery Lifecycle Manager</span>
-                <span class="badge badge-warning text-dark font-weight-bold px-3 py-1">Active Stage <?= (int)($case['lifecycle_stage'] ?? 1) ?> (<?= [1=>20,2=>40,3=>60,4=>85,5=>100][(int)($case['lifecycle_stage'] ?? 1)] ?? 20 ?>%)</span>
+                <span class="badge badge-warning text-dark font-weight-bold px-3 py-1">Active Stage <?= (int)($case['lifecycle_stage'] ?? 1) ?> (<?= (int)($case['progress_percent'] ?? 20) ?>%)</span>
             </div>
             <div class="card-body bg-dark text-white p-4">
                 <form method="POST">
@@ -254,16 +280,20 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
                         <div class="col-md-6 form-group">
                             <label class="small text-warning font-weight-bold text-uppercase">Case Recovery Lifecycle Stage</label>
                             <?php $curr_stage = (int)($case['lifecycle_stage'] ?? 1); ?>
-                            <select name="lifecycle_stage" class="form-control bg-black text-warning border-secondary font-weight-bold">
-                                <option value="1" <?= $curr_stage === 1 ? 'selected' : '' ?>>Stage 1: Intake & KYC Verification (20%)</option>
-                                <option value="2" <?= $curr_stage === 2 ? 'selected' : '' ?>>Stage 2: Crypto & Asset Tracing (40%)</option>
-                                <option value="3" <?= $curr_stage === 3 ? 'selected' : '' ?>>Stage 3: Evidence Dossier Formulation (60%)</option>
-                                <option value="4" <?= $curr_stage === 4 ? 'selected' : '' ?>>Stage 4: Legal Injunction & Regulatory Filing (85%)</option>
-                                <option value="5" <?= $curr_stage === 5 ? 'selected' : '' ?>>Stage 5: Asset Recovery & Client Settlement (100%)</option>
+                            <select name="lifecycle_stage" class="form-control bg-black text-warning border-secondary font-weight-bold" onchange="document.getElementById('progress_percent_input').value = [0,20,40,60,85,100][this.value] || 20;">
+                                <option value="1" <?= $curr_stage === 1 ? 'selected' : '' ?>>Stage 1: <?= htmlspecialchars($case['stage_1_title'] ?: 'Intake & KYC Verification') ?> (20%)</option>
+                                <option value="2" <?= $curr_stage === 2 ? 'selected' : '' ?>>Stage 2: <?= htmlspecialchars($case['stage_2_title'] ?: 'Crypto & Asset Tracing') ?> (40%)</option>
+                                <option value="3" <?= $curr_stage === 3 ? 'selected' : '' ?>>Stage 3: <?= htmlspecialchars($case['stage_3_title'] ?: 'Evidence Dossier Formulation') ?> (60%)</option>
+                                <option value="4" <?= $curr_stage === 4 ? 'selected' : '' ?>>Stage 4: <?= htmlspecialchars($case['stage_4_title'] ?: 'Legal Injunction & Regulatory Filing') ?> (85%)</option>
+                                <option value="5" <?= $curr_stage === 5 ? 'selected' : '' ?>>Stage 5: <?= htmlspecialchars($case['stage_5_title'] ?: 'Asset Recovery & Settlement') ?> (100%)</option>
                             </select>
-                            <small class="text-muted">Directly updates the real-time progress tracker on the Client Portal.</small>
+                            <small class="text-muted">Select active milestone or override exact percent below.</small>
                         </div>
-                        <div class="col-md-6 form-group">
+                        <div class="col-md-3 form-group">
+                            <label class="small text-light font-weight-bold text-uppercase">Progress %</label>
+                            <input type="number" min="0" max="100" name="progress_percent" id="progress_percent_input" class="form-control bg-dark text-warning font-weight-bold border-secondary" value="<?= (int)($case['progress_percent'] ?? 20) ?>">
+                        </div>
+                        <div class="col-md-3 form-group">
                             <label class="small text-light font-weight-bold text-uppercase">Case Status</label>
                             <?php $c_stat = strtolower($case['status'] ?? 'pending'); ?>
                             <select name="status" class="form-control bg-dark text-white border-secondary">
@@ -285,6 +315,78 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
                         <div class="col-md-6 form-group">
                             <label class="small text-light font-weight-bold text-uppercase">Recovered / Frozen Amount (USD)</label>
                             <input type="number" step="0.01" name="amount_recovered" class="form-control bg-dark text-success font-weight-bold border-secondary" value="<?= htmlspecialchars($case['amount_recovered'] ?? '0.00') ?>">
+                        </div>
+                    </div>
+
+                    <!-- MODULE TOGGLES FOR THIS CLIENT -->
+                    <div class="row mb-3">
+                        <div class="col-md-6 form-group">
+                            <label class="small text-light font-weight-bold text-uppercase">Lifecycle Progress Tracker</label>
+                            <select name="show_lifecycle_bar" class="form-control bg-dark text-white border-secondary">
+                                <option value="1" <?= ($case['show_lifecycle_bar'] ?? 1) == 1 ? 'selected' : '' ?>>Visible to Client (Enabled)</option>
+                                <option value="0" <?= ($case['show_lifecycle_bar'] ?? 1) == 0 ? 'selected' : '' ?>>Hidden from Client (Disabled)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small text-light font-weight-bold text-uppercase">Fund Flow Diagram</label>
+                            <select name="show_flow_visualizer" class="form-control bg-dark text-white border-secondary">
+                                <option value="1" <?= ($case['show_flow_visualizer'] ?? 1) == 1 ? 'selected' : '' ?>>Visible to Client (Enabled)</option>
+                                <option value="0" <?= ($case['show_flow_visualizer'] ?? 1) == 0 ? 'selected' : '' ?>>Hidden from Client (Disabled)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- CUSTOMIZABLE STEP & FLOW LABELS ACCORDION -->
+                    <div class="mb-3">
+                        <button class="btn btn-sm btn-outline-secondary text-warning font-weight-bold w-100 text-left py-2" type="button" data-toggle="collapse" data-target="#customLabelsCollapse">
+                            <i class="fas fa-sliders-h mr-2"></i>Customize 5 Stage Labels & 4 Flow Nodes for this Client (Click to Expand)
+                        </button>
+                        <div class="collapse mt-3" id="customLabelsCollapse">
+                            <div class="p-3 border border-secondary rounded" style="background:#11151e;">
+                                <h6 class="text-warning font-weight-bold small text-uppercase mb-2"><i class="fas fa-list-ol mr-1"></i>5 Lifecycle Stage Names</h6>
+                                <div class="row mb-3">
+                                    <div class="col-md-4 mb-2">
+                                        <label class="small text-muted">Stage 1</label>
+                                        <input type="text" name="stage_1_title" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['stage_1_title'] ?? '1. Intake & KYC') ?>" placeholder="1. Intake & KYC">
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <label class="small text-muted">Stage 2</label>
+                                        <input type="text" name="stage_2_title" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['stage_2_title'] ?? '2. Crypto & Asset Tracing') ?>" placeholder="2. Crypto & Asset Tracing">
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <label class="small text-muted">Stage 3</label>
+                                        <input type="text" name="stage_3_title" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['stage_3_title'] ?? '3. Evidence Dossier') ?>" placeholder="3. Evidence Dossier">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="small text-muted">Stage 4</label>
+                                        <input type="text" name="stage_4_title" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['stage_4_title'] ?? '4. Legal & Regulatory Filing') ?>" placeholder="4. Legal & Regulatory Filing">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="small text-muted">Stage 5</label>
+                                        <input type="text" name="stage_5_title" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['stage_5_title'] ?? '5. Asset Recovery') ?>" placeholder="5. Asset Recovery">
+                                    </div>
+                                </div>
+
+                                <h6 class="text-warning font-weight-bold small text-uppercase mb-2"><i class="fas fa-network-wired mr-1"></i>4 Fund Flow Diagram Nodes</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="small text-muted">Node 1</label>
+                                        <input type="text" name="flow_node_1" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['flow_node_1'] ?? '1. Rogue Infiltration') ?>" placeholder="1. Rogue Infiltration">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="small text-muted">Node 2</label>
+                                        <input type="text" name="flow_node_2" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['flow_node_2'] ?? '2. On-Chain Tracing') ?>" placeholder="2. On-Chain Tracing">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="small text-muted">Node 3</label>
+                                        <input type="text" name="flow_node_3" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['flow_node_3'] ?? '3. Asset Freezing') ?>" placeholder="3. Asset Freezing">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="small text-muted">Node 4</label>
+                                        <input type="text" name="flow_node_4" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['flow_node_4'] ?? '4. Client Repatriation') ?>" placeholder="4. Client Repatriation">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

@@ -66,6 +66,18 @@ try {
     $instalments = $s->fetchAll();
 } catch(Exception $e) {}
 
+// Determine status case-insensitively
+$raw_status = strtolower(trim($invoice['status'] ?? 'pending'));
+$is_paid = ($raw_status === 'paid');
+
+// Confirmed payments deduction
+$total_paid = 0.00;
+try {
+    $stmtP = $pdo->prepare("SELECT SUM(amount) FROM IFW_invoice_payments WHERE invoice_id = ? AND status = 'Confirmed'");
+    $stmtP->execute([$id]);
+    $total_paid = floatval($stmtP->fetchColumn() ?: 0.00);
+} catch (Exception $e) {}
+
 // Late fee calculation
 $dynamic_late_fee = 0.00;
 $next_penalty_time = null;
@@ -82,7 +94,8 @@ $symbol = $currency_symbols[$invoice['currency'] ?? 'USD'] ?? '$';
 $base_amount = ($invoice['total_amount'] > 0) ? (float)$invoice['total_amount'] : (float)$invoice['amount'];
 $subtotal_amount = ($invoice['subtotal'] > 0) ? (float)$invoice['subtotal'] : (float)$invoice['amount'];
 
-if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled']) && $invoice['late_fee_amount'] > 0) {
+// Only calculate and charge late fees if invoice is NOT paid
+if (!$is_paid && !empty($invoice['late_fee_enabled']) && $invoice['late_fee_amount'] > 0) {
     $raw_start_date = !empty($invoice['late_fee_start_date']) ? $invoice['late_fee_start_date'] : (!empty($invoice['due_date']) ? $invoice['due_date'] : null);
     $startDate = $raw_start_date ? strtotime($raw_start_date) : 0;
     $now = time();
@@ -115,7 +128,7 @@ if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled']) && $in
         $time_remaining_sec = max(0, $next_penalty_time - $now);
     } else {
         $next_penalty_time = $startDate;
-        $time_remaining_sec = $startDate - $now;
+        $time_remaining_sec = max(0, $startDate - $now);
     }
     
     // Save to DB if higher
@@ -128,19 +141,19 @@ if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled']) && $in
     }
 }
 
-$late_fee = ($invoice['status'] === 'paid') ? ($invoice['late_fee_accumulated'] ?? 0) : max($dynamic_late_fee, $invoice['late_fee_accumulated'] ?? 0);
+$late_fee = $is_paid ? ($invoice['late_fee_accumulated'] ?? 0) : max($dynamic_late_fee, $invoice['late_fee_accumulated'] ?? 0);
 $total_billed = $base_amount + $late_fee;
 
-// Confirmed payments deduction
-$total_paid = 0.00;
-try {
-    $stmtP = $pdo->prepare("SELECT SUM(amount) FROM IFW_invoice_payments WHERE invoice_id = ? AND status = 'Confirmed'");
-    $stmtP->execute([$id]);
-    $total_paid = floatval($stmtP->fetchColumn() ?: 0.00);
-} catch (Exception $e) {}
-
-$balance_due = max(0, $total_billed - $total_paid);
-$total_due = $balance_due;
+if ($is_paid || ($total_billed > 0 && $total_paid >= $total_billed)) {
+    $is_paid = true;
+    $balance_due = 0.00;
+    $total_due = 0.00;
+    $total_paid = max($total_paid, $total_billed);
+    $time_remaining_sec = 0;
+} else {
+    $balance_due = max(0, $total_billed - $total_paid);
+    $total_due = $balance_due;
+}
 
 // Global payment info fallback
 $global_payment = get_setting($pdo, 'bank_details', '');
@@ -167,12 +180,16 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
         <div>
             <a href="/client/dashboard.php" class="btn btn-sm btn-outline-warning text-warning font-weight-bold mr-2"><i class="fas fa-arrow-left mr-1"></i> Dashboard</a>
             <button onclick="window.print()" class="btn btn-sm btn-outline-secondary font-weight-bold mr-2"><i class="fas fa-print mr-1"></i> Print / PDF</button>
-            <?php if ($balance_due > 0 && $invoice['status'] !== 'paid'): ?>
+            <?php if (!$is_paid && $balance_due > 0): ?>
                 <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark shadow-sm"
                     onclick="showPayModal(<?= $invoice['id'] ?>, '#INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?>', <?= $balance_due ?>, '<?= htmlspecialchars($invoice['currency'] ?? 'USD') ?>', <?= htmlspecialchars(json_encode($payment_info)) ?>, '<?= htmlspecialchars($client_currency) ?>', <?= convert_currency($balance_due, $invoice['currency'] ?? 'USD', $client_currency) ?>)"
                     data-toggle="modal" data-target="#payNowModal">
                     <i class="fas fa-credit-card mr-1"></i> Pay Balance Due (<?= $symbol ?><?= number_format($balance_due, 2) ?>)
                 </button>
+            <?php else: ?>
+                <span class="badge badge-success font-weight-bold px-3 py-2" style="font-size:13px;">
+                    <i class="fas fa-check-circle mr-1"></i> Paid in Full ($0.00 Due)
+                </span>
             <?php endif; ?>
         </div>
     </div>
@@ -182,7 +199,7 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
 <!-- INVOICE DOCUMENT -->
 <div class="card border-0 shadow <?= $is_print ? '' : 'mb-4' ?>" id="invoiceDoc" style="<?= $is_print ? 'box-shadow:none!important;' : '' ?>">
     <div class="card-body p-5">
-        <?php if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled'])): ?>
+        <?php if (!$is_paid && !empty($invoice['late_fee_enabled']) && $balance_due > 0): ?>
             <!-- LATE FEE URGENCY TICKER -->
             <div class="alert alert-danger border-0 mb-4 p-4 shadow-sm" style="border-left: 5px solid #dc3545 !important; background: #fff5f5; color: #721c24;">
                 <div class="d-flex align-items-center justify-content-between flex-wrap">

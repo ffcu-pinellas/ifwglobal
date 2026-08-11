@@ -233,7 +233,15 @@ try {
         $next_penalty_time = null;
         $time_remaining_sec = 0;
 
-        if (strtolower($inv['status']) !== 'paid' && !empty($inv['late_fee_enabled']) && $inv['late_fee_amount'] > 0) {
+        $raw_status = strtolower(trim($inv['status'] ?? 'pending'));
+        $is_admin_marked_paid = ($raw_status === 'paid');
+
+        // Dynamic late fee calculation (only if NOT paid)
+        $dynamic_late_fee = 0.00;
+        $next_penalty_time = null;
+        $time_remaining_sec = 0;
+
+        if (!$is_admin_marked_paid && !empty($inv['late_fee_enabled']) && $inv['late_fee_amount'] > 0) {
             $raw_start_date = !empty($inv['late_fee_start_date']) ? $inv['late_fee_start_date'] : (!empty($inv['due_date']) ? $inv['due_date'] : null);
             $startDate = $raw_start_date ? strtotime($raw_start_date) : 0;
             $now = time();
@@ -276,7 +284,7 @@ try {
             }
         }
 
-        $late_fee = (strtolower($inv['status']) === 'paid') ? ($inv['late_fee_accumulated'] ?? 0) : max($dynamic_late_fee, $inv['late_fee_accumulated'] ?? 0);
+        $late_fee = $is_admin_marked_paid ? ($inv['late_fee_accumulated'] ?? 0) : max($dynamic_late_fee, $inv['late_fee_accumulated'] ?? 0);
         $inv['late_fee'] = $late_fee;
         $inv['next_penalty_time'] = $next_penalty_time;
         $inv['time_remaining_sec'] = $time_remaining_sec;
@@ -291,21 +299,27 @@ try {
             $stmtP->execute([$inv['id']]);
             $total_paid = floatval($stmtP->fetchColumn() ?: 0.00);
         } catch(Exception $ex) {}
-        $inv['total_paid'] = $total_paid;
 
-        $is_admin_marked_paid = (strtolower($inv['status'] ?? '') === 'paid');
+        $due_ts = !empty($inv['due_date']) ? strtotime($inv['due_date']) : 0;
+        $is_overdue = ($due_ts > 0 && $due_ts < time());
+
         if ($is_admin_marked_paid || ($total_billed > 0 && $total_paid >= $total_billed)) {
             $status_clean = 'Paid';
             $balance_due = 0.00;
-            $inv['balance_due'] = 0.00;
-            $inv['total_paid'] = max($total_paid, $total_billed);
-        } elseif ($total_paid > 0 && $balance_due > 0) {
-            $status_clean = 'Partial';
-        } elseif ($is_overdue || strtolower($inv['status'] ?? '') === 'overdue') {
-            $status_clean = 'Overdue';
+            $total_paid = max($total_paid, $total_billed);
         } else {
-            $status_clean = 'Unpaid';
+            $balance_due = max(0, $total_billed - $total_paid);
+            if ($total_paid > 0) {
+                $status_clean = 'Partial';
+            } elseif ($is_overdue || $raw_status === 'overdue') {
+                $status_clean = 'Overdue';
+            } else {
+                $status_clean = 'Unpaid';
+            }
         }
+
+        $inv['total_paid'] = $total_paid;
+        $inv['balance_due'] = $balance_due;
         $inv['effective_status'] = $status_clean;
 
         // Totals in USD
@@ -532,11 +546,27 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
 </div>
 
 <?php 
-$show_lifecycle = get_setting($pdo, 'show_lifecycle_tracker', '1') == '1';
-$show_fund_flow = get_setting($pdo, 'show_fund_flow_visualizer', '1') == '1';
+$case_show_lifecycle = isset($latest_case['show_lifecycle_bar']) ? ((int)$latest_case['show_lifecycle_bar'] === 1) : true;
+$case_show_fund_flow = isset($latest_case['show_flow_visualizer']) ? ((int)$latest_case['show_flow_visualizer'] === 1) : true;
+
+$show_lifecycle = (get_setting($pdo, 'show_lifecycle_tracker', '1') == '1') && $case_show_lifecycle;
+$show_fund_flow = (get_setting($pdo, 'show_fund_flow_visualizer', '1') == '1') && $case_show_fund_flow;
+
+// Dynamic Case-Specific Stage Titles
+$st1 = !empty($latest_case['stage_1_title']) ? $latest_case['stage_1_title'] : '1. Intake & KYC';
+$st2 = !empty($latest_case['stage_2_title']) ? $latest_case['stage_2_title'] : '2. Crypto & Asset Tracing';
+$st3 = !empty($latest_case['stage_3_title']) ? $latest_case['stage_3_title'] : '3. Evidence Dossier';
+$st4 = !empty($latest_case['stage_4_title']) ? $latest_case['stage_4_title'] : '4. Legal & Regulatory Filing';
+$st5 = !empty($latest_case['stage_5_title']) ? $latest_case['stage_5_title'] : '5. Asset Recovery';
+
+// Dynamic Case-Specific Flow Nodes
+$fn1 = !empty($latest_case['flow_node_1']) ? $latest_case['flow_node_1'] : '1. Rogue Infiltration';
+$fn2 = !empty($latest_case['flow_node_2']) ? $latest_case['flow_node_2'] : '2. On-Chain Tracing';
+$fn3 = !empty($latest_case['flow_node_3']) ? $latest_case['flow_node_3'] : '3. Asset Freezing';
+$fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. Client Repatriation';
 ?>
 
-<!-- CASE RECOVERY PROGRESS LIFECYCLE (ADMIN MANAGED & TOGGLEABLE) -->
+<!-- CASE RECOVERY PROGRESS LIFECYCLE (ADMIN MANAGED & CUSTOMIZABLE) -->
 <?php if ($latest_case && $show_lifecycle): ?>
 <div class="progress-track-container">
     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
@@ -554,23 +584,23 @@ $show_fund_flow = get_setting($pdo, 'show_fund_flow_visualizer', '1') == '1';
         
         <div class="step-item <?= $case_stage_step >= 1 ? ($case_stage_step > 1 ? 'completed' : 'active') : '' ?>">
             <div class="step-icon"><i class="fas <?= $case_stage_step > 1 ? 'fa-check' : 'fa-id-card' ?>"></i></div>
-            <div class="step-title">1. Intake & KYC</div>
+            <div class="step-title"><?= htmlspecialchars($st1) ?></div>
         </div>
         <div class="step-item <?= $case_stage_step >= 2 ? ($case_stage_step > 2 ? 'completed' : 'active') : '' ?>">
             <div class="step-icon"><i class="fas <?= $case_stage_step > 2 ? 'fa-check' : 'fa-search-dollar' ?>"></i></div>
-            <div class="step-title">2. Crypto & Asset Tracing</div>
+            <div class="step-title"><?= htmlspecialchars($st2) ?></div>
         </div>
         <div class="step-item <?= $case_stage_step >= 3 ? ($case_stage_step > 3 ? 'completed' : 'active') : '' ?>">
             <div class="step-icon"><i class="fas <?= $case_stage_step > 3 ? 'fa-check' : 'fa-file-invoice' ?>"></i></div>
-            <div class="step-title">3. Evidence Dossier</div>
+            <div class="step-title"><?= htmlspecialchars($st3) ?></div>
         </div>
         <div class="step-item <?= $case_stage_step >= 4 ? ($case_stage_step > 4 ? 'completed' : 'active') : '' ?>">
             <div class="step-icon"><i class="fas <?= $case_stage_step > 4 ? 'fa-check' : 'fa-gavel' ?>"></i></div>
-            <div class="step-title">4. Legal & Regulatory Filing</div>
+            <div class="step-title"><?= htmlspecialchars($st4) ?></div>
         </div>
         <div class="step-item <?= $case_stage_step >= 5 ? 'completed' : '' ?>">
             <div class="step-icon"><i class="fas fa-hand-holding-usd"></i></div>
-            <div class="step-title">5. Asset Recovery</div>
+            <div class="step-title"><?= htmlspecialchars($st5) ?></div>
         </div>
     </div>
 </div>
@@ -596,7 +626,7 @@ $show_fund_flow = get_setting($pdo, 'show_fund_flow_visualizer', '1') == '1';
                 <div style="width:36px; height:36px; border-radius:50%; background:rgba(220,53,69,0.2); color:#dc3545; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
                     <i class="fas fa-biohazard"></i>
                 </div>
-                <div class="font-weight-bold text-white small">1. Rogue Infiltration</div>
+                <div class="font-weight-bold text-white small"><?= htmlspecialchars($fn1) ?></div>
                 <small class="text-danger font-weight-bold d-block" style="font-size:10px;">Scam Entity / Address</small>
                 <small class="text-muted" style="font-size:9.5px;">Cluster Flagged</small>
             </div>
@@ -607,7 +637,7 @@ $show_fund_flow = get_setting($pdo, 'show_fund_flow_visualizer', '1') == '1';
                 <div style="width:36px; height:36px; border-radius:50%; background:rgba(254,204,86,0.2); color:#fecc56; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
                     <i class="fas fa-search-dollar"></i>
                 </div>
-                <div class="font-weight-bold text-warning small">2. On-Chain Tracing</div>
+                <div class="font-weight-bold text-warning small"><?= htmlspecialchars($fn2) ?></div>
                 <small class="text-warning font-weight-bold d-block" style="font-size:10px;">Wallet Hop Analysis</small>
                 <small class="text-light" style="font-size:9.5px;">VASP Subpoena Sent</small>
             </div>
@@ -618,7 +648,7 @@ $show_fund_flow = get_setting($pdo, 'show_fund_flow_visualizer', '1') == '1';
                 <div style="width:36px; height:36px; border-radius:50%; background:rgba(23,162,184,0.2); color:#17a2b8; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
                     <i class="fas fa-balance-scale"></i>
                 </div>
-                <div class="font-weight-bold text-white small">3. Asset Freezing</div>
+                <div class="font-weight-bold text-white small"><?= htmlspecialchars($fn3) ?></div>
                 <small class="text-info font-weight-bold d-block" style="font-size:10px;">Exchange Liquidity Lock</small>
                 <small class="text-muted" style="font-size:9.5px;">Court Injunction</small>
             </div>
@@ -629,7 +659,7 @@ $show_fund_flow = get_setting($pdo, 'show_fund_flow_visualizer', '1') == '1';
                 <div style="width:36px; height:36px; border-radius:50%; background:rgba(40,167,69,0.2); color:#28a745; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
                     <i class="fas fa-hand-holding-usd"></i>
                 </div>
-                <div class="font-weight-bold text-white small">4. Client Repatriation</div>
+                <div class="font-weight-bold text-white small"><?= htmlspecialchars($fn4) ?></div>
                 <small class="text-success font-weight-bold d-block" style="font-size:10px;">Direct Settlement</small>
                 <small class="text-muted" style="font-size:9.5px;">Final Liquidation</small>
             </div>

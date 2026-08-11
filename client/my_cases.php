@@ -103,6 +103,88 @@ require_once $dir . '/includes/admin_sidebar.php';
 .star-rating .star:hover, .star-rating .star.active { color:#fecc56; }
 .case-meta-row { padding:8px 0; border-bottom:1px solid #f0f0f0; }
 .case-meta-row:last-child { border-bottom:none; }
+
+.table-portal-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto;
+    border: 1px solid #28303f;
+    border-radius: 10px;
+    background: #161a23;
+}
+.table-portal {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 0;
+    color: #f1f5f9;
+    border-collapse: collapse;
+}
+.table-portal thead th {
+    background: #1f2533 !important;
+    color: #fecc56 !important;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-top: none;
+    border-bottom: 2px solid #333d4e !important;
+    padding: 10px 12px;
+}
+.table-portal tbody tr {
+    background: #161a23;
+    border-top: 1px solid #262e3d;
+}
+.table-portal tbody tr:hover {
+    background: #1c2230 !important;
+}
+.table-portal td {
+    padding: 12px;
+    vertical-align: middle;
+    color: #e2e8f0;
+    font-size: 13px;
+    word-break: break-word;
+}
+.table-portal td .btn {
+    white-space: nowrap;
+    margin: 2px;
+}
+
+@media (max-width: 768px) {
+    .table-portal thead { display: none !important; }
+    .table-portal, .table-portal tbody, .table-portal tr, .table-portal td {
+        display: block !important;
+        width: 100% !important;
+    }
+    .table-portal tr {
+        margin-bottom: 12px;
+        background: #1a202c !important;
+        border: 1px solid #2d3748 !important;
+        border-radius: 8px !important;
+        padding: 8px;
+    }
+    .table-portal td {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 8px 10px !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        text-align: right !important;
+    }
+    .table-portal td:last-child {
+        border-bottom: none !important;
+        justify-content: flex-end !important;
+    }
+    .table-portal td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #fecc56;
+        text-align: left;
+        margin-right: 12px;
+    }
+}
 </style>
 
 <div class="row mb-3">
@@ -306,7 +388,7 @@ require_once $dir . '/includes/admin_sidebar.php';
                     <i class="fas fa-cloud-upload-alt mr-1"></i> Upload Case Evidence
                 </button>
             </div>
-            <div class="card-body">
+            <div class="card-body p-3 p-md-4" style="overflow-x: hidden;">
                 <?php if (empty($vault_docs)): ?>
                     <div class="text-center py-4">
                         <i class="fas fa-file-pdf fa-3x text-muted mb-3 d-block"></i>
@@ -314,20 +396,20 @@ require_once $dir . '/includes/admin_sidebar.php';
                     </div>
                 <?php else: ?>
                     <p class="text-light small mb-3">Below are the files assigned to your profile. Documents requiring cryptographic signature can be e-signed immediately with your 4-digit security PIN.</p>
-                    <div class="table-portal-wrap">
-                        <table class="table-portal">
+                    <div class="table-portal-wrap" style="overflow-x: auto; max-width: 100%;">
+                        <table class="table-portal" style="width: 100%; table-layout: auto;">
                             <thead>
                                 <tr class="text-warning">
-                                    <th>File Name</th>
-                                    <th>Type</th>
-                                    <th>Verification Status</th>
-                                    <th class="text-right">Action</th>
+                                    <th style="min-width: 180px;">File Name</th>
+                                    <th style="min-width: 120px;">Type</th>
+                                    <th style="min-width: 140px;">Verification Status</th>
+                                    <th class="text-right" style="min-width: 130px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach($vault_docs as $doc): ?>
                                     <tr>
-                                        <td data-label="File Name">
+                                        <td data-label="File Name" style="word-break: break-all; max-width: 250px;">
                                             <?php if (!empty($doc['document_body'])): ?>
                                                 <a href="view_document.php?id=<?= $doc['id'] ?>" target="_blank" class="text-warning font-weight-bold text-decoration-none">
                                                     <i class="fas fa-file-alt mr-1"></i> <?= htmlspecialchars($doc['file_name']) ?>
@@ -354,20 +436,22 @@ require_once $dir . '/includes/admin_sidebar.php';
                                             <?php endif; ?>
                                         </td>
                                         <td data-label="Action" class="text-right">
-                                            <?php if (!empty($doc['document_body'])): ?>
-                                                <a href="view_document.php?id=<?= $doc['id'] ?>" target="_blank" class="btn btn-sm btn-outline-warning mr-1" title="View Document">
-                                                    <i class="fas fa-eye mr-1"></i> View
-                                                </a>
-                                            <?php else: ?>
-                                                <a href="<?= BASE_URL . '/' . htmlspecialchars($doc['file_path']) ?>" target="_blank" class="btn btn-sm btn-outline-warning mr-1" title="Download">
-                                                    <i class="fas fa-download mr-1"></i> Download
-                                                </a>
-                                            <?php endif; ?>
-                                            <?php if ($doc['requires_signature'] && !$doc['is_signed']): ?>
-                                                <button type="button" class="btn btn-sm btn-warning text-dark font-weight-bold" onclick="openSigningModal(<?= $doc['id'] ?>, '<?= htmlspecialchars(addslashes($doc['file_name'])) ?>')">
-                                                    <i class="fas fa-pen mr-1"></i> Sign Now
-                                                </button>
-                                            <?php endif; ?>
+                                            <div class="d-inline-flex flex-wrap justify-content-end" style="gap: 4px;">
+                                                <?php if (!empty($doc['document_body'])): ?>
+                                                    <a href="view_document.php?id=<?= $doc['id'] ?>" target="_blank" class="btn btn-sm btn-outline-warning" title="View Document">
+                                                        <i class="fas fa-eye mr-1"></i> View
+                                                    </a>
+                                                <?php else: ?>
+                                                    <a href="<?= BASE_URL . '/' . htmlspecialchars($doc['file_path']) ?>" target="_blank" class="btn btn-sm btn-outline-warning" title="Download">
+                                                        <i class="fas fa-download mr-1"></i> Download
+                                                    </a>
+                                                <?php endif; ?>
+                                                <?php if ($doc['requires_signature'] && !$doc['is_signed']): ?>
+                                                    <button type="button" class="btn btn-sm btn-warning text-dark font-weight-bold" onclick="openSigningModal(<?= $doc['id'] ?>, '<?= htmlspecialchars(addslashes($doc['file_name'])) ?>')">
+                                                        <i class="fas fa-pen mr-1"></i> Sign Now
+                                                    </button>
+                                                <?php endif; ?>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetchMessages(true);
         
         if (pollingInterval) clearInterval(pollingInterval);
-        pollingInterval = setInterval(() => { fetchMessages(false); fetchClients(); }, 2000);
+        pollingInterval = setInterval(() => { fetchMessages(false); fetchClients(); }, 1000);
     }
 
     function fetchMessages(scrollDown = false) {

@@ -1,4 +1,5 @@
- <?php
+<?php
+ob_start();
 // admin/settings.php
 require_once '../config.php';
 require_once '../includes/functions.php';
@@ -20,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'announcement_bar_text', 'announcement_bar_active',
         'meta_title', 'meta_description', 'meta_keywords', 'maintenance_mode',
         'chat_provider', 'manychat_script_code', 'tawkto_property_id', 'custom_chat_code', 'logo_url',
+        'show_lifecycle_tracker', 'show_fund_flow_visualizer',
         'telegram_bot_token', 'telegram_chat_id'
     ];
     

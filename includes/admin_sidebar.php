@@ -346,14 +346,10 @@ if (isset($pdo)) {
                         <i class="fas fa-comments text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">
                             <?php 
-                            if ($chat_provider === 'tawkto' || $chat_provider === 'tawk') {
-                                echo 'Tawk.to Chat';
-                            } elseif ($chat_provider === 'manychat') {
-                                echo 'ManyChat Support';
-                            } elseif ($chat_provider === 'custom') {
-                                echo 'Support Chat';
+                            if ($user_role === 'client') {
+                                echo 'Encrypted Case Desk';
                             } else {
-                                echo 'Secure Messaging';
+                                echo 'Live Case Chat';
                             }
                             ?>
                         </span>
