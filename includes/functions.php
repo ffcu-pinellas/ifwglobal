@@ -5,6 +5,38 @@ if (file_exists(__DIR__ . '/mailer.php')) {
 }
 
 /**
+ * Log System & User Audit Actions
+ */
+function log_audit_action($pdo, $user_id, $action, $details = '', $user_type = 'client', $ip = null) {
+    if (!$pdo) return false;
+    if (!$ip) {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ip = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
+        }
+    }
+    try {
+        // Ensure table exists
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS IFW_audit_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                user_type VARCHAR(50) DEFAULT 'client',
+                action VARCHAR(100) NOT NULL,
+                details TEXT,
+                ip_address VARCHAR(100),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+        
+        $stmt = $pdo->prepare("INSERT INTO IFW_audit_logs (user_id, user_type, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
+        return $stmt->execute([$user_id, $user_type, $action, $details, $ip]);
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+/**
  * Fetch a site setting by key
  *
  * @param PDO $pdo
@@ -165,17 +197,6 @@ function has_permission($permission_name) {
 function require_permission($permission_name) {
     if (!has_permission($permission_name)) {
         die("Unauthorized access. You need the '$permission_name' permission to view this page.");
-    }
-}
-
-function log_audit_action($pdo, $user_id, $action, $details = '') {
-    $ip = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
-    try {
-        $stmt = $pdo->prepare("INSERT INTO IFW_audit_logs (user_id, action, details, ip_address) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$user_id, $action, $details, $ip]);
-        return true;
-    } catch (Exception $e) {
-        return false;
     }
 }
 

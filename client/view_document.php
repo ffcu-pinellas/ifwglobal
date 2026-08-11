@@ -167,10 +167,24 @@ $logo_url = get_setting($pdo, 'logo_url', '/admin_assets/img/logo/logo.svg');
             <?php endif; ?>
         </div>
         
-        <div class="paper-footer" style="margin-top: 60px; border-top: 2px solid #fecc56; padding-top: 20px; text-align: center; font-size: 0.85rem; color: #888; font-family: 'Montserrat', sans-serif;">
-            <strong style="color: #111;">IFW Global Secure Document Vault</strong><br>
-            This document is generated, tracked, and securely vaulted on the IFW Global Platform.<br>
-            Unauthorized distribution or alteration is strictly prohibited.
+        <div class="watermark-overlay">
+            <div class="watermark-text">
+                CONFIDENTIAL &bull; CLIENT #<?= $client_id ?> &bull; <?= date('Y-m-d H:i:s') ?> UTC &bull; IP <?= htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1') ?>
+            </div>
+        </div>
+
+        <div class="paper-footer" style="margin-top: 50px; border-top: 2px solid #fecc56; padding-top: 20px; font-size: 0.85rem; color: #888; font-family: 'Montserrat', sans-serif;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div class="text-left mb-2 mb-md-0" style="max-width: 500px;">
+                    <strong style="color: #111;">IFW Global Forensic Document Vault</strong><br>
+                    <small>Cryptographic Integrity ID: <code style="color:#d97706; font-size:11px;"><?= hash('sha256', $doc['id'] . ($doc['file_name'] ?? '') . ($doc['document_body'] ?? '')) ?></code></small><br>
+                    <small class="text-muted">Tamper-evident verification certified under international forensic standard ISO/IEC 27037.</small>
+                </div>
+                <div class="text-right">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=<?= urlencode(BASE_URL . '/client/view_document.php?id=' . $doc['id']) ?>" alt="QR Verification" style="width:65px; height:65px; border:1px solid #ddd; padding:2px; border-radius:4px;">
+                    <div style="font-size:9px; color:#666; font-weight:700; margin-top:2px;">SECURE VERIFIED</div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

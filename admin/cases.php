@@ -32,8 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
     
     if ($_POST['action'] === 'update_status') {
+        $new_stat = trim($_POST['status']);
+        $c_id = (int)$_POST['case_id'];
         $stmt = $pdo->prepare("UPDATE IFW_cases SET status = ? WHERE id = ?");
-        $stmt->execute([$_POST['status'], (int)$_POST['case_id']]);
+        $stmt->execute([$new_stat, $c_id]);
+        if (function_exists('log_audit_action')) {
+            log_audit_action($pdo, $_SESSION['admin_id'] ?? 1, 'Case Status Update', "Updated Case #{$c_id} status to {$new_stat}", 'admin');
+        }
         header("Location: cases.php?updated=1");
         exit;
     }
@@ -118,14 +123,18 @@ require_once '../includes/admin_sidebar.php';
                                 <td><?= htmlspecialchars($case['attorney_name'] ?: 'Unassigned') ?></td>
                                 <td><?= $case['court_date'] ? date('M j, Y H:i', strtotime($case['court_date'])) : '<em class="text-muted">None</em>' ?></td>
                                 <td>
+                                    <?php $cur_st = strtolower($case['status'] ?? 'pending'); ?>
                                     <form method="POST">
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="case_id" value="<?= $case['id'] ?>">
-                                        <select name="status" class="form-control form-control-sm bg-dark text-white border-secondary" style="width:120px;" onchange="this.form.submit()">
-                                            <option value="Pending" <?= $case['status'] === 'Pending' ? 'selected' : '' ?>>Pending</option>
-                                            <option value="Active" <?= $case['status'] === 'Active' ? 'selected' : '' ?>>Active</option>
-                                            <option value="Suspended" <?= $case['status'] === 'Suspended' ? 'selected' : '' ?>>Suspended</option>
-                                            <option value="Resolved" <?= $case['status'] === 'Resolved' ? 'selected' : '' ?>>Resolved</option>
+                                        <select name="status" class="form-control form-control-sm bg-dark text-white border-secondary font-weight-bold" style="width:135px;" onchange="this.form.submit()">
+                                            <option value="Pending" <?= $cur_st === 'pending' ? 'selected' : '' ?>>Pending</option>
+                                            <option value="Active" <?= in_array($cur_st, ['active', 'open']) ? 'selected' : '' ?>>Active</option>
+                                            <option value="In Progress" <?= $cur_st === 'in progress' ? 'selected' : '' ?>>In Progress</option>
+                                            <option value="Under Investigation" <?= $cur_st === 'under investigation' ? 'selected' : '' ?>>Investigation</option>
+                                            <option value="Suspended" <?= $cur_st === 'suspended' ? 'selected' : '' ?>>Suspended</option>
+                                            <option value="Resolved" <?= $cur_st === 'resolved' ? 'selected' : '' ?>>Resolved</option>
+                                            <option value="Closed" <?= $cur_st === 'closed' ? 'selected' : '' ?>>Closed</option>
                                         </select>
                                     </form>
                                 </td>

@@ -41,8 +41,10 @@ try {
         u.phone AS agent_phone
         FROM IFW_cases ca 
         LEFT JOIN IFW_users u ON ca.attorney_id = u.id 
-        WHERE ca.client_id=? ORDER BY ca.created_at DESC");
-    $s->execute([$client_id]);
+        WHERE ca.client_id = ? 
+           OR ca.id IN (SELECT case_id FROM IFW_invoices WHERE client_id = ? AND case_id > 0)
+        ORDER BY ca.created_at DESC");
+    $s->execute([$client_id, $client_id]);
     $cases = $s->fetchAll();
 } catch(Exception $e) {}
 

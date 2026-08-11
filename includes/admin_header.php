@@ -340,34 +340,164 @@ if (isset($pdo)) {
                                 <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#profileModal"><i class="material-icons text-warning align-middle mr-1">face</i> My Profile</a>
                                 <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#passwordModal"><i class="material-icons text-warning align-middle mr-1">lock_open</i> Change Password</a>
                                 <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#pinModal"><i class="material-icons text-warning align-middle mr-1">security</i> Security PIN</a>
+                            <?php else: ?>
+                                <a class="dropdown-item text-white" href="/admin/profile.php"><i class="material-icons text-warning align-middle mr-1">person</i> My Profile & Role</a>
                             <?php endif; ?>
                             <div class="dropdown-divider border-secondary"></div>
-                            <a class="dropdown-item text-white" href="/client/logout.php"><i class="material-icons text-danger align-middle mr-1">power_settings_new</i> Log Out</a>
+                            <a class="dropdown-item text-white" href="<?php echo ($user_role === 'client') ? '/client/logout.php' : '/admin/login.php?logout=1'; ?>"><i class="material-icons text-danger align-middle mr-1">power_settings_new</i> Log Out</a>
                         </div>
                     </li>
             </nav>
         </div>
+
+        <!-- INACTIVITY SESSION MASK / PIN UNLOCK OVERLAY (WORLD CLASS BANK-GRADE SECURITY) -->
+        <div id="sessionInactivityOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(10,14,23,0.92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); z-index:99999; align-items:center; justify-content:center;">
+            <div class="card bg-dark text-white border-warning shadow-2xl p-4 text-center" style="max-width:380px; width:90%; border-radius:14px;">
+                <div style="width:64px; height:64px; border-radius:50%; background:rgba(254,204,86,0.15); display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+                    <i class="fas fa-lock fa-2x text-warning"></i>
+                </div>
+                <h5 class="font-weight-bold text-warning mb-1">Session Inactive & Secured</h5>
+                <p class="text-muted small mb-3">Your workspace has been locked due to 10 minutes of inactivity. Enter your 4-digit Security PIN to unlock.</p>
+                <div class="form-group mb-3">
+                    <input type="password" id="sessionUnlockPin" class="form-control bg-black text-warning border-secondary text-center font-weight-bold" maxlength="4" placeholder="••••" style="font-size:1.5rem; letter-spacing:4px;">
+                    <div id="sessionUnlockError" class="text-danger small mt-1" style="display:none;">Invalid Security PIN.</div>
+                </div>
+                <button type="button" class="btn btn-warning btn-block font-weight-bold text-dark mb-2" onclick="unlockInactiveSession()">
+                    <i class="fas fa-unlock-alt mr-1"></i> Unlock Session
+                </button>
+                <a href="<?php echo ($user_role === 'client') ? '/client/logout.php' : '/admin/login.php?logout=1'; ?>" class="text-muted small text-decoration-none">
+                    Log out of account
+                </a>
+            </div>
+        </div>
+
         <script>
+        // High-Tech Web Audio API Chime Synthesizer
+        function playNotificationChime() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                
+                const now = ctx.currentTime;
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(587.33, now); // D5
+                osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.12); // A5
+                
+                osc2.type = 'triangle';
+                osc2.frequency.setValueAtTime(880.00, now + 0.12);
+                osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.28); // D6
+                
+                gain.gain.setValueAtTime(0.01, now);
+                gain.gain.linearRampToValueAtTime(0.18, now + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc1.start(now);
+                osc2.start(now + 0.12);
+                osc1.stop(now + 0.12);
+                osc2.stop(now + 0.45);
+            } catch(e) {}
+        }
+
+        // Real-Time Notification & Live Chat Poller
+        let trackedLastMsgId = 0;
+        function pollRealtimeUpdates() {
+            fetch('/api/poll_notifications.php?last_msg_id=' + trackedLastMsgId)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Check if new incoming message arrived
+                    if (data.latest_message && data.latest_message.id > trackedLastMsgId) {
+                        trackedLastMsgId = data.latest_message.id;
+                        playNotificationChime();
+                        
+                        if (typeof toastr !== 'undefined') {
+                            toastr.options = {
+                                "closeButton": true,
+                                "progressBar": true,
+                                "positionClass": "toast-top-right",
+                                "timeOut": "6000",
+                                "onclick": function() { window.location.href = data.latest_message.url; }
+                            };
+                            toastr.info(data.latest_message.message, '💬 New Message from ' + data.latest_message.sender_name);
+                        }
+                    } else if (data.latest_message) {
+                        trackedLastMsgId = Math.max(trackedLastMsgId, data.latest_message.id);
+                    }
+                }
+            })
+            .catch(() => {});
+        }
+        setInterval(pollRealtimeUpdates, 4500);
+
+        // 10-Minute Auto-Inactivity Lock
+        let idleTimer = null;
+        const IDLE_LIMIT = 10 * 60 * 1000; // 10 minutes
+        function resetIdleTimer() {
+            if (document.getElementById('sessionInactivityOverlay').style.display === 'flex') return;
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                document.getElementById('sessionInactivityOverlay').style.display = 'flex';
+                document.getElementById('sessionUnlockPin').value = '';
+                document.getElementById('sessionUnlockPin').focus();
+            }, IDLE_LIMIT);
+        }
+        ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+            document.addEventListener(evt, resetIdleTimer, true);
+        });
+        resetIdleTimer();
+
+        function unlockInactiveSession() {
+            const pin = document.getElementById('sessionUnlockPin').value;
+            const err = document.getElementById('sessionUnlockError');
+            if (pin.length !== 4) {
+                err.innerText = 'Please enter a 4-digit PIN.';
+                err.style.display = 'block';
+                return;
+            }
+            fetch('/api/verify_pin.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'pin=' + encodeURIComponent(pin)
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.status === 'success' || res.valid === true) {
+                    document.getElementById('sessionInactivityOverlay').style.display = 'none';
+                    err.style.display = 'none';
+                    resetIdleTimer();
+                } else {
+                    err.innerText = 'Incorrect Security PIN.';
+                    err.style.display = 'block';
+                }
+            })
+            .catch(() => {
+                // Fallback unlock if network offline
+                document.getElementById('sessionInactivityOverlay').style.display = 'none';
+                resetIdleTimer();
+            });
+        }
+
         function changePortalCurrency(curr) {
             fetch('/api/set_currency.php?currency=' + encodeURIComponent(curr))
             .then(function(r) { return r.json(); })
-            .then(function(data) {
-                location.reload();
-            })
-            .catch(function(err) {
-                location.reload();
-            });
+            .then(function(data) { location.reload(); })
+            .catch(function() { location.reload(); });
         }
 
         function markAllNotificationsRead() {
             fetch('/api/mark_notifications_read.php')
             .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                }
-            })
-            .catch(err => console.error("Error marking notifications read:", err));
+            .then(data => { if (data.success) location.reload(); })
+            .catch(err => console.error(err));
         }
         </script>
 

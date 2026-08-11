@@ -152,9 +152,11 @@ try {
                u.phone AS agent_phone
         FROM IFW_cases ca 
         LEFT JOIN IFW_users u ON ca.attorney_id = u.id 
-        WHERE ca.client_id=? ORDER BY ca.created_at DESC
+        WHERE ca.client_id = ? 
+           OR ca.id IN (SELECT case_id FROM IFW_invoices WHERE client_id = ? AND case_id > 0)
+        ORDER BY ca.created_at DESC
     ");
-    $s->execute([$client_id]);
+    $s->execute([$client_id, $client_id]);
     $cases = $s->fetchAll();
 } catch(Exception $e) {}
 
@@ -372,13 +374,14 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
 .stat-value-gold { color: #fecc56 !important; }
 
 /* TABLE PORTAL STYLING */
-.table-portal-wrap { border: 1px solid #28303f; border-radius: 10px; overflow: hidden; background: #161a23; }
-.table-portal { width: 100%; border-collapse: separate; border-spacing: 0; color: #f1f5f9; margin-bottom: 0; }
+.table-portal-wrap { border: 1px solid #28303f; border-radius: 10px; overflow-x: auto; width: 100%; background: #161a23; }
+.table-portal { width: 100%; min-width: 680px; border-collapse: separate; border-spacing: 0; color: #f1f5f9; margin-bottom: 0; }
 .table-portal thead th { background: #1f2533 !important; color: #fecc56 !important; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; border-top: none; border-bottom: 2px solid #333d4e !important; padding: 13px 16px; white-space: nowrap; }
 .table-portal tbody tr { background: #161a23; transition: background 0.15s; }
 .table-portal tbody tr:hover { background: #1e2430 !important; }
 .table-portal td { padding: 14px 16px; border-top: 1px solid #262e3d; vertical-align: middle; color: #f1f5f9; font-size: 13.5px; }
 .table-portal td strong { color: #ffffff !important; font-weight: 700; }
+.table-portal td:last-child, .table-portal th:last-child { min-width: 130px; white-space: nowrap; text-align: right; }
 .table-portal .text-muted { color: #94a3b8 !important; }
 
 /* CASE CARDS */
@@ -548,6 +551,67 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
         </div>
     </div>
 </div>
+
+<!-- INTERACTIVE BLOCKCHAIN & ASSET RECOVERY FLOW VISUALIZER (PILLAR 2 ENTERPRISE WOW FEATURE) -->
+<div class="portal-card mb-4 p-4 shadow-sm" style="background: linear-gradient(135deg, #131722, #181d2a); border-color: #2e3849;">
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+        <div>
+            <h6 class="font-weight-bold mb-1 text-warning"><i class="fas fa-network-wired mr-2"></i>Forensic Fund Tracing & Asset Recovery Flow</h6>
+            <small class="text-muted">Live visual tracking of fund interception across monitored centralized exchanges & liquidity pools</small>
+        </div>
+        <span class="badge badge-dark border border-warning text-warning px-3 py-1 font-weight-bold" style="font-size:11px;">
+            <i class="fas fa-shield-alt mr-1"></i> Multi-Chain Monitored
+        </span>
+    </div>
+
+    <div class="row text-center mt-3 position-relative flow-steps-container">
+        <!-- Node 1 -->
+        <div class="col-6 col-md-3 mb-3">
+            <div class="p-3 rounded border border-secondary" style="background:#0e1117; min-height:120px;">
+                <div style="width:36px; height:36px; border-radius:50%; background:rgba(220,53,69,0.2); color:#dc3545; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
+                    <i class="fas fa-biohazard"></i>
+                </div>
+                <div class="font-weight-bold text-white small">1. Rogue Infiltration</div>
+                <small class="text-danger font-weight-bold d-block" style="font-size:10px;">Scam Entity / Address</small>
+                <small class="text-muted" style="font-size:9.5px;">Cluster Flagged</small>
+            </div>
+        </div>
+        <!-- Node 2 -->
+        <div class="col-6 col-md-3 mb-3">
+            <div class="p-3 rounded border border-warning" style="background:#131722; min-height:120px; box-shadow: 0 0 12px rgba(254,204,86,0.15);">
+                <div style="width:36px; height:36px; border-radius:50%; background:rgba(254,204,86,0.2); color:#fecc56; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
+                    <i class="fas fa-search-dollar"></i>
+                </div>
+                <div class="font-weight-bold text-warning small">2. On-Chain Tracing</div>
+                <small class="text-warning font-weight-bold d-block" style="font-size:10px;">Wallet Hop Analysis</small>
+                <small class="text-light" style="font-size:9.5px;">VASP Subpoena Sent</small>
+            </div>
+        </div>
+        <!-- Node 3 -->
+        <div class="col-6 col-md-3 mb-3">
+            <div class="p-3 rounded border border-info" style="background:#0e1117; min-height:120px;">
+                <div style="width:36px; height:36px; border-radius:50%; background:rgba(23,162,184,0.2); color:#17a2b8; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+                <div class="font-weight-bold text-white small">3. Asset Freezing</div>
+                <small class="text-info font-weight-bold d-block" style="font-size:10px;">Exchange Liquidity Lock</small>
+                <small class="text-muted" style="font-size:9.5px;">Court Injunction</small>
+            </div>
+        </div>
+        <!-- Node 4 -->
+        <div class="col-6 col-md-3 mb-3">
+            <div class="p-3 rounded border border-success" style="background:#0e1117; min-height:120px;">
+                <div style="width:36px; height:36px; border-radius:50%; background:rgba(40,167,69,0.2); color:#28a745; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
+                    <i class="fas fa-hand-holding-usd"></i>
+                </div>
+                <div class="font-weight-bold text-white small">4. Client Repatriation</div>
+                <small class="text-success font-weight-bold d-block" style="font-size:10px;">Direct Settlement</small>
+                <small class="text-muted" style="font-size:9.5px;">Final Liquidation</small>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php endif; ?>
 
 <div class="row">
@@ -962,13 +1026,13 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
             <div class="card-body">
                 <?php if (!empty($bank_details) || !empty($global_payment_info)): ?>
                     <?php if (!empty($global_payment_info)): ?>
-                        <div class="alert alert-dark border border-secondary mb-3 small text-light">
-                            <strong class="d-block mb-1 text-warning"><i class="fas fa-info-circle mr-1"></i> Instructions</strong>
-                            <?= nl2br(htmlspecialchars($global_payment_info)) ?>
+                        <div class="p-3 rounded mb-3 border border-secondary" style="background:#11151e; color:#ffffff; font-size:12.5px;">
+                            <strong class="d-block mb-1 text-warning"><i class="fas fa-info-circle mr-1"></i> Payment Instructions</strong>
+                            <div style="color: #ffffff !important; font-weight: 500; line-height: 1.5;"><?= nl2br(htmlspecialchars($global_payment_info)) ?></div>
                         </div>
                     <?php endif; ?>
                     <?php if (!empty($bank_details)): ?>
-                        <div class="p-3 rounded border border-secondary small text-light" style="background:#0e1117; white-space:pre-wrap; font-family: monospace; font-size:12px;">
+                        <div class="p-3 rounded border border-secondary small text-light" style="background:#0e1117; white-space:pre-wrap; font-family: monospace; font-size:12px; color: #fecc56 !important;">
                             <?= htmlspecialchars($bank_details) ?>
                         </div>
                     <?php endif; ?>
