@@ -16,7 +16,7 @@ function log_audit_action($pdo, $user_id, $action, $details = '', $user_type = '
         }
     }
     try {
-        // Ensure table exists
+        // Ensure table exists & has user_type column
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS IFW_audit_logs (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -28,11 +28,18 @@ function log_audit_action($pdo, $user_id, $action, $details = '', $user_type = '
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
+        $pdo->exec("ALTER TABLE IFW_audit_logs ADD COLUMN IF NOT EXISTS user_type VARCHAR(50) DEFAULT 'client' AFTER user_id");
         
         $stmt = $pdo->prepare("INSERT INTO IFW_audit_logs (user_id, user_type, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
         return $stmt->execute([$user_id, $user_type, $action, $details, $ip]);
     } catch (Exception $e) {
-        return false;
+        try {
+            // Fallback for older schemas without user_type
+            $stmt_fb = $pdo->prepare("INSERT INTO IFW_audit_logs (user_id, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, NOW())");
+            return $stmt_fb->execute([$user_id, $action, $details, $ip]);
+        } catch (Exception $ex) {
+            return false;
+        }
     }
 }
 
@@ -446,6 +453,11 @@ function log_user_login($pdo, $user_id, $role, $email, $status = 'success') {
         $stmt_ins = $pdo->prepare("INSERT INTO IFW_login_history (user_id, role, email, ip_address, user_agent, device_type, browser, os, city_country, is_new_device, login_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
         $stmt_ins->execute([$user_id, $role, $email, $ip, $raw_ua, $device_type, $browser, $os, $location, $is_new_device, $status]);
         
+        // Also mirror to IFW_audit_logs
+        $audit_action = ($status === 'success') ? 'PORTAL_LOGIN' : 'LOGIN_FAILED';
+        $audit_desc = "Authentication from {$device_type} ({$browser} on {$os})" . ($is_new_device ? ' [New Device]' : '');
+        log_audit_action($pdo, $user_id, $audit_action, $audit_desc, $role, $ip);
+
         // If it's a new device/IP and successful login, dispatch instant security alert email!
         if ($is_new_device && $status === 'success') {
             send_security_login_alert($pdo, $email, $user_id, $role, [

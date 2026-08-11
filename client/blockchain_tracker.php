@@ -14,10 +14,16 @@ if (empty($_SESSION['client_logged_in']) || empty($_SESSION['client_portal_id'])
 
 $client_id = (int)$_SESSION['client_portal_id'];
 
-// Fetch Client Cases
-$cases_stmt = $pdo->prepare("SELECT * FROM IFW_cases WHERE client_id = ? ORDER BY id DESC");
+// Fetch Client Cases where Blockchain Watcher is Enabled
+$cases_stmt = $pdo->prepare("SELECT * FROM IFW_cases WHERE client_id = ? AND show_blockchain_watcher = 1 ORDER BY id DESC");
 $cases_stmt->execute([$client_id]);
 $cases = $cases_stmt->fetchAll();
+
+if (empty($cases)) {
+    // If feature is disabled by admin for all client cases, redirect to main dashboard
+    header("Location: dashboard.php");
+    exit;
+}
 
 $selected_case_id = (int)($_GET['case_id'] ?? ($cases[0]['id'] ?? 0));
 $active_case = null;
@@ -32,11 +38,7 @@ if (!$active_case && !empty($cases)) {
     $selected_case_id = (int)$active_case['id'];
 }
 
-// Check if feature is enabled for this case (default enabled if setting not explicitly 0)
-$is_feature_enabled = true;
-if ($active_case && isset($active_case['show_blockchain_watcher']) && $active_case['show_blockchain_watcher'] == 0) {
-    $is_feature_enabled = false;
-}
+$is_feature_enabled = ($active_case && ($active_case['show_blockchain_watcher'] ?? 0) == 1);
 
 // Fetch Wallets for active case
 $wallets = [];

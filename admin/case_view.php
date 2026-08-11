@@ -75,19 +75,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     $show_lifecycle_bar = isset($_POST['show_lifecycle_bar']) ? (int)$_POST['show_lifecycle_bar'] : 1;
     $show_flow_visualizer = isset($_POST['show_flow_visualizer']) ? (int)$_POST['show_flow_visualizer'] : 1;
+    $show_blockchain_watcher = isset($_POST['show_blockchain_watcher']) ? (int)$_POST['show_blockchain_watcher'] : 0;
+    $show_settlement_escrow = isset($_POST['show_settlement_escrow']) ? (int)$_POST['show_settlement_escrow'] : 0;
+    $show_recovery_map = isset($_POST['show_recovery_map']) ? (int)$_POST['show_recovery_map'] : 0;
 
-    $stmt = $pdo->prepare("UPDATE IFW_cases SET status = ?, lifecycle_stage = ?, progress_percent = ?, amount_lost = ?, amount_recovered = ?, stage_1_title = ?, stage_2_title = ?, stage_3_title = ?, stage_4_title = ?, stage_5_title = ?, flow_node_1 = ?, flow_node_2 = ?, flow_node_3 = ?, flow_node_4 = ?, show_lifecycle_bar = ?, show_flow_visualizer = ? WHERE id = ?");
-    $stmt->execute([$new_status, $stage, $stage_percent, $amount_lost, $amount_recovered, $stage_1_title, $stage_2_title, $stage_3_title, $stage_4_title, $stage_5_title, $flow_node_1, $flow_node_2, $flow_node_3, $flow_node_4, $show_lifecycle_bar, $show_flow_visualizer, $case_id]);
+    $stmt = $pdo->prepare("UPDATE IFW_cases SET status = ?, lifecycle_stage = ?, progress_percent = ?, amount_lost = ?, amount_recovered = ?, stage_1_title = ?, stage_2_title = ?, stage_3_title = ?, stage_4_title = ?, stage_5_title = ?, flow_node_1 = ?, flow_node_2 = ?, flow_node_3 = ?, flow_node_4 = ?, show_lifecycle_bar = ?, show_flow_visualizer = ?, show_blockchain_watcher = ?, show_settlement_escrow = ?, show_recovery_map = ? WHERE id = ?");
+    $stmt->execute([$new_status, $stage, $stage_percent, $amount_lost, $amount_recovered, $stage_1_title, $stage_2_title, $stage_3_title, $stage_4_title, $stage_5_title, $flow_node_1, $flow_node_2, $flow_node_3, $flow_node_4, $show_lifecycle_bar, $show_flow_visualizer, $show_blockchain_watcher, $show_settlement_escrow, $show_recovery_map, $case_id]);
     
+    // Also sync settlement table is_enabled
+    try {
+        $pdo->prepare("UPDATE IFW_case_settlements SET is_enabled = ? WHERE case_id = ?")->execute([$show_settlement_escrow, $case_id]);
+    } catch (Exception $e) {}
+
     if (function_exists('log_audit_action')) {
-        log_audit_action($pdo, $_SESSION['admin_id'], 'Case Progress Update', "Updated Case #{$case['case_number']} to Stage {$stage} ({$new_status})", 'admin');
+        log_audit_action($pdo, $_SESSION['admin_id'], 'Case Progress Update', "Updated Case #{$case['case_number']} to Stage {$stage} ({$new_status}) [Features: Watcher={$show_blockchain_watcher}, Escrow={$show_settlement_escrow}, Radar={$show_recovery_map}]", 'admin');
     }
     
     // Refresh case record
     $stmt = $pdo->prepare("SELECT c.*, cl.first_name, cl.last_name, cl.email as client_email, cl.phone as client_phone FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id WHERE c.id = ?");
     $stmt->execute([$case_id]);
     $case = $stmt->fetch();
-    $success = "Investigation lifecycle stage, custom milestones, and recovery flow saved successfully.";
+    $success = "Investigation lifecycle stage, custom milestones, and feature visibility saved successfully.";
 }
 
 // Handle Notes Submission
@@ -293,7 +301,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt = $pdo->prepare("INSERT INTO IFW_case_settlements (case_id, client_id, gross_recovered, fee_percent, fee_amount, net_payout, escrow_ref, custody_entity, clearance_stage, status, is_enabled, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([$case_id, $case['client_id'], $gross_recovered, $fee_percent, $fee_amount, $net_payout, $escrow_ref, $custody_entity, $clearance_stage, $status, $is_enabled, $notes]);
     }
+    
+    // Sync with IFW_cases table
+    $pdo->prepare("UPDATE IFW_cases SET show_settlement_escrow = ? WHERE id = ?")->execute([$is_enabled, $case_id]);
+
     $success = "Recovery Escrow & Settlement Hub configuration saved.";
+}
+
+// Handle Quick Feature Toggles
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'toggle_feature_watcher') {
+    $val = isset($_POST['show_blockchain_watcher']) ? (int)$_POST['show_blockchain_watcher'] : 0;
+    $pdo->prepare("UPDATE IFW_cases SET show_blockchain_watcher = ? WHERE id = ?")->execute([$val, $case_id]);
+    $success = "Blockchain Forensic Watcher " . ($val ? 'enabled (visible in client nav)' : 'disabled (hidden from client nav)') . ".";
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'toggle_feature_radar') {
+    $val = isset($_POST['show_recovery_map']) ? (int)$_POST['show_recovery_map'] : 0;
+    $pdo->prepare("UPDATE IFW_cases SET show_recovery_map = ? WHERE id = ?")->execute([$val, $case_id]);
+    $success = "Global Recovery Radar Map " . ($val ? 'enabled (visible in client nav)' : 'disabled (hidden from client nav)') . ".";
 }
 
 // Handle Add Case Jurisdiction Pin
@@ -469,6 +494,27 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
                             <select name="show_flow_visualizer" class="form-control bg-dark text-white border-secondary">
                                 <option value="1" <?= ($case['show_flow_visualizer'] ?? 1) == 1 ? 'selected' : '' ?>>Visible to Client (Enabled)</option>
                                 <option value="0" <?= ($case['show_flow_visualizer'] ?? 1) == 0 ? 'selected' : '' ?>>Hidden from Client (Disabled)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label class="small text-warning font-weight-bold text-uppercase"><i class="fas fa-cubes mr-1"></i>1. Blockchain Watcher</label>
+                            <select name="show_blockchain_watcher" class="form-control bg-dark text-white border-secondary">
+                                <option value="0" <?= ($case['show_blockchain_watcher'] ?? 0) == 0 ? 'selected' : '' ?>>🔴 Disabled (Default - Hidden in Nav)</option>
+                                <option value="1" <?= ($case['show_blockchain_watcher'] ?? 0) == 1 ? 'selected' : '' ?>>🟢 Enabled (Visible in Client Nav)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label class="small text-warning font-weight-bold text-uppercase"><i class="fas fa-vault mr-1"></i>2. Escrow & Settlement</label>
+                            <select name="show_settlement_escrow" class="form-control bg-dark text-white border-secondary">
+                                <option value="0" <?= ($case['show_settlement_escrow'] ?? 0) == 0 ? 'selected' : '' ?>>🔴 Disabled (Default - Hidden in Nav)</option>
+                                <option value="1" <?= ($case['show_settlement_escrow'] ?? 0) == 1 ? 'selected' : '' ?>>🟢 Enabled (Visible in Client Nav)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label class="small text-warning font-weight-bold text-uppercase"><i class="fas fa-globe-americas mr-1"></i>3. Recovery Radar Map</label>
+                            <select name="show_recovery_map" class="form-control bg-dark text-white border-secondary">
+                                <option value="0" <?= ($case['show_recovery_map'] ?? 0) == 0 ? 'selected' : '' ?>>🔴 Disabled (Default - Hidden in Nav)</option>
+                                <option value="1" <?= ($case['show_recovery_map'] ?? 0) == 1 ? 'selected' : '' ?>>🟢 Enabled (Visible in Client Nav)</option>
                             </select>
                         </div>
                     </div>
@@ -1104,6 +1150,22 @@ function previewCustomDoc() {
         <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
       </div>
       <div class="modal-body p-4">
+        <!-- Feature Visibility Toggle -->
+        <div class="p-3 rounded mb-4 border border-secondary d-flex justify-content-between align-items-center flex-wrap gap-2" style="background:#1f2533;">
+            <div>
+                <h6 class="font-weight-bold text-white mb-0"><i class="fas fa-eye mr-2 text-warning"></i>Client Portal Feature Status</h6>
+                <small class="text-muted">When enabled, the Blockchain Watcher item appears in the client's side nav.</small>
+            </div>
+            <form method="POST" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="action" value="toggle_feature_watcher">
+                <select name="show_blockchain_watcher" class="form-control form-control-sm bg-black text-white border-secondary font-weight-bold mr-2" style="min-width:180px;">
+                    <option value="0" <?= ($case['show_blockchain_watcher'] ?? 0) == 0 ? 'selected' : '' ?>>🔴 Disabled (Hidden from Nav)</option>
+                    <option value="1" <?= ($case['show_blockchain_watcher'] ?? 0) == 1 ? 'selected' : '' ?>>🟢 Enabled (Visible in Nav)</option>
+                </select>
+                <button type="submit" class="btn btn-warning btn-sm font-weight-bold text-dark">Save Status</button>
+            </form>
+        </div>
+
         <!-- Add Wallet Form -->
         <div class="p-3 rounded mb-4 border border-secondary" style="background:#161a23;">
             <h6 class="font-weight-bold text-warning mb-3"><i class="fas fa-plus-circle mr-2"></i>Add Tracked Fraudster / Destination Wallet</h6>
@@ -1339,6 +1401,22 @@ function previewCustomDoc() {
         <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
       </div>
       <div class="modal-body p-4">
+        <!-- Feature Visibility Toggle -->
+        <div class="p-3 rounded mb-4 border border-secondary d-flex justify-content-between align-items-center flex-wrap gap-2" style="background:#1f2533;">
+            <div>
+                <h6 class="font-weight-bold text-white mb-0"><i class="fas fa-eye mr-2 text-warning"></i>Client Portal Feature Status</h6>
+                <small class="text-muted">When enabled, the Recovery Radar item appears in the client's side nav.</small>
+            </div>
+            <form method="POST" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="action" value="toggle_feature_radar">
+                <select name="show_recovery_map" class="form-control form-control-sm bg-black text-white border-secondary font-weight-bold mr-2" style="min-width:180px;">
+                    <option value="0" <?= ($case['show_recovery_map'] ?? 0) == 0 ? 'selected' : '' ?>>🔴 Disabled (Hidden from Nav)</option>
+                    <option value="1" <?= ($case['show_recovery_map'] ?? 0) == 1 ? 'selected' : '' ?>>🟢 Enabled (Visible in Nav)</option>
+                </select>
+                <button type="submit" class="btn btn-warning btn-sm font-weight-bold text-dark">Save Status</button>
+            </form>
+        </div>
+
         <!-- Add Pin Form -->
         <div class="p-3 rounded mb-4 border border-secondary" style="background:#161a23;">
             <h6 class="font-weight-bold text-warning mb-3"><i class="fas fa-map-marker-alt mr-2"></i>Add Cross-Border Jurisdiction Action Pin</h6>

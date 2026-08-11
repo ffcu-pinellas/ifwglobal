@@ -23,9 +23,16 @@ if (!$client) {
     exit;
 }
 
-$cases_stmt = $pdo->prepare("SELECT * FROM IFW_cases WHERE client_id = ? ORDER BY id DESC");
+// Fetch Client Cases where Escrow & Settlement is Enabled
+$cases_stmt = $pdo->prepare("SELECT * FROM IFW_cases WHERE client_id = ? AND show_settlement_escrow = 1 ORDER BY id DESC");
 $cases_stmt->execute([$client_id]);
 $cases = $cases_stmt->fetchAll();
+
+if (empty($cases)) {
+    // If feature is disabled by admin for all client cases, redirect to main dashboard
+    header("Location: dashboard.php");
+    exit;
+}
 
 $selected_case_id = (int)($_GET['case_id'] ?? ($cases[0]['id'] ?? 0));
 $active_case = null;

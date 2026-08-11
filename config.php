@@ -212,6 +212,13 @@ try {
     } catch (Exception $ex) {}
 }
 
+// Self-healing: Feature Flags on IFW_cases (Disabled by default: 0)
+try {
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_blockchain_watcher TINYINT(1) DEFAULT 0");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_settlement_escrow TINYINT(1) DEFAULT 0");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_recovery_map TINYINT(1) DEFAULT 0");
+} catch (Exception $ex) {}
+
 // Base URL configuration (dynamic for Hostinger and localhost subdirectories)
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
 $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';

@@ -29,6 +29,27 @@ if (isset($pdo)) {
         $global_unread_chat = 0;
     }
 }
+
+// Client Feature Enablement Flags (Disabled by default: 0)
+$has_blockchain_watcher = false;
+$has_settlement_escrow = false;
+$has_recovery_map = false;
+
+if (isset($pdo) && $user_role === 'client') {
+    $client_id = $_SESSION['client_portal_id'] ?? 0;
+    if ($client_id > 0) {
+        try {
+            $feat_stmt = $pdo->prepare("SELECT SUM(COALESCE(show_blockchain_watcher, 0)) as bw, SUM(COALESCE(show_settlement_escrow, 0)) as se, SUM(COALESCE(show_recovery_map, 0)) as rm FROM IFW_cases WHERE client_id = ?");
+            $feat_stmt->execute([$client_id]);
+            $feat_row = $feat_stmt->fetch();
+            if ($feat_row) {
+                $has_blockchain_watcher = ((int)$feat_row['bw'] > 0);
+                $has_settlement_escrow = ((int)$feat_row['se'] > 0);
+                $has_recovery_map = ((int)$feat_row['rm'] > 0);
+            }
+        } catch (Exception $e) {}
+    }
+}
 ?>
 <style>
     /* ============================================================
@@ -270,6 +291,7 @@ if (isset($pdo)) {
                     </a>
                 </li>
 
+                <?php if ($has_blockchain_watcher): ?>
                 <!-- NAV ITEM Blockchain Watcher -->
                 <li class="nav-item <?php echo ($current_page == 'blockchain_tracker.php') ? 'active' : ''; ?>">
                     <a href="<?php echo BASE_URL; ?>/client/blockchain_tracker.php" class="nav-link d-flex align-items-center px-3 py-2">
@@ -277,7 +299,9 @@ if (isset($pdo)) {
                         <span class="link-text text-white">Blockchain Watcher</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
+                <?php if ($has_settlement_escrow): ?>
                 <!-- NAV ITEM Escrow & Settlement -->
                 <li class="nav-item <?php echo ($current_page == 'settlement_payout.php') ? 'active' : ''; ?>">
                     <a href="<?php echo BASE_URL; ?>/client/settlement_payout.php" class="nav-link d-flex align-items-center px-3 py-2">
@@ -285,7 +309,9 @@ if (isset($pdo)) {
                         <span class="link-text text-white">Escrow & Settlement</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
+                <?php if ($has_recovery_map): ?>
                 <!-- NAV ITEM Global Recovery Radar -->
                 <li class="nav-item <?php echo ($current_page == 'recovery_map.php') ? 'active' : ''; ?>">
                     <a href="<?php echo BASE_URL; ?>/client/recovery_map.php" class="nav-link d-flex align-items-center px-3 py-2">
@@ -293,6 +319,7 @@ if (isset($pdo)) {
                         <span class="link-text text-white">Recovery Radar</span>
                     </a>
                 </li>
+                <?php endif; ?>
                 
                 <!-- NAV ITEM Client KYC -->
                 <li class="nav-item <?php echo ($current_page == 'kyc.php') ? 'active' : ''; ?>">
