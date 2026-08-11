@@ -350,6 +350,194 @@ function send_telegram_notification($pdo, $message) {
         return false;
     }
 }
+
+/**
+ * Get accurate client IP address
+ */
+function get_client_ip_address() {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        $ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ip = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
+    } elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        $ip = $_SERVER['HTTP_X_REAL_IP'];
+    }
+    return trim($ip);
+}
+
+/**
+ * Parse User Agent into Device Type, Browser, and OS
+ */
+function parse_device_user_agent($ua = null) {
+    if (!$ua) {
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown Device';
+    }
+    
+    // Device Type
+    $device = 'Desktop PC';
+    if (preg_match('/(tablet|ipad|playbook)|(android(?!.*(mobi|opera mini)))/i', $ua)) {
+        $device = 'Tablet';
+    } elseif (preg_match('/(up.browser|up.link|mmp|symbian|smartphone|midp|wap|phone|android|iemobile|iphone|ipod)/i', $ua)) {
+        $device = 'Mobile Device';
+    }
+    
+    // OS
+    $os = 'Unknown OS';
+    if (preg_match('/windows nt 10/i', $ua))     $os = 'Windows 10 / 11';
+    elseif (preg_match('/windows nt 6.3/i', $ua)) $os = 'Windows 8.1';
+    elseif (preg_match('/windows nt 6.2/i', $ua)) $os = 'Windows 8';
+    elseif (preg_match('/windows nt 6.1/i', $ua)) $os = 'Windows 7';
+    elseif (preg_match('/macintosh|mac os x/i', $ua)) $os = 'macOS';
+    elseif (preg_match('/iphone/i', $ua))         $os = 'iOS (iPhone)';
+    elseif (preg_match('/ipad/i', $ua))           $os = 'iPadOS';
+    elseif (preg_match('/android/i', $ua))        $os = 'Android OS';
+    elseif (preg_match('/linux/i', $ua))          $os = 'Linux';
+    
+    // Browser
+    $browser = 'Unknown Browser';
+    if (preg_match('/edg/i', $ua))               $browser = 'Microsoft Edge';
+    elseif (preg_match('/chrome/i', $ua))        $browser = 'Google Chrome';
+    elseif (preg_match('/firefox/i', $ua))       $browser = 'Mozilla Firefox';
+    elseif (preg_match('/safari/i', $ua))        $browser = 'Apple Safari';
+    elseif (preg_match('/opera|opr/i', $ua))     $browser = 'Opera';
+    elseif (preg_match('/msie|trident/i', $ua))  $browser = 'Internet Explorer';
+    
+    return [
+        'device' => $device,
+        'os' => $os,
+        'browser' => $browser,
+        'raw_ua' => $ua
+    ];
+}
+
+/**
+ * Log user login and trigger instant security email if signing in from a new/unrecognized IP or device
+ */
+function log_user_login($pdo, $user_id, $role, $email, $status = 'success') {
+    if (!$pdo || empty($user_id) || empty($email)) return false;
+    
+    $ip = get_client_ip_address();
+    $ua_info = parse_device_user_agent();
+    $device_type = $ua_info['device'];
+    $browser = $ua_info['browser'];
+    $os = $ua_info['os'];
+    $raw_ua = $ua_info['raw_ua'];
+    
+    // Check if this IP/Device has signed in within past 30 days
+    $is_new_device = 0;
+    try {
+        $stmt_chk = $pdo->prepare("SELECT id FROM IFW_login_history WHERE user_id = ? AND role = ? AND (ip_address = ? OR (browser = ? AND os = ?)) AND login_status = 'success' LIMIT 1");
+        $stmt_chk->execute([$user_id, $role, $ip, $browser, $os]);
+        $existing_login = $stmt_chk->fetch();
+        
+        if (!$existing_login && $status === 'success') {
+            $is_new_device = 1;
+        }
+        
+        // Approximate location lookup or fallback
+        $location = 'Encrypted TLS Endpoint';
+        if ($ip !== '127.0.0.1' && $ip !== '::1') {
+            // Optional GeoIP via non-blocking lightweight lookup
+            $location = 'Authorized Network (' . $ip . ')';
+        }
+        
+        // Insert record
+        $stmt_ins = $pdo->prepare("INSERT INTO IFW_login_history (user_id, role, email, ip_address, user_agent, device_type, browser, os, city_country, is_new_device, login_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+        $stmt_ins->execute([$user_id, $role, $email, $ip, $raw_ua, $device_type, $browser, $os, $location, $is_new_device, $status]);
+        
+        // If it's a new device/IP and successful login, dispatch instant security alert email!
+        if ($is_new_device && $status === 'success') {
+            send_security_login_alert($pdo, $email, $user_id, $role, [
+                'ip' => $ip,
+                'device' => $device_type,
+                'browser' => $browser,
+                'os' => $os,
+                'location' => $location,
+                'time' => date('F j, Y, g:i a') . ' UTC'
+            ]);
+        }
+        
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+/**
+ * Dispatch an Instant Branded Security Alert Email for New Device / IP Sign-In
+ */
+function send_security_login_alert($pdo, $email, $user_id, $role, $info) {
+    $app_name = get_setting($pdo, 'company_name', 'IFW Global Intelligence');
+    $user_name = 'Valued Client';
+    
+    if ($role === 'client') {
+        $st = $pdo->prepare("SELECT first_name, last_name FROM IFW_clients WHERE id = ?");
+        $st->execute([$user_id]);
+        if ($c = $st->fetch()) {
+            $user_name = $c['first_name'] . ' ' . $c['last_name'];
+        }
+    } else {
+        $st = $pdo->prepare("SELECT username FROM IFW_users WHERE id = ?");
+        $st->execute([$user_id]);
+        if ($u = $st->fetch()) {
+            $user_name = $u['username'];
+        }
+    }
+    
+    $subject = "🛡️ Security Alert: New Sign-In Detected on Your {$app_name} Workspace";
+    
+    $html = "
+    <div style='background:#0d1117; color:#f0f6fc; font-family:Montserrat,-apple-system,BlinkMacSystemFont,sans-serif; max-width:600px; margin:0 auto; border-radius:12px; border:1px solid #30363d; overflow:hidden;'>
+        <div style='background:#161b22; padding:24px; text-align:center; border-bottom:2px solid #fecc56;'>
+            <h2 style='margin:0; color:#fecc56; font-size:20px; font-weight:700; letter-spacing:1px;'>IFW GLOBAL SECURITY DESK</h2>
+            <div style='color:#8b949e; font-size:12px; margin-top:4px;'>Automated Device & Session Authentication Monitor</div>
+        </div>
+        <div style='padding:28px 24px;'>
+            <p style='font-size:15px; color:#f0f6fc; margin-top:0;'>Hello <strong>" . htmlspecialchars($user_name) . "</strong>,</p>
+            <p style='color:#8b949e; font-size:13.5px; line-height:1.6;'>A new sign-in was just verified on your <strong>" . htmlspecialchars($app_name) . "</strong> workspace from an unrecognized device or IP address.</p>
+            
+            <div style='background:#161b22; border:1px solid #30363d; border-radius:8px; padding:16px 20px; margin:20px 0;'>
+                <table style='width:100%; font-size:13px; color:#f0f6fc;'>
+                    <tr>
+                        <td style='color:#8b949e; padding:6px 0; width:35%;'>Device:</td>
+                        <td style='font-weight:600; padding:6px 0;'>" . htmlspecialchars($info['device']) . "</td>
+                    </tr>
+                    <tr>
+                        <td style='color:#8b949e; padding:6px 0;'>Browser & OS:</td>
+                        <td style='font-weight:600; padding:6px 0;'>" . htmlspecialchars($info['browser'] . ' (' . $info['os'] . ')') . "</td>
+                    </tr>
+                    <tr>
+                        <td style='color:#8b949e; padding:6px 0;'>IP Address:</td>
+                        <td style='font-weight:600; padding:6px 0; color:#fecc56; font-family:monospace;'>" . htmlspecialchars($info['ip']) . "</td>
+                    </tr>
+                    <tr>
+                        <td style='color:#8b949e; padding:6px 0;'>Timestamp:</td>
+                        <td style='font-weight:600; padding:6px 0;'>" . htmlspecialchars($info['time']) . "</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style='background:rgba(254,204,86,0.1); border-left:4px solid #fecc56; padding:12px 16px; border-radius:4px; font-size:12.5px; color:#e6edf3; margin-bottom:24px;'>
+                <strong>Was this you?</strong> If you recently logged in from this device or network, you can safely disregard this alert.
+            </div>
+            
+            <p style='color:#f85149; font-size:13px; font-weight:600; line-height:1.5; margin-bottom:16px;'>
+                ⚠️ Did not recognize this activity? Please immediately log into your workspace and change your password & 4-digit Security PIN to lock unauthorized sessions.
+            </p>
+        </div>
+        <div style='background:#161b22; padding:16px 24px; text-align:center; border-top:1px solid #30363d; font-size:11.5px; color:#8b949e;'>
+            &copy; " . date('Y') . " " . htmlspecialchars($app_name) . " &bull; Cyber & Financial Forensics Division
+        </div>
+    </div>";
+    
+    // Send email using system mailer
+    if (function_exists('send_html_email')) {
+        @send_html_email($email, $subject, $html);
+    } elseif (function_exists('send_notification_email')) {
+        @send_notification_email($pdo, $email, $subject, $html);
+    }
+}
 ?>
 
 

@@ -269,12 +269,44 @@ if (isset($pdo)) {
                         <span class="link-text text-white">My Cases</span>
                     </a>
                 </li>
+
+                <!-- NAV ITEM Blockchain Watcher -->
+                <li class="nav-item <?php echo ($current_page == 'blockchain_tracker.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>/client/blockchain_tracker.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-cubes text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Blockchain Watcher</span>
+                    </a>
+                </li>
+
+                <!-- NAV ITEM Escrow & Settlement -->
+                <li class="nav-item <?php echo ($current_page == 'settlement_payout.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>/client/settlement_payout.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-vault text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Escrow & Settlement</span>
+                    </a>
+                </li>
+
+                <!-- NAV ITEM Global Recovery Radar -->
+                <li class="nav-item <?php echo ($current_page == 'recovery_map.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>/client/recovery_map.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-globe-americas text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Recovery Radar</span>
+                    </a>
+                </li>
                 
                 <!-- NAV ITEM Client KYC -->
                 <li class="nav-item <?php echo ($current_page == 'kyc.php') ? 'active' : ''; ?>">
                     <a href="<?php echo BASE_URL; ?>/client/kyc.php" class="nav-link d-flex align-items-center px-3 py-2">
-                        <i class="fas fa-shield-alt text-warning mr-3" style="width: 20px;"></i>
+                        <i class="fas fa-id-card text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Identity Verification</span>
+                    </a>
+                </li>
+
+                <!-- NAV ITEM Security Desk -->
+                <li class="nav-item <?php echo ($current_page == 'security.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>/client/security.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-user-shield text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Security & Sessions</span>
                     </a>
                 </li>
                 <?php endif; ?>

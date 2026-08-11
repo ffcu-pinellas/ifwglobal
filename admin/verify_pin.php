@@ -22,20 +22,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         if ($user && password_verify($pin, $user['pin_hash'])) {
             // Success!
+            $a_id = (int)$_SESSION['pending_admin_id'];
+            $a_username = $_SESSION['pending_admin_username'];
+            
             $_SESSION['admin_logged_in'] = true;
-            $_SESSION['admin_id'] = $_SESSION['pending_admin_id'];
-            $_SESSION['admin_username'] = $_SESSION['pending_admin_username'];
+            $_SESSION['admin_id'] = $a_id;
+            $_SESSION['admin_username'] = $a_username;
             $_SESSION['admin_role'] = $user['role'] ?? 'admin';
             
             // Clean up pending session vars
             unset($_SESSION['pending_admin_id']);
             unset($_SESSION['pending_admin_username']);
             
-            log_audit_action($pdo, $_SESSION['admin_id'], 'LOGIN', 'Successful portal login');
+            log_audit_action($pdo, $a_id, 'LOGIN', 'Successful portal login');
+            
+            // Log security login record
+            if (function_exists('log_user_login')) {
+                $stmt_email = $pdo->prepare("SELECT email FROM IFW_users WHERE id = ?");
+                $stmt_email->execute([$a_id]);
+                $a_email = $stmt_email->fetchColumn() ?: ($a_username . '@ifwglobal.com');
+                log_user_login($pdo, $a_id, 'admin', $a_email, 'success');
+            }
             
             header("Location: index.php");
             exit;
         } else {
+            if (!empty($_SESSION['pending_admin_id']) && function_exists('log_user_login')) {
+                log_user_login($pdo, (int)$_SESSION['pending_admin_id'], 'admin', $_SESSION['pending_admin_username'] . '@ifwglobal.com', 'failed_otp');
+            }
             $error = "Invalid PIN.";
         }
     }
