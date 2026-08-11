@@ -269,27 +269,27 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
         <?php endif; ?>
 
         <!-- INVOICE HEADER -->
-        <div class="row mb-5">
-            <div class="col-6">
+        <div class="row mb-4">
+            <div class="col-sm-6 mb-3 mb-sm-0">
                 <?php if ($logo_url): ?>
                     <img src="<?= htmlspecialchars($logo_url) ?>" alt="<?= htmlspecialchars($app_name) ?>" style="max-height:60px; max-width:200px;" onerror="this.style.display='none'">
                 <?php endif; ?>
-                <h3 class="font-weight-bold text-dark mt-2 mb-0"><?= htmlspecialchars($app_name) ?></h3>
-                <?php if ($company_address): ?><p class="text-muted small mb-0"><?= nl2br(htmlspecialchars($company_address)) ?></p><?php endif; ?>
-                <?php if ($company_email): ?><p class="text-muted small mb-0"><?= htmlspecialchars($company_email) ?></p><?php endif; ?>
-                <?php if ($company_phone): ?><p class="text-muted small mb-0"><?= htmlspecialchars($company_phone) ?></p><?php endif; ?>
+                <h3 class="font-weight-bold text-white mt-2 mb-0"><?= htmlspecialchars($app_name) ?></h3>
+                <?php if ($company_address): ?><p class="text-muted small mb-0 mt-1"><?= nl2br(htmlspecialchars($company_address)) ?></p><?php endif; ?>
+                <?php if ($company_email): ?><p class="text-muted small mb-0"><i class="fas fa-envelope mr-1 text-warning"></i><?= htmlspecialchars($company_email) ?></p><?php endif; ?>
+                <?php if ($company_phone): ?><p class="text-muted small mb-0"><i class="fas fa-phone mr-1 text-warning"></i><?= htmlspecialchars($company_phone) ?></p><?php endif; ?>
             </div>
-            <div class="col-6 text-right">
-                <h1 class="font-weight-bold text-dark mb-1" style="font-size:2.5rem; letter-spacing:2px; opacity:.15;">INVOICE</h1>
-                <div class="badge bg-dark text-warning px-3 py-2 mb-3" style="font-size:1.1rem; background:#1a1a1a !important; display:inline-block; border-radius:6px;">
+            <div class="col-sm-6 text-sm-right">
+                <h1 class="font-weight-bold text-white mb-1" style="font-size:2.2rem; letter-spacing:2px; opacity:.2;">INVOICE</h1>
+                <div class="badge bg-dark text-warning px-3 py-2 mb-2 font-weight-bold" style="font-size:1.1rem; background:#111827 !important; border:1px solid #fecc56; display:inline-block; border-radius:6px;">
                     #INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?>
                 </div>
-                <table class="ml-auto" style="font-size:13px;">
-                    <tr><td class="text-muted pr-3">Issue Date:</td><td class="font-weight-bold"><?= date('F j, Y', strtotime($invoice['issue_date'] ?? $invoice['created_at'])) ?></td></tr>
+                <table class="ml-sm-auto" style="font-size:13px; color:#f1f5f9;">
+                    <tr><td class="text-muted pr-3">Issue Date:</td><td class="font-weight-bold text-white"><?= date('F j, Y', strtotime($invoice['issue_date'] ?? $invoice['created_at'])) ?></td></tr>
                     <?php if ($invoice['due_date']): ?>
                     <tr>
                         <td class="text-muted pr-3">Due Date:</td>
-                        <td class="font-weight-bold <?= (strtotime($invoice['due_date']) < time() && $invoice['status']!=='paid') ? 'text-danger' : '' ?>">
+                        <td class="font-weight-bold <?= (strtotime($invoice['due_date']) < time() && $invoice['status']!=='paid') ? 'text-danger' : 'text-white' ?>">
                             <?= date('F j, Y', strtotime($invoice['due_date'])) ?>
                         </td>
                     </tr>
@@ -298,106 +298,108 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                         <td>
                             <?php $st = strtolower($invoice['status'] ?? 'unpaid');
                             $badge = ['paid'=>'success','unpaid'=>'danger','partial'=>'warning','overdue'=>'danger'][$st] ?? 'secondary'; ?>
-                            <span class="badge badge-<?= $badge ?>"><?= ucfirst($st) ?></span>
+                            <span class="badge badge-<?= $badge ?> px-2 py-1"><?= ucfirst($st) ?></span>
                         </td>
                     </tr>
                     <?php if (!empty($invoice['case_number'])): ?>
-                    <tr><td class="text-muted pr-3">Case Ref:</td><td class="font-weight-bold"><?= htmlspecialchars($invoice['case_number']) ?></td></tr>
+                    <tr><td class="text-muted pr-3">Case Ref:</td><td class="font-weight-bold text-warning"><?= htmlspecialchars($invoice['case_number']) ?></td></tr>
                     <?php endif; ?>
                 </table>
             </div>
         </div>
 
         <!-- BILLED TO -->
-        <div class="row mb-5">
-            <div class="col-6">
-                <p class="text-muted text-uppercase small font-weight-bold mb-1" style="letter-spacing:1px;">Billed To</p>
-                <div class="bg-light p-3 rounded border">
-                    <strong class="d-block text-dark"><?= htmlspecialchars($invoice['first_name'] . ' ' . $invoice['last_name']) ?></strong>
-                    <span class="text-muted small"><?= htmlspecialchars($invoice['email']) ?></span>
-                    <?php if ($invoice['phone']): ?><br><span class="text-muted small"><?= htmlspecialchars($invoice['phone']) ?></span><?php endif; ?>
-                    <?php if ($invoice['country']): ?><br><span class="text-muted small"><?= htmlspecialchars($invoice['country']) ?></span><?php endif; ?>
+        <div class="row mb-4">
+            <div class="col-sm-6 mb-3 mb-sm-0">
+                <p class="text-warning text-uppercase small font-weight-bold mb-2" style="letter-spacing:1px;"><i class="fas fa-user-circle mr-1"></i> Billed To</p>
+                <div class="p-3 rounded border" style="background:#1f2533; border-color:#2e3849 !important;">
+                    <strong class="d-block text-white" style="font-size:1.05rem;"><?= htmlspecialchars($invoice['first_name'] . ' ' . $invoice['last_name']) ?></strong>
+                    <span class="text-light small d-block mt-1"><?= htmlspecialchars($invoice['email']) ?></span>
+                    <?php if ($invoice['phone']): ?><span class="text-muted small d-block"><?= htmlspecialchars($invoice['phone']) ?></span><?php endif; ?>
+                    <?php if ($invoice['country']): ?><span class="text-muted small d-block"><?= htmlspecialchars($invoice['country']) ?></span><?php endif; ?>
                 </div>
             </div>
             <?php if (!empty($invoice['case_title'])): ?>
-            <div class="col-6">
-                <p class="text-muted text-uppercase small font-weight-bold mb-1" style="letter-spacing:1px;">Related Case</p>
-                <div class="bg-light p-3 rounded border">
-                    <strong class="d-block text-dark"><?= htmlspecialchars($invoice['case_number'] ?? '') ?></strong>
-                    <span class="text-muted small"><?= htmlspecialchars($invoice['case_title']) ?></span>
+            <div class="col-sm-6">
+                <p class="text-warning text-uppercase small font-weight-bold mb-2" style="letter-spacing:1px;"><i class="fas fa-briefcase mr-1"></i> Related Case</p>
+                <div class="p-3 rounded border" style="background:#1f2533; border-color:#2e3849 !important;">
+                    <strong class="d-block text-warning font-weight-bold" style="font-size:1.05rem;"><?= htmlspecialchars($invoice['case_number'] ?? '') ?></strong>
+                    <span class="text-light small d-block mt-1"><?= htmlspecialchars($invoice['case_title']) ?></span>
                 </div>
             </div>
             <?php endif; ?>
         </div>
 
         <!-- LINE ITEMS -->
-        <table class="table table-bordered mb-4" style="font-size:14px;">
-            <thead style="background:#1a1a1a; color:#fecc56;">
-                <tr>
-                    <th style="width:5%">#</th>
-                    <th>Description</th>
-                    <th style="width:12%; text-align:right;">Qty</th>
-                    <th style="width:16%; text-align:right;">Unit Price</th>
-                    <th style="width:16%; text-align:right;">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (!empty($items)): ?>
-                    <?php foreach($items as $i => $item): ?>
+        <div class="table-responsive mb-4" style="border-radius:8px; border:1px solid #28303f; overflow:hidden;">
+            <table class="table table-bordered mb-0" style="font-size:14px; border-color:#28303f; background:#161a23; color:#f1f5f9;">
+                <thead style="background:#1f2533; color:#fecc56; border-color:#2e3849;">
                     <tr>
-                        <td><?= $i+1 ?></td>
-                        <td><?= htmlspecialchars($item['description']) ?><?= !empty($item['notes']) ? '<br><small class="text-muted">'.$item['notes'].'</small>' : '' ?></td>
-                        <td class="text-right"><?= htmlspecialchars($item['qty'] ?? 1) ?></td>
-                        <td class="text-right"><?= $symbol ?><?= number_format($item['rate'] ?? ($base_amount / max(1, count($items))), 2) ?></td>
-                        <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($item['amount'] ?? ($item['qty'] * $item['rate']), 2) ?></td>
+                        <th style="width:5%; border-color:#2e3849; color:#fecc56 !important;">#</th>
+                        <th style="border-color:#2e3849; color:#fecc56 !important;">Description</th>
+                        <th style="width:12%; text-align:right; border-color:#2e3849; color:#fecc56 !important;">Qty</th>
+                        <th style="width:16%; text-align:right; border-color:#2e3849; color:#fecc56 !important;">Unit Price</th>
+                        <th style="width:16%; text-align:right; border-color:#2e3849; color:#fecc56 !important;">Total</th>
                     </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td>1</td>
-                        <td><?= htmlspecialchars($invoice['description'] ?? 'Professional Services') ?></td>
-                        <td class="text-right">1</td>
-                        <td class="text-right"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
-                        <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
+                </thead>
+                <tbody>
+                    <?php if (!empty($items)): ?>
+                        <?php foreach($items as $i => $item): ?>
+                        <tr>
+                            <td style="border-color:#28303f; color:#ffffff !important;"><?= $i+1 ?></td>
+                            <td style="border-color:#28303f; color:#ffffff !important;"><?= htmlspecialchars($item['description']) ?><?= !empty($item['notes']) ? '<br><small class="text-muted">'.$item['notes'].'</small>' : '' ?></td>
+                            <td class="text-right" style="border-color:#28303f; color:#ffffff !important;"><?= htmlspecialchars($item['qty'] ?? 1) ?></td>
+                            <td class="text-right" style="border-color:#28303f; color:#ffffff !important;"><?= $symbol ?><?= number_format($item['rate'] ?? ($base_amount / max(1, count($items))), 2) ?></td>
+                            <td class="text-right font-weight-bold" style="border-color:#28303f; color:#ffffff !important;"><?= $symbol ?><?= number_format($item['amount'] ?? ($item['qty'] * $item['rate']), 2) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td style="border-color:#28303f; color:#ffffff !important;">1</td>
+                            <td style="border-color:#28303f; color:#ffffff !important;"><?= htmlspecialchars($invoice['description'] ?? 'Professional Services') ?></td>
+                            <td class="text-right" style="border-color:#28303f; color:#ffffff !important;">1</td>
+                            <td class="text-right" style="border-color:#28303f; color:#ffffff !important;"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
+                            <td class="text-right font-weight-bold" style="border-color:#28303f; color:#ffffff !important;"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+                <tfoot>
+                    <tr style="background:#1f2533; border-top:2px solid #2e3849;">
+                        <td colspan="4" class="text-right font-weight-bold" style="color:#ffffff !important; font-size:14px; border-color:#2e3849;">Subtotal</td>
+                        <td class="text-right font-weight-bold" style="color:#ffffff !important; font-size:14px; border-color:#2e3849;"><?= $symbol ?><?= number_format($subtotal_amount, 2) ?></td>
                     </tr>
-                <?php endif; ?>
-            </tbody>
-            <tfoot>
-                <tr style="background:#f8fafc; border-top:2px solid #e2e8f0;">
-                    <td colspan="4" class="text-right font-weight-bold" style="color:#111827 !important; font-size:14px;">Subtotal</td>
-                    <td class="text-right font-weight-bold" style="color:#111827 !important; font-size:14px;"><?= $symbol ?><?= number_format($subtotal_amount, 2) ?></td>
-                </tr>
-                <?php if (!empty($invoice['discount_amount']) && $invoice['discount_amount'] > 0): ?>
-                <tr style="background:#f8fafc;">
-                    <td colspan="4" class="text-right font-weight-bold text-success" style="color:#16a34a !important;">Discount</td>
-                    <td class="text-right font-weight-bold text-success" style="color:#16a34a !important;">-<?= $symbol ?><?= number_format($invoice['discount_amount'], 2) ?></td>
-                </tr>
-                <?php endif; ?>
-                <?php if ($late_fee > 0): ?>
-                <tr style="background:#f8fafc;">
-                    <td colspan="4" class="text-right font-weight-bold text-danger" style="color:#dc2626 !important;">Late Fee Penalty Interest</td>
-                    <td class="text-right font-weight-bold text-danger" style="color:#dc2626 !important;">+<?= $symbol ?><?= number_format($late_fee, 2) ?></td>
-                </tr>
-                <?php endif; ?>
-                <tr style="background:#f1f5f9; border-top:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1;">
-                    <td colspan="4" class="text-right font-weight-bold" style="color:#111827 !important; font-size:15px;">Total Invoiced Amount</td>
-                    <td class="text-right font-weight-bold" style="color:#111827 !important; font-size:15px;"><?= $symbol ?><?= number_format($total_billed, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
-                </tr>
-                <?php if ($total_paid > 0): ?>
-                <tr style="background:#f8fafc;">
-                    <td colspan="4" class="text-right font-weight-bold text-success" style="color:#16a34a !important;"><i class="fas fa-check-circle mr-1"></i>Less Verified Payments Received</td>
-                    <td class="text-right font-weight-bold text-success" style="color:#16a34a !important;">-<?= $symbol ?><?= number_format($total_paid, 2) ?></td>
-                </tr>
-                <?php endif; ?>
-                <tr style="background:#111827; color:#fecc56 !important;">
-                    <td colspan="4" class="text-right font-weight-bold" style="font-size:1.1rem; color:#fecc56 !important;">REMAINING BALANCE DUE</td>
-                    <td class="text-right font-weight-bold" style="font-size:1.25rem; color:#fecc56 !important;"><?= $symbol ?><?= number_format($balance_due, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
-                </tr>
-            </tfoot>
-        </table>
+                    <?php if (!empty($invoice['discount_amount']) && $invoice['discount_amount'] > 0): ?>
+                    <tr style="background:#1f2533;">
+                        <td colspan="4" class="text-right font-weight-bold text-success" style="color:#22c55e !important; border-color:#2e3849;">Discount</td>
+                        <td class="text-right font-weight-bold text-success" style="color:#22c55e !important; border-color:#2e3849;">-<?= $symbol ?><?= number_format($invoice['discount_amount'], 2) ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php if ($late_fee > 0): ?>
+                    <tr style="background:#1f2533;">
+                        <td colspan="4" class="text-right font-weight-bold text-danger" style="color:#ef4444 !important; border-color:#2e3849;">Late Fee Penalty Interest</td>
+                        <td class="text-right font-weight-bold text-danger" style="color:#ef4444 !important; border-color:#2e3849;">+<?= $symbol ?><?= number_format($late_fee, 2) ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <tr style="background:#242c3d; border-top:1px solid #374151; border-bottom:1px solid #374151;">
+                        <td colspan="4" class="text-right font-weight-bold" style="color:#ffffff !important; font-size:15px; border-color:#374151;">Total Invoiced Amount</td>
+                        <td class="text-right font-weight-bold" style="color:#ffffff !important; font-size:15px; border-color:#374151;"><?= $symbol ?><?= number_format($total_billed, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
+                    </tr>
+                    <?php if ($total_paid > 0): ?>
+                    <tr style="background:#1f2533;">
+                        <td colspan="4" class="text-right font-weight-bold text-success" style="color:#22c55e !important; border-color:#2e3849;"><i class="fas fa-check-circle mr-1"></i>Less Verified Payments Received</td>
+                        <td class="text-right font-weight-bold text-success" style="color:#22c55e !important; border-color:#2e3849;">-<?= $symbol ?><?= number_format($total_paid, 2) ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <tr style="background:#111827; border:2px solid #fecc56; color:#fecc56 !important;">
+                        <td colspan="4" class="text-right font-weight-bold" style="font-size:1.1rem; color:#fecc56 !important; border-color:#fecc56;">REMAINING BALANCE DUE</td>
+                        <td class="text-right font-weight-bold" style="font-size:1.25rem; color:#fecc56 !important; border-color:#fecc56;"><?= $symbol ?><?= number_format($balance_due, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
 
         <?php if (($invoice['currency'] ?? 'USD') !== $client_currency): ?>
-        <div class="card border-0 mb-4 shadow-sm" style="background:#171719; border-left:4px solid #fecc56 !important;">
+        <div class="card border-0 mb-4 shadow-sm" style="background:#1f2533; border-left:4px solid #fecc56 !important;">
             <div class="card-body py-3 px-4">
                 <div class="d-flex justify-content-between align-items-center flex-wrap">
                     <div>
@@ -417,52 +419,54 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
 
         <!-- INSTALMENTS -->
         <?php if (!empty($instalments)): ?>
-        <div class="mb-5">
-            <h6 class="font-weight-bold text-dark mb-3"><i class="fas fa-calendar-alt mr-2 text-warning"></i>Payment Schedule & Tranches</h6>
-            <table class="table table-bordered mb-0" style="font-size:13px;">
-                <thead style="background:#f8f9fa;">
-                    <tr>
-                        <th>Tranche</th>
-                        <th>Milestone / Description</th>
-                        <th>Due Date</th>
-                        <th class="text-right">Amount</th>
-                        <th class="text-center">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach($instalments as $k => $inst): ?>
-                    <tr>
-                        <td class="font-weight-bold">Tranche <?= $k+1 ?></td>
-                        <td><?= htmlspecialchars($inst['description'] ?? 'Scheduled Payment') ?></td>
-                        <td><?= !empty($inst['due_date']) ? date('M j, Y', strtotime($inst['due_date'])) : '—' ?></td>
-                        <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($inst['amount'], 2) ?></td>
-                        <td class="text-center">
-                            <?php if ($inst['status'] === 'paid'): ?>
-                                <span class="badge badge-success">Paid</span>
-                            <?php else: ?>
-                                <span class="badge badge-warning text-dark">Pending</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <div class="mb-4">
+            <h6 class="font-weight-bold text-warning mb-3"><i class="fas fa-calendar-alt mr-2"></i>Payment Schedule & Tranches</h6>
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0" style="font-size:13px; background:#161a23; color:#f1f5f9; border-color:#28303f;">
+                    <thead style="background:#1f2533; color:#fecc56;">
+                        <tr>
+                            <th style="border-color:#2e3849;">Tranche</th>
+                            <th style="border-color:#2e3849;">Milestone / Description</th>
+                            <th style="border-color:#2e3849;">Due Date</th>
+                            <th class="text-right" style="border-color:#2e3849;">Amount</th>
+                            <th class="text-center" style="border-color:#2e3849;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($instalments as $k => $inst): ?>
+                        <tr>
+                            <td class="font-weight-bold text-white" style="border-color:#28303f;">Tranche <?= $k+1 ?></td>
+                            <td style="border-color:#28303f; color:#ffffff;"><?= htmlspecialchars($inst['description'] ?? 'Scheduled Payment') ?></td>
+                            <td style="border-color:#28303f; color:#cbd5e1;"><?= !empty($inst['due_date']) ? date('M j, Y', strtotime($inst['due_date'])) : '—' ?></td>
+                            <td class="text-right font-weight-bold text-white" style="border-color:#28303f;"><?= $symbol ?><?= number_format($inst['amount'], 2) ?></td>
+                            <td class="text-center" style="border-color:#28303f;">
+                                <?php if ($inst['status'] === 'paid'): ?>
+                                    <span class="badge badge-success px-2 py-1">Paid</span>
+                                <?php else: ?>
+                                    <span class="badge badge-warning text-dark px-2 py-1">Pending</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
         <?php endif; ?>
 
         <!-- PAYMENT INFORMATION BOX -->
         <div class="row">
             <div class="col-12">
-                <div class="p-4 rounded border" style="background:#f8f9fa;">
-                    <h6 class="font-weight-bold text-dark mb-2"><i class="fas fa-university mr-2 text-warning"></i>Payment Information</h6>
-                    <p class="text-muted small mb-3">Please use the following details to make your payment. Reference your invoice number in all transactions.</p>
-                    <div style="font-family:monospace; font-size:13px; white-space:pre-wrap; line-height:1.8; color:#333;"><?= htmlspecialchars($payment_info) ?></div>
+                <div class="p-4 rounded border" style="background:#1f2533; border-color:#2e3849;">
+                    <h6 class="font-weight-bold text-warning mb-2"><i class="fas fa-university mr-2"></i>Official Wire & Settlement Instructions</h6>
+                    <p class="text-muted small mb-3">Please use the following official details to settle this invoice. Reference your invoice number in all memo fields.</p>
+                    <div style="font-family:monospace; font-size:13px; white-space:pre-wrap; line-height:1.8; color:#f1f5f9; background:#111827; padding:16px; border-radius:6px; border:1px solid #28303f;"><?= htmlspecialchars($payment_info) ?></div>
                 </div>
             </div>
         </div>
 
-        <div class="mt-4 pt-3 border-top text-center text-muted small">
-            <p class="mb-0">This invoice is computer-generated and valid without a physical signature. Thank you for your trust in <?= htmlspecialchars($app_name) ?>.</p>
+        <div class="mt-4 pt-3 border-top border-secondary text-center text-muted small">
+            <p class="mb-0">This invoice is digitally authenticated and valid without physical signature. Thank you for your trust in <?= htmlspecialchars($app_name) ?>.</p>
         </div>
     </div>
 </div>
@@ -471,7 +475,7 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
 <!-- PAY NOW MODAL -->
 <div class="modal fade" id="payNowModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg bg-dark text-white">
+        <div class="modal-content border-0 shadow-lg bg-dark text-white" style="border-radius:12px; overflow:hidden;">
             <div class="modal-header bg-dark text-warning border-secondary py-3">
                 <h5 class="modal-title font-weight-bold"><i class="fas fa-credit-card mr-2"></i>Submit Payment Proof — <span id="payInvoiceRef"></span></h5>
                 <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
@@ -480,11 +484,11 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                 <div class="bg-black text-white p-4 border-bottom border-secondary">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stat-label">Balance Outstanding</div>
+                            <div class="stat-label text-muted small text-uppercase font-weight-bold">Balance Outstanding</div>
                             <div class="font-weight-bold text-warning" style="font-size:2rem;" id="payAmount"></div>
                         </div>
                         <div class="text-right">
-                            <span class="badge badge-danger px-3 py-2" style="font-size:13px;">Action Required</span>
+                            <span class="badge badge-danger px-3 py-2" style="font-size:12px;">Action Required</span>
                         </div>
                     </div>
                 </div>
@@ -492,7 +496,7 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                     <h6 class="font-weight-bold mb-3 text-warning"><i class="fas fa-university mr-2"></i>Wire & Payment Instructions</h6>
                     <div class="bg-black border border-secondary rounded p-4 mb-4 text-light" id="payInfoBlock" style="white-space:pre-wrap; font-family: monospace; font-size:13px; line-height:1.8;"></div>
                     
-                    <div class="alert alert-warning border-0 mb-4 text-dark font-weight-bold">
+                    <div class="alert alert-warning border-0 mb-4 text-dark font-weight-bold" style="font-size:13px;">
                         <i class="fas fa-info-circle mr-2"></i>
                         After initiating payment, please submit the exact amount paid and upload your transaction receipt / proof for instant verification.
                     </div>
@@ -517,8 +521,8 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold text-light small">Transaction Hash / Ref # <span class="text-warning">*</span></label>
-                                <input type="text" name="reference_number" id="invoiceRefNumberInput" class="form-control bg-black text-white border-secondary" placeholder="e.g. TXID / Wire Ref #">
+                                <label class="font-weight-bold text-light small">Transaction Hash / Ref # <span class="text-muted">(Optional)</span></label>
+                                <input type="text" name="reference_number" id="invoiceRefNumberInput" class="form-control bg-black text-white border-secondary" placeholder="e.g. TXID / Wire Ref # (Optional)">
                             </div>
                         </div>
 
@@ -557,7 +561,7 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                             <textarea name="notes" class="form-control bg-black text-white border-secondary" rows="2" placeholder="Any additional transaction notes..."></textarea>
                         </div>
                         <button type="submit" class="btn btn-warning btn-block font-weight-bold py-3 text-dark shadow">
-                            <i class="fas fa-paper-plane mr-2"></i> Submit Payment for Instant Verification
+                            <i class="fas fa-paper-plane mr-2"></i> Submit Payment Proof for Verification
                         </button>
                     </form>
                 </div>
@@ -594,12 +598,10 @@ function handleInvoicePaymentMethodChange(val) {
         document.getElementById('cryptoWalletInputInvoice').value = w.address;
         document.getElementById('cryptoQrImgInvoice').src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(w.address);
         cryptoBox.style.display = 'block';
-        refInput.placeholder = 'e.g. 64-character Blockchain TXID';
-        refInput.setAttribute('required', 'required');
+        refInput.placeholder = 'e.g. 64-character Blockchain TXID (Optional)';
     } else {
         cryptoBox.style.display = 'none';
-        refInput.placeholder = 'e.g. Wire Ref # / Confirmation Code';
-        refInput.removeAttribute('required');
+        refInput.placeholder = 'e.g. Wire Ref # / Confirmation Code (Optional)';
     }
 }
 
@@ -639,13 +641,31 @@ function showPayModal(invoiceId, ref, amount, currency, payInfo, prefCurrency, p
 <?php endif; ?>
 
 <style>
-#invoiceDoc, #invoiceDoc table, #invoiceDoc td, #invoiceDoc th, #invoiceDoc p, #invoiceDoc span:not(.badge):not(.badge-warning):not(.text-warning):not(.text-danger):not(.text-success), #invoiceDoc strong:not(.text-warning):not(.text-danger):not(.text-success) {
-    color: #111827 !important;
+#invoiceDoc {
+    background: #161a23 !important;
+    border: 1px solid #28303f !important;
+    border-radius: 12px;
+    color: #f1f5f9 !important;
+}
+#invoiceDoc table, #invoiceDoc td, #invoiceDoc th, #invoiceDoc p, #invoiceDoc span:not(.badge):not(.badge-warning):not(.text-warning):not(.text-danger):not(.text-success), #invoiceDoc strong:not(.text-warning):not(.text-danger):not(.text-success) {
+    color: #ffffff !important;
+}
+#invoiceDoc .text-muted {
+    color: #94a3b8 !important;
+}
+@media (max-width: 768px) {
+    #invoiceDoc .card-body {
+        padding: 16px !important;
+    }
 }
 @media print {
     .d-print-none, nav, #sidebar, .btn, .modal { display:none!important; }
     .card { border:none!important; box-shadow:none!important; }
     body { background:#fff!important; }
+    #invoiceDoc, #invoiceDoc table, #invoiceDoc td, #invoiceDoc th, #invoiceDoc p, #invoiceDoc span, #invoiceDoc strong {
+        color: #000 !important;
+        background: #fff !important;
+    }
 }
 </style>
 

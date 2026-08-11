@@ -396,9 +396,9 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
 .stat-value { font-size: 1.75rem; font-weight: 800; color: #ffffff; line-height: 1.2; }
 .stat-value-gold { color: #fecc56 !important; }
 
-/* TABLE PORTAL STYLING (FLUID RESPONSIVE WITH SAFE CONTAINER WRAP) */
+/* TABLE PORTAL STYLING (FLUID ON DESKTOP, ADAPTIVE CARD STACK ON MOBILE) */
 .table-portal-wrap { border: 1px solid #28303f; border-radius: 10px; width: 100%; background: #161a23; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.table-portal { width: 100%; min-width: 680px; border-collapse: separate; border-spacing: 0; color: #f1f5f9; margin-bottom: 0; }
+.table-portal { width: 100%; border-collapse: separate; border-spacing: 0; color: #f1f5f9; margin-bottom: 0; }
 .table-portal thead th { background: #1f2533 !important; color: #fecc56 !important; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-top: none; border-bottom: 2px solid #333d4e !important; padding: 12px 14px; white-space: nowrap; }
 .table-portal tbody tr { background: #161a23; transition: background 0.15s; }
 .table-portal tbody tr:hover { background: #1e2430 !important; }
@@ -430,8 +430,8 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
 .btn-portal-secondary { background: #262e3d; border: 1px solid #374151; color: #e2e8f0; font-weight: 600; border-radius: 6px; font-size: 12px; padding: 6px 10px; }
 .btn-portal-secondary:hover { background: #333d4e; color: #fff; }
 
-/* MOBILE RESPONSIVENESS (SMART CARD ADAPTATION) */
-@media (max-width: 768px) {
+/* MOBILE RESPONSIVENESS (100% FLUID - ZERO HORIZONTAL SCROLL) */
+@media (max-width: 991px) {
     .portal-header-row { flex-direction: column; align-items: flex-start !important; gap: 14px; }
     .portal-header-btns { width: 100%; display: flex; flex-wrap: wrap; gap: 8px; }
     .portal-header-btns .btn { flex: 1; text-align: center; justify-content: center; font-size: 11px; padding: 7px 8px; }
@@ -439,14 +439,56 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
     .stat-value { font-size: 1.35rem; }
     
     /* Responsive Table to Cards Transformation */
-    .table-portal thead { display: none; }
-    .table-portal, .table-portal tbody, .table-portal tr, .table-portal td { display: block; width: 100%; }
-    .table-portal tr { margin-bottom: 12px; border: 1px solid #28303f; border-radius: 8px; padding: 12px 14px; background: #161a23; }
-    .table-portal tr:last-child { margin-bottom: 0; }
-    .table-portal td { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border: none; border-bottom: 1px solid #1f2533; }
-    .table-portal td:last-child { border-bottom: none; padding-top: 10px; justify-content: flex-end; gap: 8px; }
-    .table-portal td::before { content: attr(data-label); font-weight: 700; color: #94a3b8; font-size: 11px; text-transform: uppercase; margin-right: 12px; flex-shrink: 0; }
-    .table-portal td:last-child::before { display: none; }
+    .table-portal-wrap { border: none !important; background: transparent !important; overflow-x: hidden !important; width: 100% !important; padding: 0 !important; }
+    .table-portal { min-width: 0 !important; width: 100% !important; display: block !important; }
+    .table-portal thead { display: none !important; }
+    .table-portal tbody { display: block !important; width: 100% !important; }
+    .table-portal tbody tr { 
+        display: block !important; 
+        width: 100% !important; 
+        margin-bottom: 14px !important; 
+        border: 1px solid #28303f !important; 
+        border-radius: 10px !important; 
+        padding: 14px 16px !important; 
+        background: #161a23 !important; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+    }
+    .table-portal td { 
+        display: flex !important; 
+        justify-content: space-between !important; 
+        align-items: center !important; 
+        padding: 8px 0 !important; 
+        border: none !important; 
+        border-bottom: 1px solid #1f2533 !important; 
+        text-align: right !important;
+        font-size: 13px !important;
+        word-break: break-word !important;
+    }
+    .table-portal td:last-child { 
+        border-bottom: none !important; 
+        padding-top: 12px !important; 
+        justify-content: flex-end !important; 
+        gap: 8px !important; 
+    }
+    .table-portal td::before { 
+        content: attr(data-label) !important; 
+        font-weight: 700 !important; 
+        color: #94a3b8 !important; 
+        font-size: 11px !important; 
+        text-transform: uppercase !important; 
+        letter-spacing: 0.5px !important;
+        text-align: left !important;
+        margin-right: 12px !important; 
+        flex-shrink: 0 !important; 
+    }
+    .table-portal td:last-child::before { 
+        display: none !important; 
+    }
+    .table-portal td .pay-btn, .table-portal td .btn-portal-secondary {
+        width: auto !important;
+        padding: 6px 14px !important;
+        font-size: 12px !important;
+    }
     
     .progress-track-container { padding: 14px 10px; }
     .step-title { font-size: 9.5px; }
@@ -1198,8 +1240,8 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold text-light small">Transaction Hash / Ref # <span class="text-warning">*</span></label>
-                                <input type="text" name="reference_number" id="dashboardRefNumberInput" class="form-control bg-black text-white border-secondary" placeholder="e.g. TXID / Wire Ref #">
+                                <label class="font-weight-bold text-light small">Transaction Hash / Ref # <span class="text-muted">(Optional)</span></label>
+                                <input type="text" name="reference_number" id="dashboardRefNumberInput" class="form-control bg-black text-white border-secondary" placeholder="e.g. TXID / Wire Ref # (Optional)">
                             </div>
                         </div>
 
@@ -1347,12 +1389,10 @@ function handlePaymentMethodChange(val) {
         document.getElementById('cryptoWalletInput').value = w.address;
         document.getElementById('cryptoQrImg').src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(w.address);
         cryptoBox.style.display = 'block';
-        refInput.placeholder = 'e.g. 64-character Blockchain TXID';
-        refInput.setAttribute('required', 'required');
+        refInput.placeholder = 'e.g. 64-character Blockchain TXID (Optional)';
     } else {
         cryptoBox.style.display = 'none';
-        refInput.placeholder = 'e.g. Wire Ref # / Confirmation Code';
-        refInput.removeAttribute('required');
+        refInput.placeholder = 'e.g. Wire Ref # / Confirmation Code (Optional)';
     }
 }
 

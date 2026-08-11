@@ -211,7 +211,7 @@ if (isset($pdo)) {
             margin-left: 0 !important; 
         }
 
-        /* MOBILE RESPONSIVE SIDEBAR OVERRIDE */
+        /* MOBILE RESPONSIVE SIDEBAR & NAVBAR OVERRIDE */
         @media (max-width: 768px) {
             #wrapper-left {
                 transform: translateX(-250px) !important;
@@ -224,6 +224,27 @@ if (isset($pdo)) {
             }
             #wrapper-content {
                 margin-left: 0 !important;
+                padding-top: 68px !important;
+            }
+            #wrapper-header .navbar {
+                padding: 6px 10px !important;
+            }
+            #wrapper-header .navbar-nav.ml-auto {
+                margin-right: 0 !important;
+            }
+            #wrapper-header .navbar-nav .nav-item {
+                margin-right: 6px !important;
+            }
+            #wrapper-header .navbar-nav .nav-item:last-child {
+                margin-right: 0 !important;
+            }
+            #wrapper-header .dropdown-menu {
+                position: fixed !important;
+                top: 58px !important;
+                right: 10px !important;
+                left: auto !important;
+                width: calc(100vw - 20px) !important;
+                max-width: 320px !important;
             }
         }
 
@@ -271,19 +292,20 @@ if (isset($pdo)) {
                     </li>
                 </ul>
 
-                <ul class="navbar-nav ml-auto mr-3 align-items-center">
+                <ul class="navbar-nav ml-auto align-items-center">
                     <!-- Global Currency Switcher -->
-                    <li class="nav-item dropdown mr-3 align-self-center">
+                    <li class="nav-item dropdown mr-2 mr-md-3 align-self-center">
                         <?php
                         $active_portal_currency = get_client_currency($pdo, $_SESSION['client_portal_id'] ?? null);
                         $avail_currencies = get_available_currencies();
                         $curr_meta = $avail_currencies[$active_portal_currency] ?? $avail_currencies['USD'];
                         ?>
                         <a class="nav-link dropdown-toggle btn btn-sm btn-outline-warning text-warning d-flex align-items-center py-1 px-2 font-weight-bold shadow-sm" href="javascript:void(0);" id="portalCurrencyDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 20px; font-size: 11px; letter-spacing: 0.5px; border-color: rgba(254,204,86,0.6);">
-                            <span class="mr-1" style="font-size: 13px;"><?= $curr_meta['flag'] ?></span>
-                            <span><?= $curr_meta['code'] ?> (<?= $curr_meta['symbol'] ?>)</span>
+                            <span class="mr-1" style="font-size: 12px;"><?= $curr_meta['flag'] ?></span>
+                            <span class="d-none d-sm-inline"><?= $curr_meta['code'] ?> (<?= $curr_meta['symbol'] ?>)</span>
+                            <span class="d-inline d-sm-none font-weight-bold"><?= $curr_meta['code'] ?></span>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary p-1" aria-labelledby="portalCurrencyDropdown" style="min-width: 250px; max-height: 380px; overflow-y: auto; font-size: 12px;">
+                        <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary p-1" aria-labelledby="portalCurrencyDropdown" style="min-width: 230px; max-height: 380px; overflow-y: auto; font-size: 12px;">
                             <div class="dropdown-header text-warning small font-weight-bold px-2 py-1 text-uppercase" style="letter-spacing:1px; font-size: 10px;">
                                 <i class="fas fa-globe mr-1"></i> Display Currency
                             </div>
@@ -298,22 +320,22 @@ if (isset($pdo)) {
                     </li>
 
                     <!-- Privacy Shield / Screen Blur Mode Toggle -->
-                    <li class="nav-item mr-3 align-self-center">
-                        <button type="button" id="privacyShieldToggle" class="btn btn-sm btn-outline-secondary font-weight-bold d-flex align-items-center" onclick="togglePrivacyShield()" title="Privacy Mode: Blur sensitive financial balances and case details for public browsing" style="border-radius:20px; padding:3px 10px; font-size:11.5px; border-color:#475569; color:#cbd5e1;">
-                            <i class="fas fa-eye-slash text-warning mr-1" id="privacyShieldIcon"></i>
-                            <span id="privacyShieldText" class="d-none d-md-inline">Privacy Off</span>
+                    <li class="nav-item mr-2 mr-md-3 align-self-center">
+                        <button type="button" id="privacyShieldToggle" class="btn btn-sm btn-outline-secondary font-weight-bold d-flex align-items-center" onclick="togglePrivacyShield()" title="Privacy Mode: Blur sensitive financial balances and case details for public browsing" style="border-radius:20px; padding:3px 8px; font-size:11px; border-color:#475569; color:#cbd5e1;">
+                            <i class="fas fa-eye-slash text-warning" id="privacyShieldIcon"></i>
+                            <span id="privacyShieldText" class="d-none d-md-inline ml-1">Privacy Off</span>
                         </button>
                     </li>
 
                     <!-- Notification Bell Dropdown -->
-                    <li class="nav-item dropdown mr-3 align-self-center">
-                        <a class="nav-link dropdown-toggle no-caret position-relative" href="javascript:void(0);" id="notificationDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding: 4px;">
-                            <i class="material-icons text-warning" style="font-size: 26px;">notifications</i>
+                    <li class="nav-item dropdown mr-2 mr-md-3 align-self-center">
+                        <a class="nav-link dropdown-toggle no-caret position-relative p-1" href="javascript:void(0);" id="notificationDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="material-icons text-warning" style="font-size: 24px;">notifications</i>
                             <?php if ($unread_notifications_count > 0): ?>
-                                <span class="badge badge-danger position-absolute" style="top: -2px; right: -2px; border-radius: 50%; font-size: 9px; padding: 3px 5px; line-height: 1;"><?= $unread_notifications_count ?></span>
+                                <span class="badge badge-danger position-absolute" style="top: -2px; right: -2px; border-radius: 50%; font-size: 9px; padding: 2px 5px; line-height: 1;"><?= $unread_notifications_count ?></span>
                             <?php endif; ?>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary p-0" aria-labelledby="notificationDropdown" style="width: 320px; font-size: 13px;">
+                        <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary p-0" aria-labelledby="notificationDropdown" style="width: 300px; font-size: 13px;">
                             <div class="dropdown-header bg-black text-warning border-bottom border-secondary font-weight-bold py-2 d-flex justify-content-between align-items-center">
                                 <span><i class="fas fa-bell mr-1"></i> Notifications</span>
                                 <?php if ($unread_notifications_count > 0): ?>
@@ -358,10 +380,10 @@ if (isset($pdo)) {
                         </div>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle no-caret d-flex align-items-center" href="javascript:void(0);" id="settings" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <img src="/admin_assets/img/profile/blank.png" class="rounded-circle border border-warning" width="34px" height="34px">
-                            <span class="ml-2 text-white font-weight-bold"><?php echo htmlspecialchars($user_name); ?></span>
-                            <span class="badge badge-warning ml-2 text-dark" style="font-size: 10px;"><?php echo strtoupper($user_role); ?></span>
+                        <a class="nav-link dropdown-toggle no-caret d-flex align-items-center p-1" href="javascript:void(0);" id="settings" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <img src="/admin_assets/img/profile/blank.png" class="rounded-circle border border-warning" width="30px" height="30px">
+                            <span class="ml-2 text-white font-weight-bold d-none d-sm-inline" style="font-size:12px;"><?php echo htmlspecialchars($user_name); ?></span>
+                            <span class="badge badge-warning ml-1 text-dark d-none d-md-inline" style="font-size: 9px;"><?php echo strtoupper($user_role); ?></span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary">
                             <a class="dropdown-item text-white" href="/<?php echo ($user_role === 'client') ? 'client' : 'admin'; ?>/chat.php"><i class="material-icons text-warning align-middle mr-1">mail_outline</i> Messages</a>
@@ -376,6 +398,7 @@ if (isset($pdo)) {
                             <a class="dropdown-item text-white" href="<?php echo ($user_role === 'client') ? '/client/logout.php' : '/admin/login.php?logout=1'; ?>"><i class="material-icons text-danger align-middle mr-1">power_settings_new</i> Log Out</a>
                         </div>
                     </li>
+                </ul>
             </nav>
         </div>
 
