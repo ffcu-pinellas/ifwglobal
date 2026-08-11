@@ -347,9 +347,9 @@ if (isset($pdo)) {
                         <span class="link-text text-white">
                             <?php 
                             if ($user_role === 'client') {
-                                echo 'Encrypted Case Desk';
+                                echo 'Live Chat';
                             } else {
-                                echo 'Live Case Chat';
+                                echo 'Client Chat';
                             }
                             ?>
                         </span>

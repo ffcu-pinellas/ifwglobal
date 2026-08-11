@@ -32,15 +32,9 @@ require_once $dir . '/includes/admin_sidebar.php';
     <div class="col-12 mb-3 d-flex align-items-center justify-content-between">
         <div>
             <h3 class="text-warning font-weight-bold mb-1">
-                <i class="fas fa-comments mr-2"></i>
-                <?php 
-                if ($chat_provider === 'tawkto' || $chat_provider === 'tawk') echo 'Live Chat Support';
-                elseif ($chat_provider === 'manychat') echo 'ManyChat Support';
-                elseif ($chat_provider === 'custom') echo 'Support Center';
-                else echo 'Secure Case Messaging';
-                ?>
+                <i class="fas fa-comments mr-2"></i>Live Chat & Support
             </h3>
-            <p class="text-muted mb-0">Direct support channel with your assigned recovery team & case investigators.</p>
+            <p class="text-muted mb-0">Send a message or ask a question. Our support team is here to help you.</p>
         </div>
         <a href="dashboard.php" class="btn btn-outline-warning btn-sm font-weight-bold"><i class="fas fa-arrow-left mr-1"></i> Back to Dashboard</a>
     </div>
@@ -48,25 +42,25 @@ require_once $dir . '/includes/admin_sidebar.php';
 
 <div class="row">
     <?php if ($chat_provider === 'internal'): ?>
-        <!-- INTERNAL SECURE CHAT (FULL WIDTH) -->
+        <!-- INTERNAL LIVE CHAT (FULL WIDTH) -->
         <div class="col-12 mb-4">
             <div class="card shadow-lg bg-dark border-secondary">
                 <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3">
                     <div class="d-flex align-items-center">
                         <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center mr-3 font-weight-bold" style="width: 38px; height: 38px; font-size: 1.1rem;">
-                            <i class="fas fa-user-shield"></i>
+                            <i class="fas fa-headset"></i>
                         </div>
                         <div>
-                            <span class="text-warning font-weight-bold" style="font-size: 1.05rem;">Case Investigation & Legal Support Desk</span>
-                            <div class="text-muted small" style="font-size: 11px;"><span class="text-success mr-1">●</span> Active Live Channel &bull; Direct Case Line</div>
+                            <span class="text-warning font-weight-bold" style="font-size: 1.05rem;">Live Support Chat</span>
+                            <div class="text-muted small" style="font-size: 11px;"><span class="text-success mr-1">●</span> Active · Online</div>
                         </div>
                     </div>
-                    <span class="badge badge-success px-3 py-2" style="font-size: 12px;"><i class="fas fa-lock mr-1"></i>256-Bit Encrypted</span>
+                    <span class="badge badge-success px-3 py-2" style="font-size: 12px;"><i class="fas fa-lock mr-1"></i>Private & Secure</span>
                 </div>
                 <div class="card-body bg-dark text-white p-3 d-flex flex-column" style="min-height: 580px;">
                     <!-- Message Area -->
                     <div id="chat-messages" class="flex-grow-1 p-3 mb-3 border border-secondary rounded overflow-auto d-flex flex-column" style="min-height: 460px; height: 60vh; max-height: 720px; background-color: #0d0d0e; gap: 15px;">
-                        <div class="text-center p-4 text-muted"><i class="fas fa-spinner fa-spin text-warning"></i> Loading Secure Messaging Portal...</div>
+                        <div class="text-center p-4 text-muted"><i class="fas fa-spinner fa-spin text-warning"></i> Connecting to Live Chat...</div>
                     </div>
 
                     <!-- Selected File Preview -->
@@ -78,8 +72,8 @@ require_once $dir . '/includes/admin_sidebar.php';
                     <!-- Input Form -->
                     <form id="chat-form" class="d-flex flex-wrap align-items-center mt-2" style="gap: 10px;" enctype="multipart/form-data">
                         <input type="file" id="chat-file-input" name="chat_file" style="display:none;" onchange="handleChatFileSelect(this)">
-                        <button type="button" class="btn btn-outline-warning text-warning px-3 flex-shrink-0" style="height: 48px;" onclick="document.getElementById('chat-file-input').click()" title="Share File/Document"><i class="fas fa-paperclip"></i></button>
-                        <input type="text" id="chat-input" class="form-control bg-dark text-white border-secondary p-3 flex-grow-1" placeholder="Type your secure message to your assigned investigator..." autocomplete="off" required style="height: 48px; min-width: 180px;">
+                        <button type="button" class="btn btn-outline-warning text-warning px-3 flex-shrink-0" style="height: 48px;" onclick="document.getElementById('chat-file-input').click()" title="Send an image or document"><i class="fas fa-paperclip"></i></button>
+                        <input type="text" id="chat-input" class="form-control bg-dark text-white border-secondary p-3 flex-grow-1" placeholder="Type your message here..." autocomplete="off" required style="height: 48px; min-width: 180px;">
                         <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4 shadow flex-shrink-0" style="height: 48px;">
                             <i class="fas fa-paper-plane mr-1"></i> Send
                         </button>
@@ -284,11 +278,11 @@ require_once $dir . '/includes/admin_sidebar.php';
                     <div class="d-flex align-items-center">
                         <i class="fas fa-headset fa-lg mr-3 text-warning"></i>
                         <div>
-                            <span class="d-block text-white" style="font-size: 15px;">Live 24/7 Global Case Support Desk</span>
-                            <small class="text-muted" style="font-size: 11px;">Direct encrypted communication channel with IFW global recovery response team</small>
+                            <span class="d-block text-white" style="font-size: 15px;">Live Support Chat</span>
+                            <small class="text-muted" style="font-size: 11px;">Chat with our support team in real time</small>
                         </div>
                     </div>
-                    <span class="badge badge-success px-3 py-2" style="font-size: 12px;"><i class="fas fa-circle mr-1" style="font-size:8px;"></i> Live Online</span>
+                    <span class="badge badge-success px-3 py-2" style="font-size: 12px;"><i class="fas fa-circle mr-1" style="font-size:8px;"></i> Online</span>
                 </div>
                 
                 <?php
