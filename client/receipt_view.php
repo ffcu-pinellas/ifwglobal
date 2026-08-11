@@ -201,16 +201,21 @@ $verification_hash = hash('sha256', $receipt_num . '|' . $amount_paid . '|' . $p
         <!-- HEADER -->
         <div class="row header-bar align-items-center">
             <div class="col-sm-7">
-                <?php if ($logo_url): ?>
-                    <img src="<?= htmlspecialchars($logo_url) ?>" alt="<?= htmlspecialchars($app_name) ?>" style="max-height:55px; max-width:200px; margin-bottom:12px;" onerror="this.style.display='none'">
-                <?php endif; ?>
-                <h4 class="font-weight-bold text-dark mb-1"><?= htmlspecialchars($app_name) ?></h4>
-                <p class="text-muted small mb-0"><?= nl2br(htmlspecialchars($company_address)) ?></p>
+                <div class="d-flex align-items-center mb-2">
+                    <div style="width:48px; height:48px; border-radius:10px; background:#111827; display:flex; align-items:center; justify-content:center; margin-right:12px; flex-shrink:0; border:2px solid #fecc56; box-shadow:0 3px 8px rgba(0,0,0,0.15);">
+                        <span style="font-size:24px;">🛡️</span>
+                    </div>
+                    <div>
+                        <h4 class="font-weight-bold text-dark mb-0" style="letter-spacing:1px; line-height:1.1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-transform:uppercase;">IFW GLOBAL</h4>
+                        <div style="color:#d97706; font-weight:800; font-size:10px; letter-spacing:1.2px; text-transform:uppercase;">Private Intelligence &bull; Asset Recovery</div>
+                    </div>
+                </div>
+                <p class="text-muted small mb-0 mt-2"><?= nl2br(htmlspecialchars($company_address)) ?></p>
                 <p class="text-muted small mb-0"><i class="fas fa-envelope mr-1"></i><?= htmlspecialchars($contact_email) ?> &bull; <i class="fas fa-phone mr-1"></i><?= htmlspecialchars($contact_phone) ?></p>
             </div>
             <div class="col-sm-5 text-sm-right mt-3 mt-sm-0">
                 <h2 class="font-weight-bold text-dark mb-1" style="font-size:1.6rem; letter-spacing:1px;">OFFICIAL RECEIPT</h2>
-                <div class="badge badge-dark text-warning px-3 py-1 font-weight-bold" style="font-size:14px;">
+                <div class="badge badge-dark text-warning px-3 py-1 font-weight-bold" style="font-size:14px; background:#111827; border:1px solid #374151;">
                     #<?= htmlspecialchars($receipt_num) ?>
                 </div>
                 <div class="text-muted small mt-2"><strong>Settlement Date:</strong> <?= htmlspecialchars($payment_date) ?></div>

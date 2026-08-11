@@ -945,7 +945,6 @@ require_once $dir . '/includes/admin_sidebar.php';
                                     <option>Bank Wire Transfer</option>
                                     <option>Cryptocurrency (Bitcoin)</option>
                                     <option>Cryptocurrency (USDT)</option>
-                                    <option>Credit / Debit Card</option>
                                     <option>Other</option>
                                 </select>
                             </div>

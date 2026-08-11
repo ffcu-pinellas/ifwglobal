@@ -396,13 +396,13 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
 .stat-value { font-size: 1.75rem; font-weight: 800; color: #ffffff; line-height: 1.2; }
 .stat-value-gold { color: #fecc56 !important; }
 
-/* TABLE PORTAL STYLING (100% FLUID RESPONSIVE - ZERO HORIZONTAL SCROLLING) */
-.table-portal-wrap { border: 1px solid #28303f; border-radius: 10px; width: 100%; background: #161a23; overflow: hidden; }
-.table-portal { width: 100%; min-width: 0; border-collapse: separate; border-spacing: 0; color: #f1f5f9; margin-bottom: 0; table-layout: auto; }
-.table-portal thead th { background: #1f2533 !important; color: #fecc56 !important; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-top: none; border-bottom: 2px solid #333d4e !important; padding: 10px 12px; white-space: normal; }
+/* TABLE PORTAL STYLING (FLUID RESPONSIVE WITH SAFE CONTAINER WRAP) */
+.table-portal-wrap { border: 1px solid #28303f; border-radius: 10px; width: 100%; background: #161a23; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-portal { width: 100%; min-width: 680px; border-collapse: separate; border-spacing: 0; color: #f1f5f9; margin-bottom: 0; }
+.table-portal thead th { background: #1f2533 !important; color: #fecc56 !important; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-top: none; border-bottom: 2px solid #333d4e !important; padding: 12px 14px; white-space: nowrap; }
 .table-portal tbody tr { background: #161a23; transition: background 0.15s; }
 .table-portal tbody tr:hover { background: #1e2430 !important; }
-.table-portal td { padding: 10px 12px; border-top: 1px solid #262e3d; vertical-align: middle; color: #f1f5f9; font-size: 12.5px; }
+.table-portal td { padding: 12px 14px; border-top: 1px solid #262e3d; vertical-align: middle; color: #f1f5f9; font-size: 13px; }
 .table-portal td strong { color: #ffffff !important; font-weight: 700; }
 .table-portal td:last-child, .table-portal th:last-child { text-align: right; white-space: nowrap; }
 .table-portal .text-muted { color: #94a3b8 !important; }
@@ -855,7 +855,7 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                                 </td>
                                 <td data-label="Description">
                                     <span class="text-light font-weight-bold"><?= htmlspecialchars($inv['display_description']) ?></span>
-                                    <?php if ($inv['late_fee'] > 0): ?>
+                                    <?php if ($inv['late_fee'] > 0 && strtolower($inv['effective_status'] ?? '') !== 'paid'): ?>
                                         <br><small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i>Late fee: +<?= htmlspecialchars($inv_curr) ?> <?= number_format($inv['late_fee'], 2) ?></small>
                                     <?php endif; ?>
                                 </td>
@@ -1194,7 +1194,6 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                                     <option value="USDT (ERC-20)">🪙 Cryptocurrency — USDT (ERC-20)</option>
                                     <option value="Bitcoin (BTC)">🪙 Cryptocurrency — Bitcoin (BTC)</option>
                                     <option value="Ethereum (ETH)">🪙 Cryptocurrency — Ethereum (ETH)</option>
-                                    <option value="Credit / Debit Card">💳 Credit / Debit Card</option>
                                     <option value="Other">✨ Other Payment Method</option>
                                 </select>
                             </div>

@@ -216,28 +216,40 @@ function send_notification_email($to, $subject, $body) {
     $headers .= "X-Mailer: PHP/" . phpversion();
     
     $html_body = "
+    <!DOCTYPE html>
     <html>
     <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
         <style>
-            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; color: #333333; }
-            .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-top: 5px solid #fecc56; }
-            .header { background-color: #1f1b1c; padding: 20px; text-align: center; }
-            .header h1 { color: #fecc56; margin: 0; font-size: 24px; }
-            .content { padding: 30px; line-height: 1.6; }
-            .button { display: inline-block; padding: 12px 24px; margin-top: 20px; background-color: #fecc56; color: #000000; text-decoration: none; border-radius: 4px; font-weight: bold; }
-            .footer { background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 12px; color: #777777; border-top: 1px solid #e0e0e0; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #0b0e14; margin: 0; padding: 20px 0; color: #333333; }
+            .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.35); border-top: 4px solid #fecc56; }
+            .header { background-color: #111827; padding: 28px 20px; text-align: center; border-bottom: 2px solid #fecc56; }
+            .content { padding: 35px 30px; line-height: 1.65; font-size: 14.5px; color: #1e293b; }
+            .footer { background-color: #f8fafc; padding: 20px 30px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; line-height: 1.5; }
         </style>
     </head>
-    <body>
-        <div class='container'>
-            <div class='header'>
-                <h1>IFW Global</h1>
+    <body style='background-color: #0b0e14; margin: 0; padding: 25px 10px;'>
+        <div class='container' style='max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; border-top: 4px solid #fecc56;'>
+            <div class='header' style='background-color: #111827; padding: 26px 20px; text-align: center; border-bottom: 2px solid #fecc56;'>
+                <table align='center' border='0' cellpadding='0' cellspacing='0' style='margin: 0 auto;'>
+                    <tr>
+                        <td style='vertical-align: middle; padding-right: 12px;'>
+                            <div style='width: 36px; height: 36px; background-color: #fecc56; border-radius: 6px; text-align: center; line-height: 36px; font-size: 20px; font-weight: bold; color: #111827;'>🛡️</div>
+                        </td>
+                        <td style='vertical-align: middle; text-align: left;'>
+                            <div style='color: #fecc56; font-size: 22px; font-weight: 900; letter-spacing: 2px; font-family: Arial, sans-serif; text-transform: uppercase; line-height: 1.1;'>IFW GLOBAL</div>
+                            <div style='color: #cbd5e1; font-size: 10px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px;'>Private Intelligence & Asset Recovery</div>
+                        </td>
+                    </tr>
+                </table>
             </div>
-            <div class='content'>
+            <div class='content' style='padding: 35px 30px; line-height: 1.65; font-size: 14.5px; color: #1e293b;'>
                 $body
             </div>
-            <div class='footer'>
-                This is an automated notification from the IFW Global Secure Recovery Portal.
+            <div class='footer' style='background-color: #f8fafc; padding: 20px 30px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; line-height: 1.5;'>
+                <strong>IFW Global Cyber & Financial Crime Investigation Division</strong><br>
+                This is an automated encrypted dispatch from the IFW Global Client Recovery Portal.
             </div>
         </div>
     </body>
