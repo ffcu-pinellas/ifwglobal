@@ -227,6 +227,29 @@ function send_notification_email($to, $subject, $body) {
 }
 
 /**
+ * Automatically trigger background tasks (reminders, SLA monitors) throttled to run every 4 hours max
+ */
+function trigger_background_cron_tasks($pdo) {
+    if (!$pdo) return;
+    try {
+        $last_run = (int)get_setting($pdo, 'last_cron_reminders_ts', '0');
+        if ((time() - $last_run) >= 14400) { // 4 hours
+            set_setting($pdo, 'last_cron_reminders_ts', (string)time());
+            $cron_file = __DIR__ . '/../cron_invoice_reminders.php';
+            if (file_exists($cron_file)) {
+                // If possible run in background, otherwise include
+                if (function_exists('exec') && strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+                    @exec("php " . escapeshellarg($cron_file) . " > /dev/null 2>&1 &");
+                } else {
+                    // Safe silent inclusion
+                    include_once $cron_file;
+                }
+            }
+        }
+    } catch (Exception $e) {}
+}
+
+/**
  * Send a notification message to Telegram using Bot API configured in settings
  */
 function send_telegram_notification($pdo, $message) {

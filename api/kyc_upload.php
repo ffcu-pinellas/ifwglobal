@@ -6,8 +6,6 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-?>
-require_once '../config.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -34,11 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
         
         if (in_array($ext, $allowed) && $file['size'] <= 10485760) { // 10MB
-            $dir = '../uploads/kyc/';
-            if (!is_dir($dir)) mkdir($dir, 0777, true);
+            $dir_upload = $dir . '/uploads/kyc/';
+            if (!is_dir($dir_upload)) mkdir($dir_upload, 0777, true);
             
             $filename = uniqid('kyc_') . '.' . $ext;
-            if (move_uploaded_file($file['tmp_name'], $dir . $filename)) {
+            if (move_uploaded_file($file['tmp_name'], $dir_upload . $filename)) {
                 $path = 'uploads/kyc/' . $filename;
                 
                 $stmt = $pdo->prepare("INSERT INTO IFW_kyc_documents (client_id, document_type, file_path) VALUES (?, ?, ?)");

@@ -11,16 +11,19 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+$is_admin = isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
+$is_client = isset($_SESSION['client_portal_id']) && !empty($_SESSION['client_portal_id']);
+
+if (!$is_admin && !$is_client) {
     http_response_code(403);
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $client_id = $_POST['client_id'] ?? 0;
-    $doc_type = $_POST['document_type'] ?? 'Standard';
-    $requires_sig = isset($_POST['requires_signature']) && $_POST['requires_signature'] === '1' ? 1 : 0;
+    $client_id = $is_admin ? (int)($_POST['client_id'] ?? 0) : (int)$_SESSION['client_portal_id'];
+    $doc_type = $is_admin ? ($_POST['document_type'] ?? 'Standard') : 'Client Evidence';
+    $requires_sig = $is_admin ? (isset($_POST['requires_signature']) && $_POST['requires_signature'] === '1' ? 1 : 0) : 0;
     
     if ($client_id > 0 && isset($_FILES['vault_file']) && $_FILES['vault_file']['error'] === UPLOAD_ERR_OK) {
         $file = $_FILES['vault_file'];

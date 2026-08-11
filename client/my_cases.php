@@ -104,13 +104,13 @@ require_once $dir . '/includes/admin_sidebar.php';
 
 <div class="row mb-3">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
-                <h4 class="font-weight-bold mb-0"><i class="fas fa-briefcase text-warning mr-2"></i>My Cases</h4>
-                <p class="text-muted small mb-0">Track your active and completed cases with full investigation timeline</p>
+                <h4 class="font-weight-bold mb-0 text-white"><i class="fas fa-briefcase text-warning mr-2"></i>My Investigation Cases</h4>
+                <p class="text-warning small mb-0 font-weight-bold">Track your active and completed recovery cases with forensic milestones</p>
             </div>
-            <a href="/client/dashboard.php" class="btn btn-outline-dark btn-sm font-weight-bold">
-                <i class="fas fa-arrow-left mr-1"></i> Dashboard
+            <a href="/client/dashboard.php" class="btn btn-outline-warning text-warning btn-sm font-weight-bold">
+                <i class="fas fa-arrow-left mr-1"></i> Return to Dashboard
             </a>
         </div>
     </div>
@@ -294,9 +294,14 @@ require_once $dir . '/includes/admin_sidebar.php';
 
         <!-- DOCUMENT VAULT & SECURE E-SIGNATURES -->
         <div class="card shadow-sm border-0 mb-4 bg-dark text-white border-warning">
-            <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-folder-open mr-2"></i>Document Vault & e-Signatures</span>
-                <span class="badge badge-warning text-dark font-weight-bold"><?= count($vault_docs) ?> Files</span>
+            <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <i class="fas fa-folder-open mr-2"></i>Document Vault & e-Signatures
+                    <span class="badge badge-warning text-dark font-weight-bold ml-2"><?= count($vault_docs) ?> Files</span>
+                </div>
+                <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark shadow-sm" data-toggle="modal" data-target="#evidenceUploadModal">
+                    <i class="fas fa-cloud-upload-alt mr-1"></i> Upload Case Evidence
+                </button>
             </div>
             <div class="card-body">
                 <?php if (empty($vault_docs)): ?>
@@ -511,6 +516,82 @@ require_once $dir . '/includes/admin_sidebar.php';
     </div>
 </div>
 <?php endif; ?>
+
+<!-- Client Case Evidence Upload Modal -->
+<div class="modal fade" id="evidenceUploadModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content bg-dark text-white border-warning">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold"><i class="fas fa-cloud-upload-alt mr-2"></i>Upload Case Evidence</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="evidenceUploadForm" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">Upload transaction receipts, chat screenshots, wire records, or suspect profile links for your investigator to review.</p>
+                    
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-light small">Select Document / Evidence File</label>
+                        <input type="file" name="vault_file" id="evidenceFileInput" class="form-control-file border border-secondary p-2 rounded w-100 bg-black text-white" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+                        <small class="text-muted">Allowed formats: PDF, DOC, DOCX, JPG, PNG (Max 10MB)</small>
+                    </div>
+                    
+                    <div id="evidenceUploadError" class="alert alert-danger py-2 small" style="display:none;"></div>
+                    <div id="evidenceUploadSuccess" class="alert alert-success py-2 small" style="display:none;"></div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary font-weight-bold btn-sm" data-dismiss="modal">Cancel</button>
+                    <button type="submit" id="evidenceSubmitBtn" class="btn btn-warning font-weight-bold text-dark btn-sm"><i class="fas fa-upload mr-1"></i>Upload to Vault</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var evidenceForm = document.getElementById('evidenceUploadForm');
+    if (evidenceForm) {
+        evidenceForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var errDiv = document.getElementById('evidenceUploadError');
+            var succDiv = document.getElementById('evidenceUploadSuccess');
+            var btn = document.getElementById('evidenceSubmitBtn');
+            
+            errDiv.style.display = 'none';
+            succDiv.style.display = 'none';
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Uploading...';
+            
+            var formData = new FormData(this);
+            fetch('/api/vault_upload.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-upload mr-1"></i> Upload to Vault';
+                if (data.status === 'success') {
+                    succDiv.innerText = 'Evidence uploaded successfully to your vault!';
+                    succDiv.style.display = 'block';
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1200);
+                } else {
+                    errDiv.innerText = data.message || 'Upload failed. Please check file format.';
+                    errDiv.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-upload mr-1"></i> Upload to Vault';
+                errDiv.innerText = 'Connection error. Please try again.';
+                errDiv.style.display = 'block';
+            });
+        });
+    }
+});
+</script>
 
 <style>
 @keyframes pulse { 0%,100%{ box-shadow: 0 0 0 3px #ffc107; } 50%{ box-shadow: 0 0 0 6px rgba(255,193,7,.3); } }

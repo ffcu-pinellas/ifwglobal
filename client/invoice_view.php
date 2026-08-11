@@ -160,13 +160,13 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
 
 <?php if (!$is_print): ?>
 <div class="row mb-3 d-print-none">
-    <div class="col-12 d-flex justify-content-between align-items-center">
-        <div>
-            <h4 class="font-weight-bold mb-0"><i class="fas fa-file-invoice-dollar text-warning mr-2"></i>Invoice #INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?></h4>
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="mb-2 mb-md-0">
+            <h4 class="font-weight-bold mb-0 text-white"><i class="fas fa-file-invoice-dollar text-warning mr-2"></i>Invoice #INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?></h4>
         </div>
         <div>
-            <a href="/client/dashboard.php" class="btn btn-sm btn-outline-dark font-weight-bold mr-2"><i class="fas fa-arrow-left mr-1"></i> Back</a>
-            <button onclick="window.print()" class="btn btn-sm btn-outline-secondary font-weight-bold mr-2"><i class="fas fa-print mr-1"></i> Print</button>
+            <a href="/client/dashboard.php" class="btn btn-sm btn-outline-warning text-warning font-weight-bold mr-2"><i class="fas fa-arrow-left mr-1"></i> Dashboard</a>
+            <button onclick="window.print()" class="btn btn-sm btn-outline-secondary font-weight-bold mr-2"><i class="fas fa-print mr-1"></i> Print / PDF</button>
             <?php if ($balance_due > 0 && $invoice['status'] !== 'paid'): ?>
                 <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark shadow-sm"
                     onclick="showPayModal(<?= $invoice['id'] ?>, '#INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?>', <?= $balance_due ?>, '<?= htmlspecialchars($invoice['currency'] ?? 'USD') ?>', <?= htmlspecialchars(json_encode($payment_info)) ?>, '<?= htmlspecialchars($client_currency) ?>', <?= convert_currency($balance_due, $invoice['currency'] ?? 'USD', $client_currency) ?>)"

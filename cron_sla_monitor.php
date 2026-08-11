@@ -82,7 +82,13 @@ try {
                 <p><a href='" . BASE_URL . "/admin/chat.php' class='button' style='color:#000;'>Open Chat Console & Respond</a></p>
             ";
             
-            if (send_notification_email($recip['email'], $subject, $body)) {
+            $sent = false;
+            if (function_exists('send_html_email')) {
+                $sent = send_html_email($recip['email'], $subject, $body);
+            } elseif (function_exists('send_notification_email')) {
+                $sent = send_notification_email($recip['email'], $subject, $body);
+            }
+            if ($sent) {
                 echo "Sent unreplied client message alert to: {$recip['email']}\n";
                 $emails_sent++;
             }
@@ -124,7 +130,13 @@ try {
                 <p><a href='" . BASE_URL . "/client/chat.php' class='button' style='color:#000;'>Login & View Message</a></p>
             ";
             
-            if (send_notification_email($msg['email'], $subject, $body)) {
+            $sent = false;
+            if (function_exists('send_html_email')) {
+                $sent = send_html_email($msg['email'], $subject, $body);
+            } elseif (function_exists('send_notification_email')) {
+                $sent = send_notification_email($msg['email'], $subject, $body);
+            }
+            if ($sent) {
                 echo "Sent unread admin message alert to client: {$msg['email']}\n";
                 $emails_sent++;
             }
