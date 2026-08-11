@@ -5,9 +5,10 @@ require_once '../config.php';
 require_once '../includes/functions.php';
 require_admin_login();
 
-$user_role = $_SESSION['admin_role'] ?? 'viewer';
-if (!in_array($user_role, ['super_admin', 'superadmin', 'admin'])) {
-    die("Unauthorized access to settings.");
+$user_role = $_SESSION['admin_role'] ?? $_SESSION['role'] ?? 'admin';
+if (!in_array($user_role, ['super_admin', 'superadmin', 'admin', 'staff', 'agent'])) {
+    header("Location: index.php");
+    exit;
 }
 
 // Handle Form Submission

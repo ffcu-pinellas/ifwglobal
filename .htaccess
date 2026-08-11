@@ -1,23 +1,40 @@
+# ----------------------------------------------------------------------
+# IFW Global - Hostinger Apache & LiteSpeed Optimized Configuration
+# ----------------------------------------------------------------------
+
+# Ensure symbolic links are followed and directory browsing is disabled
+Options +FollowSymLinks -Indexes
+
+DirectoryIndex index.php index.html
+
 <IfModule mod_rewrite.c>
-RewriteEngine On
-RewriteBase /
+    RewriteEngine On
+    RewriteBase /
 
-# 1. Direct access to existing files or directories
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
+    # Redirect legacy consultation URL
+    RewriteRule ^book-a-consultation(?:/.*|\.php)?$ /contact/ [R=301,L]
 
-# 2. Fallback for public asset files
-RewriteCond %{DOCUMENT_ROOT}/public/$1 -f
-RewriteRule ^(.*)$ public/$1 [L]
+    # 1. Allow direct access to real existing files or directories
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
 
-# 3. Allow extensionless URLs (e.g. /about -> /about.php)
-RewriteCond %{REQUEST_FILENAME}.php -f [OR]
-RewriteCond %{DOCUMENT_ROOT}/$1.php -f
-RewriteRule ^([^/]+)/?$ $1.php [L]
+    # 2. Fallback for public asset files
+    RewriteCond %{DOCUMENT_ROOT}/public/$1 -f
+    RewriteRule ^(.*)$ public/$1 [L]
 
-Options -Indexes
+    # 3. Allow extensionless URLs for root pages (e.g. /about -> /about.php)
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^([^/]+)/?$ $1.php [L]
+
+    # 4. Allow extensionless URLs for subdirectories (e.g. /admin/settings -> /admin/settings.php)
+    RewriteCond %{DOCUMENT_ROOT}/$1/$2.php -f
+    RewriteRule ^([^/]+)/([^/]+)/?$ $1/$2.php [L]
 </IfModule>
 
-RewriteRule ^book-a-consultation(?:/.*|\.php)?$ /contact/ [R=301,L]
-
+# Grant full access to web resources and scripts
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.(php|html|css|js|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot|pdf|json)$">
+        Require all granted
+    </FilesMatch>
+</IfModule>
