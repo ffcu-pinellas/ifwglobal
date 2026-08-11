@@ -248,6 +248,40 @@ function send_notification_email($to, $subject, $body) {
 }
 
 /**
+ * Send an official case milestone update email to client
+ */
+function send_case_milestone_email($pdo, $client_email, $client_name, $case_number, $case_title, $milestone_title, $milestone_body, $milestone_date, $case_id) {
+    if (empty($client_email)) return false;
+    
+    $app_name = get_setting($pdo, 'app_name', 'IFW Global');
+    $subject = "Case Update: {$milestone_title} — Case #{$case_number}";
+    $date_formatted = date('F j, Y', strtotime($milestone_date ?: date('Y-m-d')));
+    $case_url = (defined('BASE_URL') ? BASE_URL : '') . "/client/my_cases.php?case_id=" . $case_id;
+
+    $body_content = "
+        <p>Dear <strong>" . htmlspecialchars($client_name) . "</strong>,</p>
+        <p>A new official investigation milestone has been logged for your active recovery case.</p>
+        
+        <div style='background: #191e2b; border: 1px solid #fecc56; border-left: 5px solid #fecc56; border-radius: 6px; padding: 20px; margin: 20px 0; color: #ffffff;'>
+            <div style='font-size: 11px; text-transform: uppercase; color: #fecc56; font-weight: bold; margin-bottom: 5px;'>CASE REFERENCE</div>
+            <div style='font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #ffffff;'>#" . htmlspecialchars($case_number) . " — " . htmlspecialchars($case_title) . "</div>
+            
+            <div style='font-size: 11px; text-transform: uppercase; color: #fecc56; font-weight: bold; margin-bottom: 5px;'>MILESTONE POSTED (" . $date_formatted . ")</div>
+            <div style='font-size: 15px; font-weight: bold; color: #ffffff; margin-bottom: 10px;'>" . htmlspecialchars($milestone_title) . "</div>
+            " . (!empty($milestone_body) ? "<div style='font-size: 13.5px; color: #cbd5e1; line-height: 1.6; white-space: pre-wrap; background: #0f131c; padding: 12px; border-radius: 4px;'>" . nl2br(htmlspecialchars($milestone_body)) . "</div>" : "") . "
+        </div>
+
+        <p style='color: #475569; font-size: 13px;'>You can review the full dossier, cryptographic evidence vault, and case timeline anytime directly in your portal.</p>
+        
+        <div style='text-align: center; margin-top: 25px;'>
+            <a href='" . htmlspecialchars($case_url) . "' style='display: inline-block; background-color: #fecc56; color: #000000; padding: 14px 28px; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;'>View Case Update & Dossier &rarr;</a>
+        </div>
+    ";
+
+    return send_notification_email($client_email, $subject, $body_content);
+}
+
+/**
  * Automatically trigger background tasks (reminders, SLA monitors) throttled to run every 4 hours max
  */
 function trigger_background_cron_tasks($pdo) {

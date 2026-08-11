@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'phone_australia', 'phone_australia_secondary', 'phone_uk', 'phone_usa', 'display_phone_numbers',
         'contact_email', 'contact_phone', 'office_address',
         'bank_name', 'bank_account_name', 'bank_account_number', 'bank_swift_iban',
-        'crypto_wallet_address', 'crypto_wallet_type', 'payment_instructions',
+        'crypto_wallet_address', 'crypto_wallet_type', 'crypto_usdt_trc20_address', 'crypto_usdt_erc20_address', 'crypto_btc_address', 'crypto_eth_address', 'payment_instructions',
         'hero_headline', 'hero_subheadline', 'hero_cta', 
         'announcement_bar_text', 'announcement_bar_active',
         'meta_title', 'meta_description', 'meta_keywords', 'maintenance_mode',
@@ -182,19 +182,30 @@ while ($row = $stmt->fetch()) {
                     </div>
 
                     <div class="row">
-                        <div class="col-md-8 form-group mb-3">
-                            <label class="font-weight-bold text-light">Crypto Wallet Address (Optional)</label>
-                            <input type="text" name="crypto_wallet_address" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['crypto_wallet_address'] ?? ''); ?>" placeholder="0x... or bc1q...">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light"><i class="fab fa-bitcoin text-warning mr-1"></i>Bitcoin (BTC) Wallet Address</label>
+                            <input type="text" name="crypto_btc_address" class="form-control bg-secondary text-white border-0 font-weight-bold" value="<?php echo htmlspecialchars($s['crypto_btc_address'] ?? 'bc1q9xle8v2kwj6d234p8cmnrqtvq80f3w9a2lx7kd'); ?>" placeholder="bc1q...">
                         </div>
-                        <div class="col-md-4 form-group mb-3">
-                            <label class="font-weight-bold text-light">Wallet Network</label>
-                            <input type="text" name="crypto_wallet_type" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['crypto_wallet_type'] ?? 'USDT (TRC20)'); ?>" placeholder="USDT TRC20 / BTC">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light"><i class="fas fa-coins text-success mr-1"></i>USDT (TRC-20) Wallet Address</label>
+                            <input type="text" name="crypto_usdt_trc20_address" class="form-control bg-secondary text-white border-0 font-weight-bold" value="<?php echo htmlspecialchars($s['crypto_usdt_trc20_address'] ?? 'TYDvsPq9xL3r6K2oH41N8xQzVmM7pB3kRa'); ?>" placeholder="T...">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light"><i class="fab fa-ethereum text-info mr-1"></i>USDT (ERC-20) Wallet Address</label>
+                            <input type="text" name="crypto_usdt_erc20_address" class="form-control bg-secondary text-white border-0 font-weight-bold" value="<?php echo htmlspecialchars($s['crypto_usdt_erc20_address'] ?? '0x71C8360f38bB2902f4D3e1b78297bB32789cA854'); ?>" placeholder="0x...">
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light"><i class="fab fa-ethereum text-primary mr-1"></i>Ethereum (ETH) Wallet Address</label>
+                            <input type="text" name="crypto_eth_address" class="form-control bg-secondary text-white border-0 font-weight-bold" value="<?php echo htmlspecialchars($s['crypto_eth_address'] ?? '0x71C8360f38bB2902f4D3e1b78297bB32789cA854'); ?>" placeholder="0x...">
                         </div>
                     </div>
 
                     <div class="form-group mb-0">
-                        <label class="font-weight-bold text-light">Payment Instructions for Clients</label>
-                        <textarea name="payment_instructions" class="form-control bg-secondary text-white border-0" rows="2"><?php echo htmlspecialchars($s['payment_instructions'] ?? 'Please include your Case Reference Number in the transaction memo.'); ?></textarea>
+                        <label class="font-weight-bold text-light">Payment & Wire Memo Instructions for Clients</label>
+                        <textarea name="payment_instructions" class="form-control bg-secondary text-white border-0" rows="2"><?php echo htmlspecialchars($s['payment_instructions'] ?? 'Please include your Invoice # or Case Reference Number in the transaction memo/reference.'); ?></textarea>
                     </div>
                 </div>
             </div>

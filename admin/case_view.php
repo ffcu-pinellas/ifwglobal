@@ -122,8 +122,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             // Update the link to point to this case
             $pdo->prepare("UPDATE IFW_notifications SET link = ? WHERE id = ?")->execute(['/client/my_cases.php?case_id=' . $case_id, $last_notif_id]);
         } catch(Exception $e) {}
+
+        // Dispatch branded milestone notification email to client
+        if ($is_client_visible && !empty($case['client_email'])) {
+            try {
+                $client_full_name = trim(($case['first_name'] ?? '') . ' ' . ($case['last_name'] ?? ''));
+                send_case_milestone_email($pdo, $case['client_email'], $client_full_name, $case['case_number'], $case['title'], $milestone_title, $milestone_body, $milestone_date, $case_id);
+            } catch(Exception $e) {}
+        }
         
-        $success = "Milestone added successfully.";
+        $success = "Milestone added successfully and dispatched to client email.";
     }
 }
 
@@ -159,7 +167,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         if (move_uploaded_file($file_tmp, $target_file)) {
             $stmt = $pdo->prepare("INSERT INTO IFW_documents (client_id, file_name, file_path, document_type, requires_signature) VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([$case['client_id'], $file_name, $db_path, $doc_type, $requires_sig]);
-            $success = "Document uploaded successfully to client vault.";
+            
+            // Dispatch notification email to client
+            if (!empty($case['client_email'])) {
+                try {
+                    $client_full_name = trim(($case['first_name'] ?? '') . ' ' . ($case['last_name'] ?? ''));
+                    send_case_milestone_email($pdo, $case['client_email'], $client_full_name, $case['case_number'], $case['title'], "New Document Deposited: " . $file_name, "Your case investigator has deposited a new official document ({$doc_type}) into your secure Document Vault.", date('Y-m-d'), $case_id);
+                } catch(Exception $e) {}
+            }
+
+            $success = "Document uploaded successfully to client vault and notification dispatched.";
         } else {
             $error = "Failed to save uploaded file.";
         }

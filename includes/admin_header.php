@@ -235,6 +235,27 @@ if (isset($pdo)) {
         .sidebar-brand h4 { color: #fecc56 !important; font-weight: 700; letter-spacing: 1px; }
         .card { background-color: #1f1b1c; border: 1px solid #333; color: #fff; }
         .card-header { background-color: #2a2526; border-bottom: 1px solid #444; color: #fecc56; font-weight: bold; }
+        
+        /* PRIVACY SHIELD / PUBLIC SCREEN BLUR MODE */
+        body.privacy-shield-active .privacy-sensitive,
+        body.privacy-shield-active .stat-value,
+        body.privacy-shield-active td[data-label="Amount"],
+        body.privacy-shield-active td[data-label="Balance"],
+        body.privacy-shield-active td[data-label="Loss Claimed"],
+        body.privacy-shield-active td[data-label="Recovered"] {
+            filter: blur(8px) !important;
+            user-select: none !important;
+            transition: filter 0.25s ease;
+            cursor: pointer;
+        }
+        body.privacy-shield-active .privacy-sensitive:hover,
+        body.privacy-shield-active .stat-value:hover,
+        body.privacy-shield-active td[data-label="Amount"]:hover,
+        body.privacy-shield-active td[data-label="Balance"]:hover,
+        body.privacy-shield-active td[data-label="Loss Claimed"]:hover,
+        body.privacy-shield-active td[data-label="Recovered"]:hover {
+            filter: blur(2px) !important;
+        }
     </style>
 </head>
 <body>
@@ -274,6 +295,14 @@ if (isset($pdo)) {
                                 </a>
                             <?php endforeach; ?>
                         </div>
+                    </li>
+
+                    <!-- Privacy Shield / Screen Blur Mode Toggle -->
+                    <li class="nav-item mr-3 align-self-center">
+                        <button type="button" id="privacyShieldToggle" class="btn btn-sm btn-outline-secondary font-weight-bold d-flex align-items-center" onclick="togglePrivacyShield()" title="Privacy Mode: Blur sensitive financial balances and case details for public browsing" style="border-radius:20px; padding:3px 10px; font-size:11.5px; border-color:#475569; color:#cbd5e1;">
+                            <i class="fas fa-eye-slash text-warning mr-1" id="privacyShieldIcon"></i>
+                            <span id="privacyShieldText" class="d-none d-md-inline">Privacy Off</span>
+                        </button>
                     </li>
 
                     <!-- Notification Bell Dropdown -->
@@ -499,6 +528,50 @@ if (isset($pdo)) {
             .then(data => { if (data.success) location.reload(); })
             .catch(err => console.error(err));
         }
+
+        // Privacy Shield / Public Browsing Screen Blur
+        function initPrivacyShield() {
+            var saved = localStorage.getItem('ifw_privacy_shield');
+            if (saved === 'active') {
+                document.body.classList.add('privacy-shield-active');
+                updatePrivacyShieldBtn(true);
+            }
+        }
+
+        function togglePrivacyShield() {
+            var isActive = document.body.classList.toggle('privacy-shield-active');
+            localStorage.setItem('ifw_privacy_shield', isActive ? 'active' : 'inactive');
+            updatePrivacyShieldBtn(isActive);
+            if (typeof toastr !== 'undefined') {
+                if (isActive) {
+                    toastr.info('Sensitive financial balances and case details are now blurred.', '🕶️ Privacy Shield: ON');
+                } else {
+                    toastr.success('Financial details are now visible.', '👁️ Privacy Shield: OFF');
+                }
+            }
+        }
+
+        function updatePrivacyShieldBtn(isActive) {
+            var icon = document.getElementById('privacyShieldIcon');
+            var text = document.getElementById('privacyShieldText');
+            var btn = document.getElementById('privacyShieldToggle');
+            if (!btn) return;
+            if (isActive) {
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-warning');
+                btn.style.color = '#000';
+                if (icon) icon.className = 'fas fa-eye text-dark mr-1';
+                if (text) text.textContent = 'Privacy ON';
+            } else {
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-outline-secondary');
+                btn.style.color = '#cbd5e1';
+                if (icon) icon.className = 'fas fa-eye-slash text-warning mr-1';
+                if (text) text.textContent = 'Privacy Off';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initPrivacyShield);
         </script>
 
 <?php if(isset($_GET['profile_updated'])): ?>

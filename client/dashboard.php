@@ -951,6 +951,9 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                                              <span class="badge badge-warning text-dark"><i class="fas fa-clock mr-1"></i> Pending Review</span>
                                          <?php elseif ($pr['status'] === 'Confirmed'): ?>
                                              <span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i> Approved</span>
+                                             <a href="/client/receipt_view.php?id=<?= $pr['id'] ?>" class="btn btn-xs btn-outline-warning text-warning ml-1 font-weight-bold shadow-sm" style="font-size:11px; padding:3px 8px; border-radius:4px;">
+                                                 <i class="fas fa-receipt mr-1"></i> Official Receipt
+                                             </a>
                                          <?php else: ?>
                                              <span class="badge badge-danger" title="<?= htmlspecialchars($pr['notes'] ?? '') ?>"><i class="fas fa-times-circle mr-1"></i> Rejected</span>
                                          <?php endif; ?>
@@ -1179,40 +1182,64 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                         <input type="hidden" name="invoice_id" id="payInvoiceId">
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold text-light small">Amount Paid (<span id="payCurrencyLabel">USD</span>)</label>
-                                <input type="number" step="0.01" name="amount_paid" id="payAmountInput" class="form-control bg-black text-white border-secondary" required placeholder="Enter amount paid">
+                                <label class="font-weight-bold text-light small">Amount Paid (<span id="payCurrencyLabel">USD</span>) <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" name="amount_paid" id="payAmountInput" class="form-control bg-black text-white border-secondary font-weight-bold text-warning" required placeholder="0.00">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold text-light small">Payment Method</label>
-                                <select name="payment_method" class="form-control bg-black text-white border-secondary" onchange="if(this.value==='Other'){$('#otherPaymentMethodDivDashboard').show().find('input').attr('required',true);}else{$('#otherPaymentMethodDivDashboard').hide().find('input').removeAttr('required').val('');}" required>
+                                <label class="font-weight-bold text-light small">Payment Method <span class="text-danger">*</span></label>
+                                <select name="payment_method" id="dashboardPaymentMethodSelect" class="form-control bg-black text-white border-secondary" onchange="handlePaymentMethodChange(this.value)" required>
                                     <option value="">Select method...</option>
-                                    <option>Bank Wire Transfer</option>
-                                    <option>Cryptocurrency (Bitcoin)</option>
-                                    <option>Cryptocurrency (USDT)</option>
-                                    <option>Credit / Debit Card</option>
-                                    <option>Other</option>
+                                    <option value="Bank Wire Transfer">🏛️ Bank Wire Transfer</option>
+                                    <option value="USDT (TRC-20)">🪙 Cryptocurrency — USDT (TRC-20)</option>
+                                    <option value="USDT (ERC-20)">🪙 Cryptocurrency — USDT (ERC-20)</option>
+                                    <option value="Bitcoin (BTC)">🪙 Cryptocurrency — Bitcoin (BTC)</option>
+                                    <option value="Ethereum (ETH)">🪙 Cryptocurrency — Ethereum (ETH)</option>
+                                    <option value="Credit / Debit Card">💳 Credit / Debit Card</option>
+                                    <option value="Other">✨ Other Payment Method</option>
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold text-light small">Reference / TXID (Optional)</label>
-                                <input type="text" name="reference_number" class="form-control bg-black text-white border-secondary" placeholder="e.g. TXN12345678">
-                            </div>
-                            <div class="col-md-12 mb-3" id="otherPaymentMethodDivDashboard" style="display:none;">
-                                <label class="font-weight-bold text-warning small">Specify Other Payment Method <span class="text-danger">*</span></label>
-                                <input type="text" name="other_payment_method" class="form-control bg-black text-white border-secondary" placeholder="e.g. PayPal, Revolut, CashApp">
+                                <label class="font-weight-bold text-light small">Transaction Hash / Ref # <span class="text-warning">*</span></label>
+                                <input type="text" name="reference_number" id="dashboardRefNumberInput" class="form-control bg-black text-white border-secondary" placeholder="e.g. TXID / Wire Ref #">
                             </div>
                         </div>
+
+                        <!-- DYNAMIC CRYPTO WALLET & QR BOX -->
+                        <div id="cryptoPaymentDetailsBox" class="p-3 rounded mb-3 border border-warning" style="display:none; background:#0b0e14;">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between">
+                                <div class="mr-3 mb-2 text-center" style="min-width:140px;">
+                                    <img id="cryptoQrImg" src="" alt="Crypto QR" class="img-fluid rounded border border-secondary p-1 bg-white" style="width:130px; height:130px;">
+                                    <div class="text-muted small mt-1 font-weight-bold" style="font-size:10px;" id="cryptoNetworkLabel">TRC-20 Network</div>
+                                </div>
+                                <div class="flex-grow-1 mb-2">
+                                    <div class="font-weight-bold text-warning mb-1" id="cryptoNameLabel">USDT TRC-20 Wallet Address</div>
+                                    <p class="text-muted small mb-2">Send only the exact asset on this network. Funds will be credited after 1 network confirmation.</p>
+                                    <div class="input-group">
+                                        <input type="text" id="cryptoWalletInput" class="form-control bg-dark text-white border-secondary font-weight-bold" style="font-family:monospace; font-size:12px;" readonly>
+                                        <div class="input-group-append">
+                                            <button type="button" class="btn btn-warning text-dark font-weight-bold" onclick="copyCryptoAddress()"><i class="fas fa-copy mr-1"></i> <span id="copyCryptoBtnText">Copy</span></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12 mb-3 px-0" id="otherPaymentMethodDivDashboard" style="display:none;">
+                            <label class="font-weight-bold text-warning small">Specify Other Payment Method <span class="text-danger">*</span></label>
+                            <input type="text" name="other_payment_method" class="form-control bg-black text-white border-secondary" placeholder="e.g. PayPal, Revolut, CashApp">
+                        </div>
+
                         <div class="mb-3">
-                            <label class="font-weight-bold text-light small">Upload Payment Receipt / Wire Proof</label>
+                            <label class="font-weight-bold text-light small">Upload Payment Receipt / TX Screenshot <span class="text-danger">*</span></label>
                             <input type="file" name="proof_file" class="form-control-file border border-secondary p-2 rounded w-100 bg-black text-white" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" required>
                             <small class="text-muted">Accepted: JPG, PNG, PDF, DOC (Max 10MB)</small>
                         </div>
                         <div class="mb-3">
                             <label class="font-weight-bold text-light small">Additional Transaction Notes (Optional)</label>
-                            <textarea name="notes" class="form-control bg-black text-white border-secondary" rows="2" placeholder="Any notes regarding your transaction..."></textarea>
+                            <textarea name="notes" class="form-control bg-black text-white border-secondary" rows="2" placeholder="Any additional notes or sender details..."></textarea>
                         </div>
                         <button type="submit" class="btn pay-btn btn-block font-weight-bold py-3 shadow-lg">
-                            <i class="fas fa-paper-plane mr-2"></i> Submit Payment Verification
+                            <i class="fas fa-paper-plane mr-2"></i> Submit Payment for Instant Verification
                         </button>
                     </form>
                 </div>
@@ -1293,6 +1320,54 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
 </div>
 
 <script>
+var cryptoWallets = {
+    'USDT (TRC-20)': { name: 'USDT (TRC-20) TRON Network', network: 'TRC-20 Network', address: '<?= addslashes(get_setting($pdo, "crypto_usdt_trc20_address", "TYDvsPq9xL3r6K2oH41N8xQzVmM7pB3kRa")) ?>' },
+    'USDT (ERC-20)': { name: 'USDT (ERC-20) Ethereum Network', network: 'ERC-20 Network', address: '<?= addslashes(get_setting($pdo, "crypto_usdt_erc20_address", "0x71C8360f38bB2902f4D3e1b78297bB32789cA854")) ?>' },
+    'Bitcoin (BTC)': { name: 'Bitcoin (BTC) Native Mainnet', network: 'BTC Mainnet', address: '<?= addslashes(get_setting($pdo, "crypto_btc_address", "bc1q9xle8v2kwj6d234p8cmnrqtvq80f3w9a2lx7kd")) ?>' },
+    'Ethereum (ETH)': { name: 'Ethereum (ETH) Mainnet', network: 'ETH Mainnet', address: '<?= addslashes(get_setting($pdo, "crypto_eth_address", "0x71C8360f38bB2902f4D3e1b78297bB32789cA854")) ?>' }
+};
+
+function handlePaymentMethodChange(val) {
+    var cryptoBox = document.getElementById('cryptoPaymentDetailsBox');
+    var otherDiv = document.getElementById('otherPaymentMethodDivDashboard');
+    var refInput = document.getElementById('dashboardRefNumberInput');
+    
+    if (val === 'Other') {
+        otherDiv.style.display = 'block';
+        otherDiv.querySelector('input').setAttribute('required', 'required');
+    } else {
+        otherDiv.style.display = 'none';
+        otherDiv.querySelector('input').removeAttribute('required');
+        otherDiv.querySelector('input').value = '';
+    }
+    
+    if (cryptoWallets[val]) {
+        var w = cryptoWallets[val];
+        document.getElementById('cryptoNameLabel').textContent = w.name;
+        document.getElementById('cryptoNetworkLabel').textContent = w.network;
+        document.getElementById('cryptoWalletInput').value = w.address;
+        document.getElementById('cryptoQrImg').src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(w.address);
+        cryptoBox.style.display = 'block';
+        refInput.placeholder = 'e.g. 64-character Blockchain TXID';
+        refInput.setAttribute('required', 'required');
+    } else {
+        cryptoBox.style.display = 'none';
+        refInput.placeholder = 'e.g. Wire Ref # / Confirmation Code';
+        refInput.removeAttribute('required');
+    }
+}
+
+function copyCryptoAddress() {
+    var copyText = document.getElementById('cryptoWalletInput');
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(copyText.value);
+    document.getElementById('copyCryptoBtnText').textContent = 'Copied!';
+    setTimeout(function() {
+        document.getElementById('copyCryptoBtnText').textContent = 'Copy';
+    }, 2500);
+}
+
 function showPayModal(invoiceId, ref, balanceDue, currency, paymentInfo, prefCurrency, prefBalance) {
     currency = currency || 'USD';
     prefCurrency = prefCurrency || currency;
@@ -1307,6 +1382,11 @@ function showPayModal(invoiceId, ref, balanceDue, currency, paymentInfo, prefCur
     document.getElementById('payAmount').innerHTML = disp;
     document.getElementById('payAmountInput').value = parseFloat(balanceDue).toFixed(2);
     document.getElementById('paymentInfoBlock').textContent = paymentInfo || 'Please contact your assigned investigator for payment details.';
+    
+    // Reset crypto box
+    document.getElementById('dashboardPaymentMethodSelect').value = '';
+    document.getElementById('cryptoPaymentDetailsBox').style.display = 'none';
+    
     $('#payNowModal').modal('show');
 }
 
