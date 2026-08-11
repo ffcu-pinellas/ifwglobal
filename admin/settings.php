@@ -261,6 +261,35 @@ while ($row = $stmt->fetch()) {
                 </div>
             </div>
         </div>
+
+        <!-- 6. CLIENT PORTAL VISUAL MODULES & FEATURES -->
+        <div class="col-lg-12 mb-4">
+            <div class="card shadow-sm border-secondary">
+                <div class="card-header bg-dark text-warning border-secondary d-flex align-items-center">
+                    <i class="fas fa-cubes mr-2"></i>Client Portal Visual Modules & Interactive Trackers
+                </div>
+                <div class="card-body bg-dark text-white">
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light">1. Investigation & Asset Recovery Lifecycle Tracker</label>
+                            <select name="show_lifecycle_tracker" class="form-control bg-secondary text-white border-0">
+                                <option value="1" <?php echo ($s['show_lifecycle_tracker'] ?? '1') == '1' ? 'selected' : ''; ?>>Enabled (Show 5-Stage Recovery Lifecycle on Client Portal)</option>
+                                <option value="0" <?php echo ($s['show_lifecycle_tracker'] ?? '1') == '0' ? 'selected' : ''; ?>>Disabled (Hide Lifecycle Bar)</option>
+                            </select>
+                            <small class="text-muted">Managed and updated per case in the Admin Recovery Cases section.</small>
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light">2. Forensic Fund Tracing & Asset Recovery Flow</label>
+                            <select name="show_fund_flow_visualizer" class="form-control bg-secondary text-white border-0">
+                                <option value="1" <?php echo ($s['show_fund_flow_visualizer'] ?? '1') == '1' ? 'selected' : ''; ?>>Enabled (Show Interactive Flow Diagram on Client Dashboard)</option>
+                                <option value="0" <?php echo ($s['show_fund_flow_visualizer'] ?? '1') == '0' ? 'selected' : ''; ?>>Disabled (Hide Flow Diagram)</option>
+                            </select>
+                            <small class="text-muted">Displays the 4-step fund interception and repatriation flow to clients.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 6. TELEGRAM NOTIFICATIONS -->

@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetchMessages(true);
         
         if (pollingInterval) clearInterval(pollingInterval);
-        pollingInterval = setInterval(() => { fetchMessages(false); fetchClients(); }, 3000);
+        pollingInterval = setInterval(() => { fetchMessages(false); fetchClients(); }, 2000);
     }
 
     function fetchMessages(scrollDown = false) {
@@ -291,6 +291,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         senderLabel = `<div class="msg-sender-name"><i class="fas fa-user-shield mr-1"></i>You</div>`;
                     } else {
                         senderLabel = `<div class="msg-sender-name"><i class="fas fa-user-circle mr-1"></i>${m.sender_name || 'Client'}</div>`;
+                        if (m.id > lastMsgId && lastMsgId > 0) {
+                            if (typeof playNotificationChime === 'function') {
+                                playNotificationChime();
+                            }
+                            if (typeof toastr !== 'undefined') {
+                                toastr.info(m.message, '💬 ' + (m.sender_name || 'Client'));
+                            }
+                        }
                     }
 
                     let attachmentMarkup = "";
@@ -324,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="msg-time">${time}</div>
                     `;
                     elChatMessages.appendChild(div);
-                    lastMsgId = m.id;
+                    lastMsgId = Math.max(lastMsgId, m.id);
                 });
                 
                 if (scrollDown || isScrolledToBottom) {

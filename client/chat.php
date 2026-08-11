@@ -194,10 +194,16 @@ require_once $dir . '/includes/admin_sidebar.php';
                             `;
                             elChatMessages.appendChild(div);
                             
-                            if (hasNewAdminMsg && m.id > lastMsgId) {
+                            if (hasNewAdminMsg && m.id > lastMsgId && lastMsgId > 0) {
+                                if (typeof playNotificationChime === 'function') {
+                                    playNotificationChime();
+                                }
                                 showNotification("New message from " + (m.sender_name || 'Support'), m.message);
+                                if (typeof toastr !== 'undefined') {
+                                    toastr.info(m.message, '💬 ' + (m.sender_name || 'Investigator'));
+                                }
                             }
-                            lastMsgId = m.id;
+                            lastMsgId = Math.max(lastMsgId, m.id);
                         });
 
                         if (scrollDown || isScrolledToBottom) {
@@ -266,85 +272,57 @@ require_once $dir . '/includes/admin_sidebar.php';
             };
 
             fetchMessages(true);
-            pollingInterval = setInterval(() => fetchMessages(false), 3000);
+            pollingInterval = setInterval(() => fetchMessages(false), 2000);
         });
         </script>
 
     <?php elseif ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
-        <!-- TAWK.TO LIVE SUPPORT CONSOLE -->
+        <!-- TAWK.TO FULL-HEIGHT PROFESSIONAL IN-PAGE IFRAME -->
         <div class="col-12 mb-4">
-            <div class="card shadow-lg bg-dark border-secondary">
-                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3">
-                    <span><i class="fas fa-headset mr-2"></i>Live 24/7 Global Support Desk</span>
-                    <span class="badge badge-success px-3 py-1"><i class="fas fa-circle mr-1" style="font-size:8px;"></i> Live Online</span>
+            <div class="card shadow-lg bg-dark border-secondary" style="border-radius: 12px; overflow: hidden;">
+                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3 px-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-headset fa-lg mr-3 text-warning"></i>
+                        <div>
+                            <span class="d-block text-white" style="font-size: 15px;">Live 24/7 Global Case Support Desk</span>
+                            <small class="text-muted" style="font-size: 11px;">Direct encrypted communication channel with IFW global recovery response team</small>
+                        </div>
+                    </div>
+                    <span class="badge badge-success px-3 py-2" style="font-size: 12px;"><i class="fas fa-circle mr-1" style="font-size:8px;"></i> Live Online</span>
                 </div>
-                <div class="card-body bg-dark text-white text-center py-5">
-                    <?php if (!empty($tawk_property)): ?>
-                        <?php
-                        $clean_tawk = $tawk_property;
-                        $clean_tawk = strip_tags($clean_tawk);
-                        $clean_tawk = preg_replace('/<!--.*?-->/s', '', $clean_tawk);
-                        $clean_tawk = preg_replace('/var\s+Tawk_API[\s\S]*?embed\.tawk\.to\//i', '', $clean_tawk);
-                        $clean_tawk = preg_replace('/[\'"];.*$/s', '', $clean_tawk);
-                        $clean_tawk = trim($clean_tawk, " \t\n\r;'\"/");
-                        if (strpos($clean_tawk, 'tawk.to/chat/') !== false) {
-                            $clean_tawk = preg_replace('/.*tawk\.to\/chat\//', '', $clean_tawk);
-                        } elseif (strpos($clean_tawk, 'embed.tawk.to/') !== false) {
-                            $clean_tawk = preg_replace('/.*embed\.tawk\.to\//', '', $clean_tawk);
-                        }
-                        $clean_tawk = trim($clean_tawk, " \t\n\r;'\"/");
-                        $parts = explode('/', $clean_tawk);
-                        $prop_id = $parts[0] ?? '';
-                        $chat_hash = $parts[1] ?? 'default';
-                        $direct_chat_url = "https://tawk.to/chat/{$prop_id}/{$chat_hash}";
-                        ?>
-                        <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#fecc56,#f0a500);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 6px 20px rgba(254,204,86,0.35);">
-                            <i class="fas fa-comments fa-3x text-dark"></i>
-                        </div>
-                        <h4 class="font-weight-bold text-white mb-2">Connect to Live Case Support</h4>
-                        <p class="text-light small mx-auto mb-4" style="max-width:550px; opacity:0.85;">
-                            Our dedicated investigation team and recovery specialists are ready to assist you. 
-                            Click below to launch your instant live session or use the chat widget in the bottom right corner.
-                        </p>
-                        
-                        <div class="d-flex justify-content-center flex-wrap gap-3 mb-4">
-                            <button type="button" class="btn btn-warning font-weight-bold text-dark px-4 py-2 shadow-lg" onclick="launchTawkChat()">
-                                <i class="fas fa-comment-dots mr-2"></i> Start Live Chat Now
-                            </button>
-                            <a href="<?= htmlspecialchars($direct_chat_url) ?>" target="_blank" class="btn btn-outline-warning font-weight-bold px-4 py-2 ml-2">
-                                <i class="fas fa-external-link-alt mr-2"></i> Open Dedicated Window
-                            </a>
-                        </div>
-                        
-                        <div class="small text-muted">
-                            <i class="fas fa-lock mr-1 text-warning"></i> End-to-End Encrypted Session &bull; Property Ref: <code class="text-warning"><?= htmlspecialchars($prop_id) ?></code>
-                        </div>
+                
+                <?php
+                $clean_tawk = $tawk_property;
+                $clean_tawk = strip_tags($clean_tawk);
+                $clean_tawk = preg_replace('/<!--.*?-->/s', '', $clean_tawk);
+                $clean_tawk = preg_replace('/var\s+Tawk_API[\s\S]*?embed\.tawk\.to\//i', '', $clean_tawk);
+                $clean_tawk = preg_replace('/[\'"];.*$/s', '', $clean_tawk);
+                $clean_tawk = trim($clean_tawk, " \t\n\r;'\"/");
+                if (strpos($clean_tawk, 'tawk.to/chat/') !== false) {
+                    $clean_tawk = preg_replace('/.*tawk\.to\/chat\//', '', $clean_tawk);
+                } elseif (strpos($clean_tawk, 'embed.tawk.to/') !== false) {
+                    $clean_tawk = preg_replace('/.*embed\.tawk\.to\//', '', $clean_tawk);
+                }
+                $clean_tawk = trim($clean_tawk, " \t\n\r;'\"/");
+                $parts = explode('/', $clean_tawk);
+                $prop_id = $parts[0] ?? '';
+                $chat_hash = $parts[1] ?? 'default';
+                $direct_chat_url = "https://tawk.to/chat/{$prop_id}/{$chat_hash}";
+                ?>
 
-                        <!-- Official Tawk.to JavaScript Widget Embed -->
-                        <script type="text/javascript">
-                        var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
-                        (function(){
-                            var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
-                            s1.async = true;
-                            s1.src = 'https://embed.tawk.to/<?= htmlspecialchars($prop_id) ?>/<?= htmlspecialchars($chat_hash) ?>';
-                            s1.charset = 'UTF-8';
-                            s1.setAttribute('crossorigin','*');
-                            s0.parentNode.insertBefore(s1, s0);
-                        })();
-
-                        function launchTawkChat() {
-                            if (typeof Tawk_API !== 'undefined' && typeof Tawk_API.maximize === 'function') {
-                                Tawk_API.maximize();
-                            } else {
-                                window.open('<?= htmlspecialchars($direct_chat_url) ?>', 'TawkChat', 'width=450,height=600');
-                            }
-                        }
-                        </script>
+                <div class="card-body bg-black p-0" style="height: 720px; min-height: 600px; position: relative;">
+                    <?php if (!empty($prop_id)): ?>
+                        <iframe 
+                            src="<?= htmlspecialchars($direct_chat_url) ?>" 
+                            style="width: 100%; height: 100%; min-height: 720px; border: none; display: block; background: #000;" 
+                            allow="camera; microphone; autoplay; encrypted-media;"
+                            title="IFW Live Support">
+                        </iframe>
                     <?php else: ?>
                         <div class="p-5 text-center text-muted">
                             <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
-                            <h5>Tawk.to Live Support Desk</h5>
-                            <p class="text-light">Please use the live chat widget in the bottom right corner or contact your assigned case investigator directly.</p>
+                            <h5>Live Chat Configuration Pending</h5>
+                            <p class="text-light">Tawk.to property ID is not configured in Admin Settings.</p>
                         </div>
                     <?php endif; ?>
                 </div>

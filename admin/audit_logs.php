@@ -3,21 +3,46 @@
 require_once '../config.php';
 require_once '../includes/functions.php';
 
-require_superadmin();
+require_admin_login();
 
-// Fetch logs with proper user resolution
-$stmt = $pdo->query("
-    SELECT l.*, 
-           CASE 
-               WHEN l.user_type = 'client' THEN (SELECT CONCAT(first_name, ' ', last_name, ' [Client #', id, ']') FROM IFW_clients WHERE id = l.user_id)
-               ELSE COALESCE(NULLIF(u.full_name, ''), u.username, 'System/Admin')
-           END as user_display_name
-    FROM IFW_audit_logs l 
-    LEFT JOIN IFW_users u ON (l.user_id = u.id AND (l.user_type = 'admin' OR l.user_type IS NULL))
-    ORDER BY l.created_at DESC, l.id DESC 
-    LIMIT 500
-");
-$logs = $stmt->fetchAll();
+// Ensure audit log schema
+try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS IFW_audit_logs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            user_type VARCHAR(50) DEFAULT 'client',
+            action VARCHAR(100) NOT NULL,
+            details TEXT,
+            ip_address VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ");
+    $pdo->exec("ALTER TABLE IFW_audit_logs ADD COLUMN IF NOT EXISTS user_type VARCHAR(50) DEFAULT 'client' AFTER user_id");
+} catch(Exception $e) {}
+
+$logs = [];
+try {
+    $stmt = $pdo->query("
+        SELECT l.*, 
+               CASE 
+                   WHEN l.user_type = 'client' THEN (SELECT CONCAT(first_name, ' ', last_name, ' [Client #', id, ']') FROM IFW_clients WHERE id = l.user_id)
+                   ELSE COALESCE(NULLIF(u.full_name, ''), u.username, 'System/Admin')
+               END as user_display_name
+        FROM IFW_audit_logs l 
+        LEFT JOIN IFW_users u ON (l.user_id = u.id AND (l.user_type = 'admin' OR l.user_type IS NULL))
+        ORDER BY l.created_at DESC, l.id DESC 
+        LIMIT 500
+    ");
+    if ($stmt) {
+        $logs = $stmt->fetchAll();
+    }
+} catch(Exception $e) {
+    try {
+        $stmt_fb = $pdo->query("SELECT *, 'Admin' as user_display_name FROM IFW_audit_logs ORDER BY created_at DESC LIMIT 500");
+        if ($stmt_fb) $logs = $stmt_fb->fetchAll();
+    } catch(Exception $ex) {}
+}
 ?>
 
 <?php require_once '../includes/admin_header.php'; ?>

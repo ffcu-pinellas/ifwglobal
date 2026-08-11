@@ -43,8 +43,9 @@ try {
         LEFT JOIN IFW_users u ON ca.attorney_id = u.id 
         WHERE ca.client_id = ? 
            OR ca.id IN (SELECT case_id FROM IFW_invoices WHERE client_id = ? AND case_id > 0)
+           OR ca.client_id IN (SELECT id FROM IFW_clients WHERE email = (SELECT email FROM IFW_clients WHERE id = ? LIMIT 1))
         ORDER BY ca.created_at DESC");
-    $s->execute([$client_id, $client_id]);
+    $s->execute([$client_id, $client_id, $client_id]);
     $cases = $s->fetchAll();
 } catch(Exception $e) {}
 
@@ -313,8 +314,8 @@ require_once $dir . '/includes/admin_sidebar.php';
                     </div>
                 <?php else: ?>
                     <p class="text-light small mb-3">Below are the files assigned to your profile. Documents requiring cryptographic signature can be e-signed immediately with your 4-digit security PIN.</p>
-                    <div class="table-responsive">
-                        <table class="table table-dark table-hover table-striped mb-0" style="background:#111; font-size:13px;">
+                    <div class="table-portal-wrap">
+                        <table class="table-portal">
                             <thead>
                                 <tr class="text-warning">
                                     <th>File Name</th>
@@ -326,7 +327,7 @@ require_once $dir . '/includes/admin_sidebar.php';
                             <tbody>
                                 <?php foreach($vault_docs as $doc): ?>
                                     <tr>
-                                        <td class="align-middle">
+                                        <td data-label="File Name">
                                             <?php if (!empty($doc['document_body'])): ?>
                                                 <a href="view_document.php?id=<?= $doc['id'] ?>" target="_blank" class="text-warning font-weight-bold text-decoration-none">
                                                     <i class="fas fa-file-alt mr-1"></i> <?= htmlspecialchars($doc['file_name']) ?>
@@ -338,13 +339,13 @@ require_once $dir . '/includes/admin_sidebar.php';
                                             <?php endif; ?>
                                             <br><small class="text-muted"><?= date('M j, Y H:i', strtotime($doc['uploaded_at'])) ?></small>
                                         </td>
-                                        <td class="align-middle">
+                                        <td data-label="Type">
                                             <span class="badge badge-secondary"><?= htmlspecialchars($doc['document_type']) ?></span>
                                         </td>
-                                        <td class="align-middle">
+                                        <td data-label="Verification Status">
                                             <?php if ($doc['requires_signature']): ?>
                                                 <?php if ($doc['is_signed']): ?>
-                                                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Cryptographically Signed</span>
+                                                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Signed</span>
                                                 <?php else: ?>
                                                     <span class="badge badge-warning text-dark px-2 py-1"><i class="fas fa-signature mr-1"></i> Pending Signature</span>
                                                 <?php endif; ?>
@@ -352,19 +353,19 @@ require_once $dir . '/includes/admin_sidebar.php';
                                                 <span class="badge badge-info px-2 py-1"><i class="fas fa-eye mr-1"></i> Reference Only</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td class="align-middle text-right">
+                                        <td data-label="Action" class="text-right">
                                             <?php if (!empty($doc['document_body'])): ?>
-                                                <a href="view_document.php?id=<?= $doc['id'] ?>" target="_blank" class="btn btn-xs btn-outline-warning mr-1" title="View Document">
-                                                    <i class="fas fa-eye"></i>
+                                                <a href="view_document.php?id=<?= $doc['id'] ?>" target="_blank" class="btn btn-sm btn-outline-warning mr-1" title="View Document">
+                                                    <i class="fas fa-eye mr-1"></i> View
                                                 </a>
                                             <?php else: ?>
-                                                <a href="<?= BASE_URL . '/' . htmlspecialchars($doc['file_path']) ?>" target="_blank" class="btn btn-xs btn-outline-warning mr-1" title="Download">
-                                                    <i class="fas fa-download"></i>
+                                                <a href="<?= BASE_URL . '/' . htmlspecialchars($doc['file_path']) ?>" target="_blank" class="btn btn-sm btn-outline-warning mr-1" title="Download">
+                                                    <i class="fas fa-download mr-1"></i> Download
                                                 </a>
                                             <?php endif; ?>
                                             <?php if ($doc['requires_signature'] && !$doc['is_signed']): ?>
-                                                <button type="button" class="btn btn-xs btn-warning text-dark font-weight-bold" onclick="openSigningModal(<?= $doc['id'] ?>, '<?= htmlspecialchars(addslashes($doc['file_name'])) ?>')">
-                                                    <i class="fas fa-pen mr-1"></i> Sign
+                                                <button type="button" class="btn btn-sm btn-warning text-dark font-weight-bold" onclick="openSigningModal(<?= $doc['id'] ?>, '<?= htmlspecialchars(addslashes($doc['file_name'])) ?>')">
+                                                    <i class="fas fa-pen mr-1"></i> Sign Now
                                                 </button>
                                             <?php endif; ?>
                                         </td>

@@ -31,6 +31,39 @@ if (!in_array($_SESSION['admin_role'], ['super_admin', 'superadmin', 'admin']) &
     }
 }
 
+// Ensure columns in IFW_cases
+try {
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS lifecycle_stage INT DEFAULT 1");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS progress_percent INT DEFAULT 20");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS amount_lost DECIMAL(15,2) DEFAULT 0.00");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS amount_recovered DECIMAL(15,2) DEFAULT 0.00");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS forensic_analyst_id INT NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS legal_counsel_id INT NULL");
+} catch(Exception $e) {}
+
+// Handle Case Lifecycle & Details Update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_case_stage') {
+    $new_status = trim($_POST['status'] ?? 'Active');
+    $stage = max(1, min(5, (int)($_POST['lifecycle_stage'] ?? 1)));
+    $stage_percent = [1 => 20, 2 => 40, 3 => 60, 4 => 85, 5 => 100][$stage] ?? ($stage * 20);
+    $amount_lost = floatval($_POST['amount_lost'] ?? 0);
+    $amount_recovered = floatval($_POST['amount_recovered'] ?? 0);
+    $attorney_id = !empty($_POST['attorney_id']) ? (int)$_POST['attorney_id'] : null;
+    
+    $stmt = $pdo->prepare("UPDATE IFW_cases SET status = ?, lifecycle_stage = ?, progress_percent = ?, amount_lost = ?, amount_recovered = ?, attorney_id = ? WHERE id = ?");
+    $stmt->execute([$new_status, $stage, $stage_percent, $amount_lost, $amount_recovered, $attorney_id, $case_id]);
+    
+    if (function_exists('log_audit_action')) {
+        log_audit_action($pdo, $_SESSION['admin_id'], 'Case Progress Update', "Updated Case #{$case['case_number']} to Stage {$stage} ({$new_status})", 'admin');
+    }
+    
+    // Refresh case record
+    $stmt = $pdo->prepare("SELECT c.*, cl.first_name, cl.last_name, cl.email as client_email, cl.phone as client_phone FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id WHERE c.id = ?");
+    $stmt->execute([$case_id]);
+    $case = $stmt->fetch();
+    $success = "Investigation lifecycle stage and case details saved successfully.";
+}
+
 // Handle Notes Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_note') {
     $note = trim($_POST['note']);
@@ -207,6 +240,64 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
     </div>
 
     <div class="col-lg-8">
+        <!-- INVESTIGATION LIFECYCLE & STAGE CONTROLLER (PILLAR 3 ENTERPRISE FEATURE) -->
+        <div class="card border-0 shadow-sm mb-4 bg-dark text-white border-warning">
+            <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3">
+                <span><i class="fas fa-stream mr-2"></i>Investigation & Asset Recovery Lifecycle Manager</span>
+                <span class="badge badge-warning text-dark font-weight-bold px-3 py-1">Active Stage <?= (int)($case['lifecycle_stage'] ?? 1) ?> (<?= [1=>20,2=>40,3=>60,4=>85,5=>100][(int)($case['lifecycle_stage'] ?? 1)] ?? 20 ?>%)</span>
+            </div>
+            <div class="card-body bg-dark text-white p-4">
+                <form method="POST">
+                    <input type="hidden" name="action" value="update_case_stage">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6 form-group">
+                            <label class="small text-warning font-weight-bold text-uppercase">Case Recovery Lifecycle Stage</label>
+                            <?php $curr_stage = (int)($case['lifecycle_stage'] ?? 1); ?>
+                            <select name="lifecycle_stage" class="form-control bg-black text-warning border-secondary font-weight-bold">
+                                <option value="1" <?= $curr_stage === 1 ? 'selected' : '' ?>>Stage 1: Intake & KYC Verification (20%)</option>
+                                <option value="2" <?= $curr_stage === 2 ? 'selected' : '' ?>>Stage 2: Crypto & Asset Tracing (40%)</option>
+                                <option value="3" <?= $curr_stage === 3 ? 'selected' : '' ?>>Stage 3: Evidence Dossier Formulation (60%)</option>
+                                <option value="4" <?= $curr_stage === 4 ? 'selected' : '' ?>>Stage 4: Legal Injunction & Regulatory Filing (85%)</option>
+                                <option value="5" <?= $curr_stage === 5 ? 'selected' : '' ?>>Stage 5: Asset Recovery & Client Settlement (100%)</option>
+                            </select>
+                            <small class="text-muted">Directly updates the real-time progress tracker on the Client Portal.</small>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small text-light font-weight-bold text-uppercase">Case Status</label>
+                            <?php $c_stat = strtolower($case['status'] ?? 'pending'); ?>
+                            <select name="status" class="form-control bg-dark text-white border-secondary">
+                                <option value="Pending" <?= $c_stat === 'pending' ? 'selected' : '' ?>>Pending</option>
+                                <option value="Active" <?= in_array($c_stat, ['active', 'in progress', 'open']) ? 'selected' : '' ?>>Active / In Progress</option>
+                                <option value="Under Investigation" <?= $c_stat === 'under investigation' ? 'selected' : '' ?>>Under Investigation</option>
+                                <option value="Suspended" <?= $c_stat === 'suspended' ? 'selected' : '' ?>>Suspended</option>
+                                <option value="Resolved" <?= $c_stat === 'resolved' ? 'selected' : '' ?>>Resolved</option>
+                                <option value="Closed" <?= $c_stat === 'closed' ? 'selected' : '' ?>>Closed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6 form-group">
+                            <label class="small text-light font-weight-bold text-uppercase">Claim Loss Amount (USD)</label>
+                            <input type="number" step="0.01" name="amount_lost" class="form-control bg-dark text-danger font-weight-bold border-secondary" value="<?= htmlspecialchars($case['amount_lost'] ?? '0.00') ?>">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small text-light font-weight-bold text-uppercase">Recovered / Frozen Amount (USD)</label>
+                            <input type="number" step="0.01" name="amount_recovered" class="form-control bg-dark text-success font-weight-bold border-secondary" value="<?= htmlspecialchars($case['amount_recovered'] ?? '0.00') ?>">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <small class="text-muted"><i class="fas fa-info-circle mr-1"></i> Changes are logged in audit trail and immediately visible to client.</small>
+                        <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4 shadow">
+                            <i class="fas fa-save mr-1"></i> Update Case Lifecycle & Progress
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Case Details -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-bottom">

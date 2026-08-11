@@ -293,16 +293,15 @@ try {
         } catch(Exception $ex) {}
         $inv['total_paid'] = $total_paid;
 
-        $balance_due = max(0, $total_billed - $total_paid);
-        $inv['balance_due'] = $balance_due;
-
-        // Clean status
-        $is_overdue = !empty($inv['due_date']) && strtotime($inv['due_date']) < time() && $balance_due > 0;
-        if ($total_billed > 0 && $total_paid >= $total_billed) {
+        $is_admin_marked_paid = (strtolower($inv['status'] ?? '') === 'paid');
+        if ($is_admin_marked_paid || ($total_billed > 0 && $total_paid >= $total_billed)) {
             $status_clean = 'Paid';
+            $balance_due = 0.00;
+            $inv['balance_due'] = 0.00;
+            $inv['total_paid'] = max($total_paid, $total_billed);
         } elseif ($total_paid > 0 && $balance_due > 0) {
             $status_clean = 'Partial';
-        } elseif ($is_overdue || strtolower($inv['status']) === 'overdue') {
+        } elseif ($is_overdue || strtolower($inv['status'] ?? '') === 'overdue') {
             $status_clean = 'Overdue';
         } else {
             $status_clean = 'Unpaid';
@@ -311,9 +310,11 @@ try {
 
         // Totals in USD
         $total_invoiced_usd += ($total_billed * $rate);
-        $total_outstanding_usd += ($balance_due * $rate);
+        if ($status_clean !== 'Paid') {
+            $total_outstanding_usd += ($balance_due * $rate);
+        }
 
-        if ($late_fee > 0 || (!empty($inv['late_fee_enabled']) && $balance_due > 0)) {
+        if (($late_fee > 0 || (!empty($inv['late_fee_enabled']) && $balance_due > 0)) && $status_clean !== 'Paid') {
             $active_penalty_invoices++;
             $total_accumulated_penalty_usd += ($late_fee * $rate);
             if (!$primary_penalty_invoice) {
@@ -333,28 +334,36 @@ $app_name            = get_setting($pdo, 'app_name', 'IFW Global');
 // Fetch Activity Logs for Security Modal
 $activity_logs = [];
 try {
-    $stmt_act = $pdo->prepare("SELECT * FROM IFW_audit_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 20");
+    if (function_exists('log_audit_action')) {
+        log_audit_action($pdo, $client_id, 'Portal Access', 'Client accessed dashboard overview', 'client');
+    }
+    $stmt_act = $pdo->prepare("SELECT * FROM IFW_audit_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 25");
     $stmt_act->execute([$client_id]);
     $activity_logs = $stmt_act->fetchAll();
 } catch(Exception $e) {}
 
-// Calculate Case Recovery Stage & Percent
+// Calculate Case Recovery Stage & Percent (Admin Manageable)
 $case_stage_percent = 20;
 $case_stage_step = 1;
 if ($latest_case) {
-    $c_st = strtolower($latest_case['status'] ?? 'pending');
-    if (!empty($latest_case['amount_recovered']) && $latest_case['amount_recovered'] > 0) {
+    if (!empty($latest_case['lifecycle_stage']) && (int)$latest_case['lifecycle_stage'] > 0) {
+        $case_stage_step = (int)$latest_case['lifecycle_stage'];
+        $case_stage_percent = [1 => 20, 2 => 40, 3 => 60, 4 => 85, 5 => 100][$case_stage_step] ?? ($case_stage_step * 20);
+    } elseif (!empty($latest_case['amount_recovered']) && $latest_case['amount_recovered'] > 0) {
         $case_stage_percent = 85;
         $case_stage_step = 4;
-    } elseif ($c_st === 'resolved' || $c_st === 'closed') {
-        $case_stage_percent = 100;
-        $case_stage_step = 5;
-    } elseif ($c_st === 'in progress' || $c_st === 'active') {
-        $case_stage_percent = 60;
-        $case_stage_step = 3;
-    } elseif ($kyc_status === 'approved') {
-        $case_stage_percent = 40;
-        $case_stage_step = 2;
+    } else {
+        $c_st = strtolower($latest_case['status'] ?? 'pending');
+        if ($c_st === 'resolved' || $c_st === 'closed') {
+            $case_stage_percent = 100;
+            $case_stage_step = 5;
+        } elseif ($c_st === 'in progress' || $c_st === 'active' || $c_st === 'under investigation') {
+            $case_stage_percent = 60;
+            $case_stage_step = 3;
+        } elseif ($kyc_status === 'approved') {
+            $case_stage_percent = 40;
+            $case_stage_step = 2;
+        }
     }
 }
 
@@ -373,15 +382,15 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
 .stat-value { font-size: 1.75rem; font-weight: 800; color: #ffffff; line-height: 1.2; }
 .stat-value-gold { color: #fecc56 !important; }
 
-/* TABLE PORTAL STYLING */
-.table-portal-wrap { border: 1px solid #28303f; border-radius: 10px; overflow-x: auto; width: 100%; background: #161a23; }
-.table-portal { width: 100%; min-width: 680px; border-collapse: separate; border-spacing: 0; color: #f1f5f9; margin-bottom: 0; }
-.table-portal thead th { background: #1f2533 !important; color: #fecc56 !important; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; border-top: none; border-bottom: 2px solid #333d4e !important; padding: 13px 16px; white-space: nowrap; }
+/* TABLE PORTAL STYLING (100% FLUID RESPONSIVE - ZERO HORIZONTAL SCROLLING) */
+.table-portal-wrap { border: 1px solid #28303f; border-radius: 10px; width: 100%; background: #161a23; overflow: hidden; }
+.table-portal { width: 100%; min-width: 0; border-collapse: separate; border-spacing: 0; color: #f1f5f9; margin-bottom: 0; table-layout: auto; }
+.table-portal thead th { background: #1f2533 !important; color: #fecc56 !important; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-top: none; border-bottom: 2px solid #333d4e !important; padding: 10px 12px; white-space: normal; }
 .table-portal tbody tr { background: #161a23; transition: background 0.15s; }
 .table-portal tbody tr:hover { background: #1e2430 !important; }
-.table-portal td { padding: 14px 16px; border-top: 1px solid #262e3d; vertical-align: middle; color: #f1f5f9; font-size: 13.5px; }
+.table-portal td { padding: 10px 12px; border-top: 1px solid #262e3d; vertical-align: middle; color: #f1f5f9; font-size: 12.5px; }
 .table-portal td strong { color: #ffffff !important; font-weight: 700; }
-.table-portal td:last-child, .table-portal th:last-child { min-width: 130px; white-space: nowrap; text-align: right; }
+.table-portal td:last-child, .table-portal th:last-child { text-align: right; white-space: nowrap; }
 .table-portal .text-muted { color: #94a3b8 !important; }
 
 /* CASE CARDS */
@@ -393,31 +402,40 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
 .progress-track { display: flex; justify-content: space-between; position: relative; margin-top: 15px; margin-bottom: 5px; }
 .progress-track::before { content: ''; position: absolute; top: 18px; left: 20px; right: 20px; height: 4px; background: #262e3d; z-index: 1; border-radius: 2px; }
 .progress-bar-fill { position: absolute; top: 18px; left: 20px; height: 4px; background: linear-gradient(90deg, #fecc56, #22c55e); z-index: 1; border-radius: 2px; transition: width 0.6s ease; }
-.step-item { position: relative; z-index: 2; text-align: center; flex: 1; min-width: 80px; }
-.step-icon { width: 38px; height: 38px; border-radius: 50%; background: #1c212c; border: 2px solid #374151; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 13px; font-weight: 700; color: #94a3b8; transition: all 0.3s; }
-.step-item.active .step-icon { background: #fecc56; border-color: #fecc56; color: #000; box-shadow: 0 0 16px rgba(254,204,86,0.6); }
-.step-item.completed .step-icon { background: #22c55e; border-color: #22c55e; color: #fff; box-shadow: 0 0 12px rgba(34,197,94,0.4); }
-.step-title { font-size: 11.5px; font-weight: 600; color: #94a3b8; line-height: 1.3; }
+.step-item { position: relative; z-index: 2; text-align: center; flex: 1; min-width: 0; padding: 0 4px; }
+.step-icon { width: 34px; height: 34px; border-radius: 50%; background: #1c212c; border: 2px solid #374151; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 12px; font-weight: 700; color: #94a3b8; transition: all 0.3s; }
+.step-item.active .step-icon { background: #fecc56; border-color: #fecc56; color: #000; box-shadow: 0 0 14px rgba(254,204,86,0.6); }
+.step-item.completed .step-icon { background: #22c55e; border-color: #22c55e; color: #fff; box-shadow: 0 0 10px rgba(34,197,94,0.4); }
+.step-title { font-size: 10.5px; font-weight: 600; color: #94a3b8; line-height: 1.2; }
 .step-item.active .step-title { color: #fecc56; font-weight: 700; }
 .step-item.completed .step-title { color: #22c55e; }
 
 /* BUTTONS & BADGES */
-.pay-btn { background: linear-gradient(135deg,#fecc56,#f0a500); color:#000 !important; border:none; font-weight:700; border-radius: 6px; padding: 7px 14px; transition:all .2s; box-shadow: 0 2px 8px rgba(254,204,86,0.3); }
+.pay-btn { background: linear-gradient(135deg,#fecc56,#f0a500); color:#000 !important; border:none; font-weight:700; border-radius: 6px; padding: 6px 12px; transition:all .2s; box-shadow: 0 2px 8px rgba(254,204,86,0.3); font-size: 12px; display: inline-flex; align-items: center; justify-content: center; }
 .pay-btn:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(254,204,86,.5); color:#000 !important; }
-.btn-portal-secondary { background: #262e3d; border: 1px solid #374151; color: #e2e8f0; font-weight: 600; border-radius: 6px; }
+.btn-portal-secondary { background: #262e3d; border: 1px solid #374151; color: #e2e8f0; font-weight: 600; border-radius: 6px; font-size: 12px; padding: 6px 10px; }
 .btn-portal-secondary:hover { background: #333d4e; color: #fff; }
 
-/* MOBILE RESPONSIVENESS OVERRIDES */
+/* MOBILE RESPONSIVENESS (SMART CARD ADAPTATION) */
 @media (max-width: 768px) {
     .portal-header-row { flex-direction: column; align-items: flex-start !important; gap: 14px; }
     .portal-header-btns { width: 100%; display: flex; flex-wrap: wrap; gap: 8px; }
-    .portal-header-btns .btn { flex: 1; text-align: center; justify-content: center; font-size: 11.5px; padding: 7px 10px; }
-    .stat-mini { padding: 14px; margin-bottom: 12px; }
-    .stat-value { font-size: 1.45rem; }
-    .table-portal-wrap { overflow-x: auto; }
-    .table-portal { min-width: 620px; }
-    .progress-track { overflow-x: auto; padding-bottom: 8px; }
-    .step-item { min-width: 85px; }
+    .portal-header-btns .btn { flex: 1; text-align: center; justify-content: center; font-size: 11px; padding: 7px 8px; }
+    .stat-mini { padding: 12px 14px; margin-bottom: 10px; }
+    .stat-value { font-size: 1.35rem; }
+    
+    /* Responsive Table to Cards Transformation */
+    .table-portal thead { display: none; }
+    .table-portal, .table-portal tbody, .table-portal tr, .table-portal td { display: block; width: 100%; }
+    .table-portal tr { margin-bottom: 12px; border: 1px solid #28303f; border-radius: 8px; padding: 12px 14px; background: #161a23; }
+    .table-portal tr:last-child { margin-bottom: 0; }
+    .table-portal td { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border: none; border-bottom: 1px solid #1f2533; }
+    .table-portal td:last-child { border-bottom: none; padding-top: 10px; justify-content: flex-end; gap: 8px; }
+    .table-portal td::before { content: attr(data-label); font-weight: 700; color: #94a3b8; font-size: 11px; text-transform: uppercase; margin-right: 12px; flex-shrink: 0; }
+    .table-portal td:last-child::before { display: none; }
+    
+    .progress-track-container { padding: 14px 10px; }
+    .step-title { font-size: 9.5px; }
     .modal-dialog { margin: 10px auto; max-width: 96%; }
     .dash-penalty-box { flex-direction: column; text-align: left !important; gap: 12px; }
     .dash-penalty-box .text-right { text-align: left !important; }
@@ -513,8 +531,13 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
     </div>
 </div>
 
-<!-- CASE RECOVERY PROGRESS LIFECYCLE (WORLD-CLASS FEATURE) -->
-<?php if ($latest_case): ?>
+<?php 
+$show_lifecycle = get_setting($pdo, 'show_lifecycle_tracker', '1') == '1';
+$show_fund_flow = get_setting($pdo, 'show_fund_flow_visualizer', '1') == '1';
+?>
+
+<!-- CASE RECOVERY PROGRESS LIFECYCLE (ADMIN MANAGED & TOGGLEABLE) -->
+<?php if ($latest_case && $show_lifecycle): ?>
 <div class="progress-track-container">
     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
         <div>
@@ -551,23 +574,25 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
         </div>
     </div>
 </div>
+<?php endif; ?>
 
-<!-- INTERACTIVE BLOCKCHAIN & ASSET RECOVERY FLOW VISUALIZER (PILLAR 2 ENTERPRISE WOW FEATURE) -->
+<!-- INTERACTIVE BLOCKCHAIN & ASSET RECOVERY FLOW VISUALIZER (TOGGLEABLE & FULLY RESPONSIVE) -->
+<?php if ($show_fund_flow): ?>
 <div class="portal-card mb-4 p-4 shadow-sm" style="background: linear-gradient(135deg, #131722, #181d2a); border-color: #2e3849;">
     <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
         <div>
             <h6 class="font-weight-bold mb-1 text-warning"><i class="fas fa-network-wired mr-2"></i>Forensic Fund Tracing & Asset Recovery Flow</h6>
             <small class="text-muted">Live visual tracking of fund interception across monitored centralized exchanges & liquidity pools</small>
         </div>
-        <span class="badge badge-dark border border-warning text-warning px-3 py-1 font-weight-bold" style="font-size:11px;">
+        <span class="badge badge-dark border border-warning text-warning px-3 py-1 font-weight-bold mt-2 mt-sm-0" style="font-size:11px;">
             <i class="fas fa-shield-alt mr-1"></i> Multi-Chain Monitored
         </span>
     </div>
 
     <div class="row text-center mt-3 position-relative flow-steps-container">
         <!-- Node 1 -->
-        <div class="col-6 col-md-3 mb-3">
-            <div class="p-3 rounded border border-secondary" style="background:#0e1117; min-height:120px;">
+        <div class="col-12 col-sm-6 col-lg-3 mb-3">
+            <div class="p-3 rounded border border-secondary h-100" style="background:#0e1117; min-height:120px;">
                 <div style="width:36px; height:36px; border-radius:50%; background:rgba(220,53,69,0.2); color:#dc3545; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
                     <i class="fas fa-biohazard"></i>
                 </div>
@@ -577,8 +602,8 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
             </div>
         </div>
         <!-- Node 2 -->
-        <div class="col-6 col-md-3 mb-3">
-            <div class="p-3 rounded border border-warning" style="background:#131722; min-height:120px; box-shadow: 0 0 12px rgba(254,204,86,0.15);">
+        <div class="col-12 col-sm-6 col-lg-3 mb-3">
+            <div class="p-3 rounded border border-warning h-100" style="background:#131722; min-height:120px; box-shadow: 0 0 12px rgba(254,204,86,0.15);">
                 <div style="width:36px; height:36px; border-radius:50%; background:rgba(254,204,86,0.2); color:#fecc56; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
                     <i class="fas fa-search-dollar"></i>
                 </div>
@@ -588,8 +613,8 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
             </div>
         </div>
         <!-- Node 3 -->
-        <div class="col-6 col-md-3 mb-3">
-            <div class="p-3 rounded border border-info" style="background:#0e1117; min-height:120px;">
+        <div class="col-12 col-sm-6 col-lg-3 mb-3">
+            <div class="p-3 rounded border border-info h-100" style="background:#0e1117; min-height:120px;">
                 <div style="width:36px; height:36px; border-radius:50%; background:rgba(23,162,184,0.2); color:#17a2b8; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
                     <i class="fas fa-balance-scale"></i>
                 </div>
@@ -599,8 +624,8 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
             </div>
         </div>
         <!-- Node 4 -->
-        <div class="col-6 col-md-3 mb-3">
-            <div class="p-3 rounded border border-success" style="background:#0e1117; min-height:120px;">
+        <div class="col-12 col-sm-6 col-lg-3 mb-3">
+            <div class="p-3 rounded border border-success h-100" style="background:#0e1117; min-height:120px;">
                 <div style="width:36px; height:36px; border-radius:50%; background:rgba(40,167,69,0.2); color:#28a745; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
                     <i class="fas fa-hand-holding-usd"></i>
                 </div>
@@ -611,7 +636,6 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
         </div>
     </div>
 </div>
-
 <?php endif; ?>
 
 <div class="row">
@@ -795,17 +819,17 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
                             $balance_due_pref = convert_currency($inv['balance_due'], $inv_curr, $client_currency);
                             ?>
                             <tr>
-                                <td>
+                                <td data-label="Invoice">
                                     <strong class="text-white"><?= htmlspecialchars($inv['invoice_number'] ?? '#INV-' . str_pad($inv['id'], 5, '0', STR_PAD_LEFT)) ?></strong><br>
                                     <small class="text-muted"><?= date('M j, Y', strtotime($inv['issue_date'] ?? $inv['created_at'])) ?></small>
                                 </td>
-                                <td>
+                                <td data-label="Description">
                                     <span class="text-light font-weight-bold"><?= htmlspecialchars($inv['display_description']) ?></span>
                                     <?php if ($inv['late_fee'] > 0): ?>
                                         <br><small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i>Late fee: +<?= htmlspecialchars($inv_curr) ?> <?= number_format($inv['late_fee'], 2) ?></small>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td data-label="Amount / Due">
                                     <strong class="text-white" style="font-size: 1.05rem;"><?= htmlspecialchars($inv_curr) ?> <?= number_format($inv['total_billed'], 2) ?></strong>
                                     <?php if ($is_diff_curr): ?>
                                         <br><span class="text-muted small font-weight-bold" style="font-size:11px;">≈ <?= format_currency($total_billed_pref, $client_currency) ?></span>
@@ -820,7 +844,7 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
                                         <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td data-label="Due Date">
                                     <?php if ($inv['due_date']): ?>
                                         <?php $is_over = strtotime($inv['due_date']) < time() && $inv['balance_due'] > 0; ?>
                                         <span class="<?= $is_over ? 'text-danger font-weight-bold' : 'text-light' ?>">
@@ -831,7 +855,7 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
                                         <span class="text-muted">—</span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     <?php $st = $inv['effective_status']; ?>
                                     <?php if($st === 'Paid'): ?>
                                         <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i>Paid</span>
@@ -843,14 +867,14 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
                                         <span class="badge badge-secondary px-2 py-1"><i class="fas fa-clock mr-1"></i>Unpaid</span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="text-right">
+                                <td data-label="Actions" class="text-right">
                                     <a href="/client/invoice_view.php?id=<?= $inv['id'] ?>" class="btn btn-sm btn-portal-secondary mr-1" title="View & Print Invoice">
-                                        <i class="fas fa-eye"></i>
+                                        <i class="fas fa-eye mr-1"></i> View
                                     </a>
                                     <?php if ($inv['balance_due'] > 0): ?>
                                         <button type="button" class="btn btn-sm pay-btn" 
                                             onclick="showPayModal(<?= $inv['id'] ?>, '<?= htmlspecialchars(addslashes($inv['invoice_number'] ?? '#INV-'.str_pad($inv['id'],5,'0',STR_PAD_LEFT))) ?>', <?= $inv['balance_due'] ?>, '<?= htmlspecialchars($inv_curr) ?>', <?= htmlspecialchars(json_encode($inv['payment_info'] ?? $global_payment_info)) ?>, '<?= htmlspecialchars($client_currency) ?>', <?= $balance_due_pref ?>)">
-                                            <i class="fas fa-credit-card mr-1"></i> Pay
+                                            <i class="fas fa-credit-card mr-1"></i> Pay Now
                                         </button>
                                     <?php endif; ?>
                                 </td>
@@ -888,11 +912,11 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
                          <tbody>
                              <?php foreach($proofs as $pr): ?>
                                  <tr>
-                                     <td><span class="text-muted small"><?= date('M j, Y', strtotime($pr['created_at'])) ?></span></td>
-                                     <td><strong class="text-white"><?= htmlspecialchars($pr['invoice_number'] ?? '#INV-' . $pr['invoice_id']) ?></strong></td>
-                                     <td><strong class="text-success"><?= htmlspecialchars($pr['currency'] ?? 'USD') ?> <?= number_format($pr['amount'], 2) ?></strong></td>
-                                     <td><span class="badge badge-info"><?= htmlspecialchars($pr['payment_method']) ?></span><br><small class="text-muted">Ref: <?= htmlspecialchars($pr['reference_number']) ?></small></td>
-                                     <td>
+                                     <td data-label="Date"><span class="text-muted small"><?= date('M j, Y', strtotime($pr['created_at'])) ?></span></td>
+                                     <td data-label="Invoice"><strong class="text-white"><?= htmlspecialchars($pr['invoice_number'] ?? '#INV-' . $pr['invoice_id']) ?></strong></td>
+                                     <td data-label="Amount"><strong class="text-success"><?= htmlspecialchars($pr['currency'] ?? 'USD') ?> <?= number_format($pr['amount'], 2) ?></strong></td>
+                                     <td data-label="Reference"><span class="badge badge-info"><?= htmlspecialchars($pr['payment_method']) ?></span><br><small class="text-muted">Ref: <?= htmlspecialchars($pr['reference_number']) ?></small></td>
+                                     <td data-label="Verification Status">
                                          <?php if ($pr['status'] === 'Pending'): ?>
                                              <span class="badge badge-warning text-dark"><i class="fas fa-clock mr-1"></i> Pending Review</span>
                                          <?php elseif ($pr['status'] === 'Confirmed'): ?>
