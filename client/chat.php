@@ -51,16 +51,16 @@ require_once $dir . '/includes/admin_sidebar.php';
                             <i class="fas fa-headset"></i>
                         </div>
                         <div>
-                            <span class="text-warning font-weight-bold" style="font-size: 1.05rem;">Live Support Chat</span>
-                            <div class="text-muted small" style="font-size: 11px;"><span class="text-success mr-1">●</span> Active · Online</div>
+                            <span class="text-warning font-weight-bold" style="font-size: 1.05rem;">Case Investigation & Legal Support Desk</span>
+                            <div class="text-muted small" style="font-size: 11px;"><span class="text-success mr-1">●</span> Active Live Channel &bull; Direct Case Line</div>
                         </div>
                     </div>
-                    <span class="badge badge-success px-3 py-2" style="font-size: 12px;"><i class="fas fa-lock mr-1"></i>Private & Secure</span>
+                    <span class="badge badge-success px-3 py-2" style="font-size: 12px;"><i class="fas fa-lock mr-1"></i>256-Bit Encrypted</span>
                 </div>
                 <div class="card-body bg-dark text-white p-3 d-flex flex-column" style="min-height: 580px;">
                     <!-- Message Area -->
                     <div id="chat-messages" class="flex-grow-1 p-3 mb-3 border border-secondary rounded overflow-auto d-flex flex-column" style="min-height: 460px; height: 60vh; max-height: 720px; background-color: #0d0d0e; gap: 15px;">
-                        <div class="text-center p-4 text-muted"><i class="fas fa-spinner fa-spin text-warning"></i> Connecting to Live Chat...</div>
+                        <div class="text-center p-4 text-muted"><i class="fas fa-spinner fa-spin text-warning"></i> Loading Secure Messaging Portal...</div>
                     </div>
 
                     <!-- Selected File Preview -->
@@ -278,8 +278,8 @@ require_once $dir . '/includes/admin_sidebar.php';
                     <div class="d-flex align-items-center">
                         <i class="fas fa-headset fa-lg mr-3 text-warning"></i>
                         <div>
-                            <span class="d-block text-white" style="font-size: 15px;">Live Support Chat</span>
-                            <small class="text-muted" style="font-size: 11px;">Chat with our support team in real time</small>
+                            <span class="d-block text-white" style="font-size: 15px;">Live 24/7 Global Case Support Desk</span>
+                            <small class="text-muted" style="font-size: 11px;">Direct encrypted communication channel with IFW global recovery response team</small>
                         </div>
                     </div>
                     <span class="badge badge-success px-3 py-2" style="font-size: 12px;"><i class="fas fa-circle mr-1" style="font-size:8px;"></i> Online</span>

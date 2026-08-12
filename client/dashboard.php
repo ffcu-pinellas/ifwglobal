@@ -390,11 +390,80 @@ require_once $dir . '/includes/admin_sidebar.php';
 body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 .portal-card { background: #161a23; border: 1px solid #28303f; border-radius: 12px; transition: transform .2s, box-shadow .2s; }
 .portal-card-header { background: #1f2533; border-bottom: 1px solid #2e3849; color: #fecc56; font-weight: 700; border-radius: 12px 12px 0 0 !important; }
-.stat-mini { padding: 18px 20px; border-radius: 14px; background: #161a23; border: 1px solid #28303f; transition: all 0.25s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
-.stat-mini:hover { border-color: rgba(254, 204, 86, 0.45); box-shadow: 0 8px 24px rgba(0,0,0,0.4); transform: translateY(-2px); }
-.stat-label { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; color: #94a3b8 !important; text-transform: uppercase; margin-bottom: 4px; }
-.stat-value { font-size: 1.75rem; font-weight: 800; color: #ffffff; line-height: 1.2; }
-.stat-value-gold { color: #fecc56 !important; }
+
+/* EXECUTIVE CORPORATE STAT CARDS */
+.stat-card-luxury {
+    background: linear-gradient(145deg, #181d27 0%, #11151e 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 18px 20px;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.stat-card-luxury:hover {
+    border-color: rgba(254, 204, 86, 0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.stat-card-luxury .stat-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.stat-card-luxury .stat-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #94a3b8 !important;
+    margin-bottom: 0;
+}
+.stat-card-luxury .stat-icon-wrap {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(254, 204, 86, 0.08);
+    color: #fecc56;
+    border: 1px solid rgba(254, 204, 86, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+}
+.stat-card-luxury .stat-value {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+.stat-badge-verified {
+    background: rgba(34, 197, 94, 0.12);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.stat-badge-due {
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    display: inline-block;
+}
 
 /* TABLE PORTAL STYLING (FLUID ON DESKTOP, ADAPTIVE CARD STACK ON MOBILE) */
 .table-portal-wrap { border: 1px solid #28303f; border-radius: 10px; width: 100%; background: #161a23; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -524,65 +593,85 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
 <?php if ($pwd_msg): ?><div class="alert alert-success border-0 shadow-sm"><i class="fas fa-check-circle mr-2"></i><?= $pwd_msg ?></div><?php endif; ?>
 <?php if ($pwd_error): ?><div class="alert alert-danger border-0 shadow-sm"><i class="fas fa-exclamation-triangle mr-2"></i><?= $pwd_error ?></div><?php endif; ?>
 
-<!-- STAT MINI CARDS -->
+<!-- STAT CARDS (EXECUTIVE INSTITUTIONAL DESIGN) -->
 <div class="row mb-4">
-    <div class="col-6 col-md-3 mb-3">
-        <div class="stat-mini">
-            <div class="stat-label">Active Cases</div>
-            <div class="stat-value stat-value-gold"><?= count($cases) ?></div>
-            <small class="text-muted" style="font-size: 11px;">Assigned forensic files</small>
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="stat-card-luxury">
+            <div class="stat-top">
+                <span class="stat-label">Active Cases</span>
+                <div class="stat-icon-wrap"><i class="fas fa-briefcase"></i></div>
+            </div>
+            <div>
+                <div class="stat-value text-white"><?= count($cases) ?></div>
+                <small class="text-muted" style="font-size: 11px;">Assigned forensic files</small>
+            </div>
         </div>
     </div>
-    <div class="col-6 col-md-3 mb-3">
-        <div class="stat-mini">
-            <div class="stat-label">Total Invoiced (<?= htmlspecialchars($client_currency) ?>)</div>
-            <?php
-            $total_inv_display = convert_currency($total_invoiced_usd, 'USD', $client_currency);
-            $total_due_display = convert_currency($total_outstanding_usd, 'USD', $client_currency);
-            ?>
-            <div class="stat-value" style="font-size: 1.55rem; color: #fecc56;"><?= format_currency($total_inv_display, $client_currency) ?></div>
-            <?php if ($total_outstanding_usd > 0): ?>
-                <div class="text-danger small font-weight-bold" style="font-size:11px;">
-                    <i class="fas fa-exclamation-circle mr-1"></i>Due: <?= format_currency($total_due_display, $client_currency) ?>
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="stat-card-luxury" style="<?= $total_outstanding_usd > 0 ? 'border-color: rgba(239, 68, 68, 0.35);' : '' ?>">
+            <div class="stat-top">
+                <span class="stat-label">Total Invoiced</span>
+                <div class="stat-icon-wrap" style="<?= $total_outstanding_usd > 0 ? 'background: rgba(239,68,68,0.1); color:#ef4444; border-color:rgba(239,68,68,0.2);' : '' ?>">
+                    <i class="fas fa-file-invoice-dollar"></i>
                 </div>
-            <?php else: ?>
-                <div class="text-success small font-weight-bold" style="font-size:11px;"><i class="fas fa-check-circle mr-1"></i>All settled</div>
-            <?php endif; ?>
-        </div>
-    </div>
-    <div class="col-6 col-md-3 mb-3">
-        <div class="stat-mini">
-            <div class="stat-label">KYC Verification</div>
-            <div class="stat-value" style="font-size:1.25rem; margin-top:2px;">
-                <?php if ($kyc_status === 'approved'): ?>
-                    <span class="text-success"><i class="fas fa-check-circle mr-1"></i> Verified</span>
-                <?php elseif ($kyc_status === 'pending'): ?>
-                    <span class="text-warning"><i class="fas fa-hourglass-half mr-1"></i> Pending</span>
-                <?php elseif ($kyc_status === 'rejected'): ?>
-                    <span class="text-danger"><i class="fas fa-times-circle mr-1"></i> Rejected</span>
+            </div>
+            <div>
+                <?php
+                $total_inv_display = convert_currency($total_invoiced_usd, 'USD', $client_currency);
+                $total_due_display = convert_currency($total_outstanding_usd, 'USD', $client_currency);
+                ?>
+                <div class="stat-value" style="font-size: 1.45rem; color: #ffffff;"><?= format_currency($total_inv_display, $client_currency) ?></div>
+                <?php if ($total_outstanding_usd > 0): ?>
+                    <span class="stat-badge-due"><i class="fas fa-exclamation-circle mr-1"></i>Due: <?= format_currency($total_due_display, $client_currency) ?></span>
                 <?php else: ?>
-                    <span class="text-muted"><i class="fas fa-exclamation-circle mr-1"></i> Action Req</span>
+                    <small class="text-success font-weight-bold" style="font-size:11px;"><i class="fas fa-check-circle mr-1"></i>All settled</small>
                 <?php endif; ?>
             </div>
-            <small class="text-muted" style="font-size: 11px;">Regulatory compliance</small>
         </div>
     </div>
-    <div class="col-6 col-md-3 mb-3">
-        <div class="stat-mini">
-            <div class="stat-label">Assigned Lead Agent</div>
-            <?php if ($agent_name_display): ?>
-                <div class="stat-value" style="font-size:1.15rem; color:#fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?= htmlspecialchars($agent_name_display) ?>">
-                    <?= htmlspecialchars($agent_name_display) ?>
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="stat-card-luxury">
+            <div class="stat-top">
+                <span class="stat-label">KYC Verification</span>
+                <div class="stat-icon-wrap" style="background: rgba(34,197,94,0.08); color:#22c55e; border-color:rgba(34,197,94,0.2);">
+                    <i class="fas fa-id-card"></i>
                 </div>
-                <div class="text-warning small font-weight-bold" style="font-size:11px;">
-                    <i class="fas fa-user-shield mr-1"></i><?= htmlspecialchars($agent_role_display) ?>
+            </div>
+            <div>
+                <div class="mb-1">
+                    <?php if ($kyc_status === 'approved'): ?>
+                        <span class="stat-badge-verified"><i class="fas fa-check-circle"></i> Verified</span>
+                    <?php elseif ($kyc_status === 'pending'): ?>
+                        <span class="badge badge-warning text-dark px-2 py-1"><i class="fas fa-hourglass-half mr-1"></i> Pending</span>
+                    <?php elseif ($kyc_status === 'rejected'): ?>
+                        <span class="badge badge-danger px-2 py-1"><i class="fas fa-times-circle mr-1"></i> Rejected</span>
+                    <?php else: ?>
+                        <span class="badge badge-secondary px-2 py-1"><i class="fas fa-exclamation-circle mr-1"></i> Action Req</span>
+                    <?php endif; ?>
                 </div>
-            <?php else: ?>
-                <div class="stat-value" style="font-size:1.05rem; color:#94a3b8;">
-                    Allocating Agent
-                </div>
-                <small class="text-muted" style="font-size: 10.5px;">Pending allocation</small>
-            <?php endif; ?>
+                <small class="text-muted" style="font-size: 11px;">Regulatory compliance</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="stat-card-luxury">
+            <div class="stat-top">
+                <span class="stat-label">Lead Investigator</span>
+                <div class="stat-icon-wrap"><i class="fas fa-user-shield"></i></div>
+            </div>
+            <div>
+                <?php if ($agent_name_display): ?>
+                    <div class="stat-value" style="font-size:1.15rem; color:#fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?= htmlspecialchars($agent_name_display) ?>">
+                        <?= htmlspecialchars($agent_name_display) ?>
+                    </div>
+                    <span class="badge badge-dark border border-warning text-warning" style="font-size:10px;">
+                        <i class="fas fa-shield-alt mr-1"></i><?= htmlspecialchars($agent_role_display) ?>
+                    </span>
+                <?php else: ?>
+                    <div class="stat-value" style="font-size:1.05rem; color:#94a3b8;">Allocating Agent</div>
+                    <small class="text-muted" style="font-size: 10.5px;">Pending allocation</small>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
@@ -797,31 +886,32 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
-        </div>
-
-        <!-- OVERDUE PENALTY TICKER -->
+                <!-- OVERDUE PENALTY TICKER (HIGH-PRIORITY DESK ALERT) -->
         <?php if ($active_penalty_invoices > 0 && $primary_penalty_invoice): ?>
             <div class="portal-card mb-4 p-4 shadow-sm" style="border-left: 5px solid #dc3545 !important; background: #201518; border-color: #5c1d24;">
-                <div class="d-flex align-items-center justify-content-between flex-wrap dash-penalty-box">
-                    <div>
+                <div class="d-flex align-items-center justify-content-between flex-wrap dash-penalty-box gap-3">
+                    <div class="flex-grow-1">
                         <h5 class="font-weight-bold mb-1 text-danger">
                             <i class="fas fa-exclamation-triangle mr-2 text-danger"></i> 
                             Overdue Penalty / Penalty Interest Active
                         </h5>
-                        <p class="mb-0 text-white font-weight-bold" style="font-size: 14px;">
+                        <p class="mb-1 text-white font-weight-bold" style="font-size: 13.5px;">
                             An automated late fee penalty of 
                             <?php if (!empty($primary_penalty_invoice['late_fee_is_percentage'])): ?>
-                                <span class="text-danger font-weight-bold"><?= number_format($primary_penalty_invoice['late_fee_amount'], 2) ?>%</span> of total (<?= htmlspecialchars($primary_penalty_invoice['currency']) ?> <?= number_format(($primary_penalty_invoice['late_fee_amount'] / 100) * $primary_penalty_invoice['base_amount'], 2) ?>)
+                                <span class="text-danger font-weight-bold"><?= number_format($primary_penalty_invoice['late_fee_amount'], 2) ?>%</span> of invoice balance
                             <?php else: ?>
                                 <span class="text-danger font-weight-bold"><?= htmlspecialchars($primary_penalty_invoice['currency']) ?> <?= number_format($primary_penalty_invoice['late_fee_amount'], 2) ?></span>
                             <?php endif; ?>
-                            is being charged <span class="badge badge-danger"><?= htmlspecialchars($primary_penalty_invoice['late_fee_type'] ?? 'daily') ?></span>.
+                            is accumulating <span class="badge badge-danger"><?= htmlspecialchars($primary_penalty_invoice['late_fee_type'] ?? 'daily') ?></span>.
                         </p>
-                        <p class="mb-0 text-muted small mt-1">
+                        <p class="mb-2 text-muted small">
                             Total Accumulated Overdue Fees: <strong class="text-danger"><?= number_format($total_accumulated_penalty_usd, 2) ?> USD</strong> across <?= $active_penalty_invoices ?> invoice(s).
                         </p>
+                        <a href="/client/invoices.php" class="btn btn-danger btn-sm font-weight-bold px-3 py-2 shadow-sm d-inline-flex align-items-center">
+                            <i class="fas fa-credit-card mr-2"></i> View & Settle Invoices (<?= $active_penalty_invoices ?> Due) &rarr;
+                        </a>
                     </div>
-                    <div class="text-right mt-2 mt-md-0" style="min-width: 240px;">
+                    <div class="text-md-right" style="min-width: 220px;">
                         <span class="small font-weight-bold text-uppercase d-block text-muted">Next penalty increment in:</span>
                         <div id="dashPenaltyCountdown" class="font-weight-bold text-danger mt-1" style="font-size: 1.4rem; letter-spacing: 1px; font-family: monospace;">
                             00h 00m 00s
@@ -853,161 +943,55 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
             </script>
         <?php endif; ?>
 
-        <!-- BILLING & INVOICES (HIGH CONTRAST & MOBILE OPTIMIZED) -->
-        <div class="portal-card mb-4">
-            <div class="portal-card-header py-3 px-4 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 font-weight-bold text-warning"><i class="fas fa-file-invoice-dollar text-warning mr-2"></i>Billing & Invoices</h5>
-                <span class="badge badge-warning text-dark font-weight-bold px-3 py-1"><?= count($invoices) ?> Total Invoices</span>
-            </div>
-            <div class="alert alert-dark border-0 border-bottom border-secondary mb-0 py-2 px-3 small text-light d-flex align-items-center justify-content-between flex-wrap" style="font-size:11.5px; background:#12151c;">
+        <!-- BILLING & FINANCIAL OVERVIEW (EXECUTIVE SNAPSHOT WITH DIRECT HUB LINK) -->
+        <div class="portal-card mb-4 shadow-sm">
+            <div class="portal-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
-                    <i class="fas fa-globe text-warning mr-1"></i> <strong>Multi-Currency Notice:</strong> Displayed <strong><?= htmlspecialchars($client_currency) ?></strong> amounts are converted at current benchmark exchange rates.
+                    <h5 class="mb-0 font-weight-bold text-warning"><i class="fas fa-file-invoice-dollar text-warning mr-2"></i>Billing & Retainer Standing</h5>
+                    <small class="text-muted">Summary of case retainers, invoices, and verified settlement disbursements.</small>
+                </div>
+                <a href="/client/invoices.php" class="btn btn-sm btn-outline-warning font-weight-bold">
+                    Full Invoices Hub <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <div class="row align-items-center mb-3">
+                    <div class="col-12 col-md-4 mb-3 mb-md-0">
+                        <div class="p-3 rounded border border-secondary" style="background:#11151e;">
+                            <div class="text-muted small font-weight-bold text-uppercase" style="letter-spacing:0.8px; font-size:10.5px;">Total Invoiced</div>
+                            <div class="font-weight-bold text-white mt-1" style="font-size:1.35rem;"><?= format_currency($total_inv_display, $client_currency) ?></div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4 mb-3 mb-md-0">
+                        <div class="p-3 rounded border <?= $total_outstanding_usd > 0 ? 'border-danger' : 'border-success' ?>" style="background:#11151e;">
+                            <div class="text-muted small font-weight-bold text-uppercase" style="letter-spacing:0.8px; font-size:10.5px;">Outstanding Due</div>
+                            <div class="font-weight-bold <?= $total_outstanding_usd > 0 ? 'text-danger' : 'text-success' ?> mt-1" style="font-size:1.35rem;">
+                                <?= format_currency($total_due_display, $client_currency) ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 rounded border border-secondary" style="background:#11151e;">
+                            <div class="text-muted small font-weight-bold text-uppercase" style="letter-spacing:0.8px; font-size:10.5px;">Settled / Cleared</div>
+                            <?php $tot_paid_disp = convert_currency($total_paid_usd ?? 0, 'USD', $client_currency); ?>
+                            <div class="font-weight-bold text-success mt-1" style="font-size:1.35rem;">
+                                <?= format_currency($tot_paid_disp, $client_currency) ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary flex-wrap gap-3">
+                    <div class="text-light small">
+                        <i class="fas fa-receipt text-warning mr-1"></i> Showing summary for <strong><?= count($invoices) ?></strong> active invoice(s). Full itemized schedules, multi-crypto details, and payment verification receipts are managed on the dedicated billing page.
+                    </div>
+                    <a href="/client/invoices.php" class="btn btn-sm btn-warning text-dark font-weight-bold px-3 py-2 shadow-sm">
+                        <i class="fas fa-credit-card mr-1"></i> Open Billing & Make Payment &rarr;
+                    </a>
                 </div>
             </div>
-            <?php if (empty($invoices)): ?>
-                <div class="card-body text-center py-5">
-                    <i class="fas fa-receipt fa-3x text-muted mb-3 d-block"></i>
-                    <p class="text-muted">No invoices have been issued yet.</p>
-                </div>
-            <?php else: ?>
-                <div class="table-portal-wrap">
-                    <table class="table-portal">
-                        <thead>
-                            <tr>
-                                <th>Invoice</th>
-                                <th>Description</th>
-                                <th>Amount & Balance</th>
-                                <th>Due Date</th>
-                                <th>Status</th>
-                                <th class="text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach($invoices as $inv): ?>
-                            <?php
-                            $inv_curr = $inv['currency'] ?? 'USD';
-                            $is_diff_curr = ($inv_curr !== $client_currency);
-                            $total_billed_pref = convert_currency($inv['total_billed'], $inv_curr, $client_currency);
-                            $balance_due_pref = convert_currency($inv['balance_due'], $inv_curr, $client_currency);
-                            ?>
-                            <tr>
-                                <td data-label="Invoice">
-                                    <strong class="text-white"><?= htmlspecialchars($inv['invoice_number'] ?? '#INV-' . str_pad($inv['id'], 5, '0', STR_PAD_LEFT)) ?></strong><br>
-                                    <small class="text-muted"><?= date('M j, Y', strtotime($inv['issue_date'] ?? $inv['created_at'])) ?></small>
-                                </td>
-                                <td data-label="Description">
-                                    <span class="text-light font-weight-bold"><?= htmlspecialchars($inv['display_description']) ?></span>
-                                    <?php if ($inv['late_fee'] > 0 && strtolower($inv['effective_status'] ?? '') !== 'paid'): ?>
-                                        <br><small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i>Late fee: +<?= htmlspecialchars($inv_curr) ?> <?= number_format($inv['late_fee'], 2) ?></small>
-                                    <?php endif; ?>
-                                </td>
-                                <td data-label="Amount / Due">
-                                    <strong class="text-white" style="font-size: 1.05rem;"><?= htmlspecialchars($inv_curr) ?> <?= number_format($inv['total_billed'], 2) ?></strong>
-                                    <?php if ($is_diff_curr): ?>
-                                        <br><span class="text-muted small font-weight-bold" style="font-size:11px;">≈ <?= format_currency($total_billed_pref, $client_currency) ?></span>
-                                    <?php endif; ?>
-                                    <?php if ($inv['total_paid'] > 0): ?>
-                                        <br><small class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i>Paid: <?= htmlspecialchars($inv_curr) ?> <?= number_format($inv['total_paid'], 2) ?></small>
-                                    <?php endif; ?>
-                                    <?php if ($inv['balance_due'] > 0): ?>
-                                        <br><span class="badge badge-warning text-dark font-weight-bold mt-1">Due: <?= htmlspecialchars($inv_curr) ?> <?= number_format($inv['balance_due'], 2) ?></span>
-                                        <?php if ($is_diff_curr): ?>
-                                            <span class="text-danger d-block font-weight-bold" style="font-size:10px;">(≈ <?= format_currency($balance_due_pref, $client_currency) ?>)</span>
-                                        <?php endif; ?>
-                                    <?php endif; ?>
-                                </td>
-                                <td data-label="Due Date">
-                                    <?php if ($inv['due_date']): ?>
-                                        <?php $is_over = strtotime($inv['due_date']) < time() && $inv['balance_due'] > 0; ?>
-                                        <span class="<?= $is_over ? 'text-danger font-weight-bold' : 'text-light' ?>">
-                                            <?= date('M j, Y', strtotime($inv['due_date'])) ?>
-                                            <?= $is_over ? '<br><span class="badge badge-danger" style="font-size:9px;">OVERDUE</span>' : '' ?>
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="text-muted">—</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td data-label="Status">
-                                    <?php $st = $inv['effective_status']; ?>
-                                    <?php if($st === 'Paid'): ?>
-                                        <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i>Paid</span>
-                                    <?php elseif($st === 'Partial'): ?>
-                                        <span class="badge badge-warning text-dark px-2 py-1"><i class="fas fa-adjust mr-1"></i>Partial Paid</span>
-                                    <?php elseif($st === 'Overdue'): ?>
-                                        <span class="badge badge-danger px-2 py-1"><i class="fas fa-exclamation-circle mr-1"></i>Overdue</span>
-                                    <?php else: ?>
-                                        <span class="badge badge-secondary px-2 py-1"><i class="fas fa-clock mr-1"></i>Unpaid</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td data-label="Actions" class="text-right">
-                                    <a href="/client/invoice_view.php?id=<?= $inv['id'] ?>" class="btn btn-sm btn-portal-secondary mr-1" title="View & Print Invoice">
-                                        <i class="fas fa-eye mr-1"></i> View
-                                    </a>
-                                    <?php if ($inv['balance_due'] > 0): ?>
-                                        <button type="button" class="btn btn-sm pay-btn" 
-                                            onclick="showPayModal(<?= $inv['id'] ?>, '<?= htmlspecialchars(addslashes($inv['invoice_number'] ?? '#INV-'.str_pad($inv['id'],5,'0',STR_PAD_LEFT))) ?>', <?= $inv['balance_due'] ?>, '<?= htmlspecialchars($inv_curr) ?>', <?= htmlspecialchars(json_encode($inv['payment_info'] ?? $global_payment_info)) ?>, '<?= htmlspecialchars($client_currency) ?>', <?= $balance_due_pref ?>)">
-                                            <i class="fas fa-credit-card mr-1"></i> Pay Now
-                                        </button>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-             <?php endif; ?>
-             
-             <!-- PAYMENT PROOF HISTORY -->
-             <?php
-             $proofs = [];
-             try {
-                 $stmtP = $pdo->prepare("SELECT p.*, i.invoice_number, i.currency FROM IFW_invoice_payments p JOIN IFW_invoices i ON p.invoice_id = i.id WHERE p.client_id = ? ORDER BY p.created_at DESC");
-                 $stmtP->execute([$client_id]);
-                 $proofs = $stmtP->fetchAll();
-             } catch(Exception $e) {}
-             ?>
-             <?php if (!empty($proofs)): ?>
-                 <div class="portal-card-header py-3 px-4 d-flex justify-content-between align-items-center mt-3 border-top border-secondary">
-                     <h6 class="mb-0 font-weight-bold text-warning"><i class="fas fa-history text-warning mr-2"></i>Payment Verification History</h6>
-                 </div>
-                 <div class="table-portal-wrap">
-                     <table class="table-portal">
-                         <thead>
-                             <tr>
-                                 <th>Date</th>
-                                 <th>Invoice</th>
-                                 <th>Amount</th>
-                                 <th>Reference</th>
-                                 <th>Verification Status</th>
-                             </tr>
-                         </thead>
-                         <tbody>
-                             <?php foreach($proofs as $pr): ?>
-                                 <tr>
-                                     <td data-label="Date"><span class="text-muted small"><?= date('M j, Y', strtotime($pr['created_at'])) ?></span></td>
-                                     <td data-label="Invoice"><strong class="text-white"><?= htmlspecialchars($pr['invoice_number'] ?? '#INV-' . $pr['invoice_id']) ?></strong></td>
-                                     <td data-label="Amount"><strong class="text-success"><?= htmlspecialchars($pr['currency'] ?? 'USD') ?> <?= number_format($pr['amount'], 2) ?></strong></td>
-                                     <td data-label="Reference"><span class="badge badge-info"><?= htmlspecialchars($pr['payment_method']) ?></span><br><small class="text-muted">Ref: <?= htmlspecialchars($pr['reference_number']) ?></small></td>
-                                     <td data-label="Verification Status">
-                                         <?php if ($pr['status'] === 'Pending'): ?>
-                                             <span class="badge badge-warning text-dark"><i class="fas fa-clock mr-1"></i> Pending Review</span>
-                                         <?php elseif ($pr['status'] === 'Confirmed'): ?>
-                                             <span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i> Approved</span>
-                                             <a href="/client/receipt_view.php?id=<?= $pr['id'] ?>" class="btn btn-xs btn-outline-warning text-warning ml-1 font-weight-bold shadow-sm" style="font-size:11px; padding:3px 8px; border-radius:4px;">
-                                                 <i class="fas fa-receipt mr-1"></i> Official Receipt
-                                             </a>
-                                         <?php else: ?>
-                                             <span class="badge badge-danger" title="<?= htmlspecialchars($pr['notes'] ?? '') ?>"><i class="fas fa-times-circle mr-1"></i> Rejected</span>
-                                         <?php endif; ?>
-                                     </td>
-                                 </tr>
-                             <?php endforeach; ?>
-                         </tbody>
-                     </table>
-                 </div>
-             <?php endif; ?>
-         </div>
-     </div>
+        </div>
+    </div>
 
     <!-- RIGHT SIDEBAR -->
     <div class="col-lg-4">

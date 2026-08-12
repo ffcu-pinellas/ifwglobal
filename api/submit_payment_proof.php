@@ -149,10 +149,11 @@ try {
         }
     } catch(Exception $e) {}
 
-    header("Location: /client/dashboard.php?payment_submitted=1");
+    $redirect_url = !empty($_POST['return_to']) ? $_POST['return_to'] : '/client/invoices.php?payment_submitted=1';
+    header("Location: " . $redirect_url);
     exit;
 } catch (Exception $e) {
-    header("Location: /client/dashboard.php?error=db");
+    header("Location: /client/invoices.php?error=db");
     exit;
 }
 ?>
