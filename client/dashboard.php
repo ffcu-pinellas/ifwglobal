@@ -593,8 +593,8 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
 <?php if ($pwd_msg): ?><div class="alert alert-success border-0 shadow-sm"><i class="fas fa-check-circle mr-2"></i><?= $pwd_msg ?></div><?php endif; ?>
 <?php if ($pwd_error): ?><div class="alert alert-danger border-0 shadow-sm"><i class="fas fa-exclamation-triangle mr-2"></i><?= $pwd_error ?></div><?php endif; ?>
 
-<!-- STAT CARDS (EXECUTIVE INSTITUTIONAL DESIGN) -->
-<div class="row mb-4">
+<!-- STAT CARDS (EXECUTIVE INSTITUTIONAL DESIGN - HIDDEN ON MOBILE) -->
+<div class="row mb-4 d-none d-md-flex">
     <div class="col-6 col-lg-3 mb-3">
         <div class="stat-card-luxury">
             <div class="stat-top">
@@ -857,7 +857,7 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
 
 <!-- MAIN DASHBOARD CONTENT (BALANCED 2-COLUMN INSTITUTIONAL LAYOUT) -->
 <div class="row">
-    <!-- LEFT MAIN COLUMN -->
+    <!-- LEFT MAIN COLUMN: ACTIVE CASE SNAPSHOT & ALL CASES -->
     <div class="col-lg-8">
         
         <!-- KYC BANNER (IF NOT APPROVED) -->
@@ -888,6 +888,87 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                         <i class="fas fa-upload mr-1"></i> <?= $kyc_status === 'rejected' ? 'Resubmit Verification' : 'Verify Identity Now' ?>
                     </a>
                 <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- ACTIVE CASE SNAPSHOT (PROMINENT EXPANSIVE OVERVIEW IN MAIN COLUMN) -->
+        <?php if ($latest_case): ?>
+        <div class="portal-card mb-4 shadow-sm" style="border-left: 4px solid #fecc56 !important;">
+            <div class="portal-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h5 class="mb-0 font-weight-bold text-warning">
+                        <i class="fas fa-folder-open text-warning mr-2"></i>Active Case Snapshot
+                    </h5>
+                    <small class="text-muted">Primary forensic file and real-time operational status.</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge badge-dark border border-warning text-warning px-3 py-1 font-weight-bold" style="font-size:12px;">
+                        <?= htmlspecialchars($latest_case['case_number'] ?? 'IFW-'.str_pad($latest_case['id'],5,'0',STR_PAD_LEFT)) ?>
+                    </span>
+                    <?php
+                    $s = strtolower($latest_case['status'] ?? 'pending');
+                    $badge = ['pending'=>'warning text-dark','in progress'=>'info','active'=>'info','resolved'=>'success','closed'=>'secondary'][$s] ?? 'secondary';
+                    ?>
+                    <span class="badge badge-<?= $badge ?> px-3 py-1 font-weight-bold" style="font-size:12px;"><?= htmlspecialchars(ucwords($latest_case['status'] ?? 'Pending')) ?></span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <h5 class="font-weight-bold text-white mb-2" style="font-size: 1.25rem;"><?= htmlspecialchars($latest_case['title']) ?></h5>
+                <?php if (!empty($latest_case['description'])): ?>
+                    <p class="text-light opacity-80 mb-4" style="font-size: 14px; line-height: 1.6;">
+                        <?= nl2br(htmlspecialchars($latest_case['description'])) ?>
+                    </p>
+                <?php endif; ?>
+
+                <!-- KEY DOSSIER METRICS ROW -->
+                <div class="row text-left mb-4">
+                    <div class="col-12 col-sm-6 col-md-4 mb-3 mb-md-0">
+                        <div class="p-3 rounded border border-secondary" style="background:#11151e; height: 100%;">
+                            <span class="text-muted text-uppercase d-block mb-1 font-weight-bold" style="font-size:10.5px; letter-spacing:0.8px;">Reported Claim Loss</span>
+                            <div class="font-weight-bold text-danger" style="font-size: 1.3rem;">
+                                <?php if (!empty($latest_case['amount_lost']) && $latest_case['amount_lost'] > 0): ?>
+                                    $<?= number_format($latest_case['amount_lost'],2) ?> <small class="text-muted" style="font-size:11px;"><?= htmlspecialchars($latest_case['currency'] ?? 'USD') ?></small>
+                                <?php else: ?>
+                                    <span class="text-muted" style="font-size: 1rem;">Under Audit</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-4 mb-3 mb-md-0">
+                        <div class="p-3 rounded border border-secondary" style="background:#11151e; height: 100%;">
+                            <span class="text-muted text-uppercase d-block mb-1 font-weight-bold" style="font-size:10.5px; letter-spacing:0.8px;">Total Recovered / Locked</span>
+                            <div class="font-weight-bold text-success" style="font-size: 1.3rem;">
+                                <?php if (!empty($latest_case['amount_recovered']) && $latest_case['amount_recovered'] > 0): ?>
+                                    $<?= number_format($latest_case['amount_recovered'],2) ?>
+                                <?php else: ?>
+                                    <span class="text-muted" style="font-size: 1rem;">In Tracing</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-12 col-md-4">
+                        <div class="p-3 rounded border border-secondary" style="background:#11151e; height: 100%;">
+                            <span class="text-muted text-uppercase d-block mb-1 font-weight-bold" style="font-size:10.5px; letter-spacing:0.8px;">Lead Case Officer</span>
+                            <div class="font-weight-bold text-white" style="font-size: 1.05rem;">
+                                <?php if (!empty($latest_case['agent_name'])): ?>
+                                    <i class="fas fa-user-shield text-warning mr-1"></i><?= htmlspecialchars($latest_case['agent_name']) ?>
+                                <?php else: ?>
+                                    <span class="text-muted">Central Directorate</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-2 border-top border-secondary">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt text-warning mr-1"></i> Immutable Case ID: <strong><?= htmlspecialchars($latest_case['case_number'] ?? 'IFW-'.$latest_case['id']) ?></strong>
+                    </small>
+                    <a href="/client/my_cases.php?case_id=<?= $latest_case['id'] ?>" class="btn btn-warning font-weight-bold text-dark px-4 py-2 shadow-sm" style="background: linear-gradient(135deg, #fecc56, #f59e0b); border:none;">
+                        <i class="fas fa-search-plus mr-1"></i> Open Full Investigation File & Evidence Vault &rarr;
+                    </a>
+                </div>
             </div>
         </div>
         <?php endif; ?>
@@ -947,40 +1028,9 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                 <?php endif; ?>
             </div>
         </div>
-
-        <!-- SETTLEMENT & BANKING DETAILS (IN LEFT MAIN COLUMN FOR OPTIMAL SCREEN BALANCE) -->
-        <div class="portal-card mb-4 shadow-sm">
-            <div class="portal-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
-                    <h5 class="mb-0 font-weight-bold text-warning"><i class="fas fa-university text-warning mr-2"></i>Settlement & Banking Details</h5>
-                    <small class="text-muted">Official wire routing and settlement escrow instructions.</small>
-                </div>
-                <a href="/client/invoices.php" class="btn btn-sm btn-outline-warning font-weight-bold">
-                    <i class="fas fa-file-invoice-dollar mr-1"></i> Go to Billing Hub &rarr;
-                </a>
-            </div>
-            <div class="card-body p-4">
-                <?php if (!empty($bank_details) || !empty($global_payment_info)): ?>
-                    <?php if (!empty($global_payment_info)): ?>
-                        <div class="p-3 rounded mb-3 border border-secondary" style="background:#11151e; color:#ffffff; font-size:13px;">
-                            <strong class="d-block mb-1 text-warning"><i class="fas fa-info-circle mr-1"></i> Payment & Settlement Notice</strong>
-                            <div style="color: #ffffff !important; font-weight: 500; line-height: 1.6;"><?= nl2br(htmlspecialchars($global_payment_info)) ?></div>
-                        </div>
-                    <?php endif; ?>
-                    <?php if (!empty($bank_details)): ?>
-                        <div class="p-3 rounded border border-secondary text-light" style="background:#0e1117; white-space:pre-wrap; font-family: monospace; font-size:12.5px; color: #fecc56 !important; line-height: 1.7;">
-                            <?= htmlspecialchars($bank_details) ?>
-                        </div>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <p class="text-muted small text-center mb-0">Official banking wire instructions and crypto addresses are generated dynamically inside the Billing & Invoices Hub.</p>
-                <?php endif; ?>
-            </div>
-        </div>
-
     </div>
 
-    <!-- RIGHT SIDEBAR COLUMN -->
+    <!-- RIGHT SIDEBAR COLUMN: INVESTIGATOR, SETTLEMENT & BANKING, SECURITY PIN -->
     <div class="col-lg-4">
 
         <!-- YOUR FORENSIC INVESTIGATOR -->
@@ -1007,47 +1057,34 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
             </div>
         </div>
 
-        <!-- ACTIVE CASE SNAPSHOT -->
-        <?php if ($latest_case): ?>
+        <!-- SETTLEMENT & BANKING DETAILS (IN RIGHT COLUMN) -->
         <div class="portal-card mb-4 shadow-sm">
-            <div class="portal-card-header py-3 px-4 font-weight-bold">
-                <i class="fas fa-briefcase mr-2"></i>Active Case Snapshot
-            </div>
-            <div class="card-body p-4">
-                <div class="mb-3">
-                    <div class="stat-label">Case Reference</div>
-                    <div class="font-weight-bold text-warning" style="font-size:1.1rem;"><?= htmlspecialchars($latest_case['case_number'] ?? 'IFW-'.str_pad($latest_case['id'],5,'0',STR_PAD_LEFT)) ?></div>
+            <div class="portal-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="font-weight-bold">
+                    <i class="fas fa-university mr-2"></i>Settlement & Banking Details
                 </div>
-                <div class="mb-3">
-                    <div class="stat-label">Case Title</div>
-                    <div class="font-weight-bold text-white"><?= htmlspecialchars($latest_case['title']) ?></div>
-                </div>
-                <div class="mb-3">
-                    <div class="stat-label">Status</div>
-                    <?php
-                    $s = strtolower($latest_case['status'] ?? 'pending');
-                    $badge = ['pending'=>'warning text-dark','in progress'=>'info','active'=>'info','resolved'=>'success','closed'=>'secondary'][$s] ?? 'secondary';
-                    ?>
-                    <span class="badge badge-<?= $badge ?> px-3 py-1" style="font-size:12.5px;"><?= htmlspecialchars(ucwords($latest_case['status'] ?? 'Pending')) ?></span>
-                </div>
-                <?php if (!empty($latest_case['amount_lost']) && $latest_case['amount_lost'] > 0): ?>
-                <div class="mb-3">
-                    <div class="stat-label">Reported Claim Loss</div>
-                    <div class="font-weight-bold text-danger" style="font-size:1.1rem;">$<?= number_format($latest_case['amount_lost'],2) ?> <?= htmlspecialchars($latest_case['currency'] ?? 'USD') ?></div>
-                </div>
-                <?php endif; ?>
-                <?php if (!empty($latest_case['amount_recovered']) && $latest_case['amount_recovered'] > 0): ?>
-                <div class="mb-3">
-                    <div class="stat-label">Total Recovered</div>
-                    <div class="font-weight-bold text-success" style="font-size:1.1rem;">$<?= number_format($latest_case['amount_recovered'],2) ?></div>
-                </div>
-                <?php endif; ?>
-                <a href="/client/my_cases.php?case_id=<?= $latest_case['id'] ?>" class="btn btn-outline-warning btn-sm font-weight-bold w-100 mt-2">
-                    <i class="fas fa-search mr-1"></i> View Investigation Dossier
+                <a href="/client/invoices.php" class="btn btn-sm btn-outline-warning font-weight-bold" style="font-size:11px;">
+                    Billing Hub &rarr;
                 </a>
             </div>
+            <div class="card-body p-3">
+                <?php if (!empty($bank_details) || !empty($global_payment_info)): ?>
+                    <?php if (!empty($global_payment_info)): ?>
+                        <div class="p-3 rounded mb-2 border border-secondary" style="background:#11151e; color:#ffffff; font-size:12.5px;">
+                            <strong class="d-block mb-1 text-warning"><i class="fas fa-info-circle mr-1"></i> Settlement Notice</strong>
+                            <div style="color: #ffffff !important; font-weight: 500; line-height: 1.5;"><?= nl2br(htmlspecialchars($global_payment_info)) ?></div>
+                        </div>
+                    <?php endif; ?>
+                    <?php if (!empty($bank_details)): ?>
+                        <div class="p-3 rounded border border-secondary text-light" style="background:#0e1117; white-space:pre-wrap; font-family: monospace; font-size:11.5px; color: #fecc56 !important; line-height: 1.6;">
+                            <?= htmlspecialchars($bank_details) ?>
+                        </div>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <p class="text-muted small text-center mb-0">Official banking wire instructions are generated in the Billing Hub.</p>
+                <?php endif; ?>
+            </div>
         </div>
-        <?php endif; ?>
 
         <!-- PORTAL SECURITY PIN -->
         <div class="portal-card mb-4 shadow-sm">
