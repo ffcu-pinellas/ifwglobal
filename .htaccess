@@ -7,12 +7,21 @@ Options +FollowSymLinks -Indexes
 
 DirectoryIndex index.php index.html
 
+# Disable LiteSpeed Rate Limiting / Throttling to prevent 429 errors
+<IfModule litespeed>
+    RewriteEngine On
+    RewriteRule .* - [E=nothrottle:1]
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
 
     # Redirect legacy consultation URL
     RewriteRule ^book-a-consultation(?:/.*|\.php)?$ /contact/ [R=301,L]
+
+    # About aliases
+    RewriteRule ^about/?$ /about-us.php [L]
 
     # 1. Allow direct access to real existing files or directories
     RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -23,8 +32,8 @@ DirectoryIndex index.php index.html
     RewriteCond %{DOCUMENT_ROOT}/public/$1 -f
     RewriteRule ^(.*)$ public/$1 [L]
 
-    # 3. Allow extensionless URLs for root pages (e.g. /about -> /about.php)
-    RewriteCond %{REQUEST_FILENAME}.php -f
+    # 3. Allow extensionless URLs for root pages (e.g. /about-us or /about-us/ -> /about-us.php)
+    RewriteCond %{DOCUMENT_ROOT}/$1.php -f
     RewriteRule ^([^/]+)/?$ $1.php [L]
 
     # 4. Allow extensionless URLs for subdirectories (e.g. /admin/settings -> /admin/settings.php)

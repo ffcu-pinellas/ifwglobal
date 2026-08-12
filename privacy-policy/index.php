@@ -1,5 +1,5 @@
 <?php
-$dir = __DIR__;
+$dir = dirname(__DIR__);
 while (!file_exists($dir . '/config.php')) {
     $dir = dirname($dir);
     if ($dir === '/' || $dir === '\\' || preg_match('/^[A-Z]:\\\\$/i', $dir)) break;
@@ -7,25 +7,74 @@ while (!file_exists($dir . '/config.php')) {
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
 ?>
-<!DOCTYPE html><html lang="en-US"><head>
-<?php if (get_setting($pdo, 'display_phone_numbers', 'show') === 'hide'): ?>
-<style>
-.alert__numbers, .phones__link, .phone-number, a[href^="tel:"] { display: none !important; visibility: hidden !important; }
-.footer__address, .footer__details, address, .contact-details { display: none !important; visibility: hidden !important; }
-</style>
-<?php endif; ?>
-<style id='gdpr-global-suppress'>#gdpr-cookie-consent-bar, #gdpr-cookie-consent-show-again, #cookie_action_settings, .gdpr_action_button, .gdpr-modal, .cli-modal, #cliModal, [id*='gdpr'], [class*='gdpr-cookie'], [class*='cli-'] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important; }</style><title>Just a moment...</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=Edge"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="content-security-policy" content="default-src 'none'; script-src 'nonce-79i5QZvVhya1hOqH6SkUhZ' 'unsafe-eval' https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'unsafe-inline'; img-src 'self' https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com blob:; child-src 'self' https://challenges.cloudflare.com blob:; worker-src blob:; form-action http: https:; base-uri 'self'"><style>*{box-sizing:border-box;margin:0;padding:0}html{line-height:1.15;-webkit-text-size-adjust:100%;color:#313131;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"}body{display:flex;flex-direction:column;height:100vh;min-height:100vh}.main-content{margin:8rem auto;padding-left:1.5rem;max-width:60rem}@media (width <= 720px){.main-content{margin-top:4rem}}#challenge-error-text{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgZmlsbD0ibm9uZSI+PHBhdGggZmlsbD0iI0IyMEYwMyIgZD0iTTE2IDNhMTMgMTMgMCAxIDAgMTMgMTNBMTMuMDE1IDEzLjAxNSAwIDAgMCAxNiAzbTAgMjRhMTEgMTEgMCAxIDEgMTEtMTEgMTEuMDEgMTEuMDEgMCAwIDEtMTEgMTEiLz48cGF0aCBmaWxsPSIjQjIwRjAzIiBkPSJNMTcuMDM4IDE4LjYxNUgxNC44N0wxNC41NjMgOS41aDIuNzgzem0tMS4wODQgMS40MjdxLjY2IDAgMS4wNTcuMzg4LjQwNy4zODkuNDA3Ljk5NCAwIC41OTYtLjQwNy45ODQtLjM5Ny4zOS0xLjA1Ny4zODktLjY1IDAtMS4wNTYtLjM4OS0uMzk4LS4zODktLjM5OC0uOTg0IDAtLjU5Ny4zOTgtLjk4NS40MDYtLjM5NyAxLjA1Ni0uMzk3Ii8+PC9zdmc+");background-repeat:no-repeat;background-size:contain;padding-left:34px}</style><meta http-equiv="refresh" content="360"></head><body>
-<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
-<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
-    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
+<!DOCTYPE html>
+<html lang="en-AU" class="js">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy & Compliance Terms | IFW Global</title>
+    <meta name="description" content="IFW Global's Privacy Policy, Data Protection standards, and GDPR compliance framework.">
+    <link rel="icon" type="image/png" sizes="32x32" href="/media/icons/favicon-32x32.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 0; background-color: #0e1117; color: #f1f5f9; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.7; }
+        .policy-header { background: #161a23; border-bottom: 1px solid #28303f; padding: 30px 20px; }
+        .policy-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        .policy-card { background: #161a23; border: 1px solid #28303f; border-radius: 12px; padding: 35px; margin-bottom: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        h1, h2, h3 { color: #fecc56; font-weight: 700; }
+        h1 { font-size: 2.2rem; margin-bottom: 10px; }
+        h2 { font-size: 1.4rem; margin-top: 25px; margin-bottom: 12px; border-bottom: 1px solid #2e3849; padding-bottom: 8px; }
+        p, li { color: #cbd5e1; font-size: 14.5px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        .badge-compliance { background: rgba(254,204,86,0.15); color: #fecc56; border: 1px solid rgba(254,204,86,0.3); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .back-btn { display: inline-flex; align-items: center; background: #fecc56; color: #000; font-weight: bold; padding: 10px 20px; border-radius: 6px; text-decoration: none; transition: 0.2s; }
+        .back-btn:hover { background: #e5b340; color: #000; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<?php require_once $dir . '/includes/announcement.php'; ?>
+
+<div class="policy-header">
+    <div style="max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <span class="badge-compliance"><i class="fas fa-shield-alt mr-1"></i> Official Legal Policy</span>
+            <h1 style="margin-top: 8px;">Privacy Policy & Data Protection</h1>
+            <small style="color: #94a3b8;">Effective Date: January 1, 2026 &bull; IFW Global Forensics & Intelligence</small>
+        </div>
+        <a href="/" class="back-btn"><i class="fas fa-arrow-left mr-2"></i> Return to Homepage</a>
+    </div>
 </div>
-<?php endif; ?>
 
-<?php require_once $dir . '/includes/announcement.php'; ?><div class="main-wrapper" role="main"><div class="main-content"><noscript><div class="h2"><span id="challenge-error-text">Enable JavaScript and cookies to continue</span></div></noscript></div></div><script nonce="79i5QZvVhya1hOqH6SkUhZ">(function(){window._cf_chl_opt = {cFPWv: 'g',cH: '0QA0J5_Pp.Ny2cuA4lIYvm4QIx.MOmaBPZA37SCVw.Q-1785733782-1.2.1.1-_1cs5Ym7zwZGMvIGpPdrS5SXTjjvy28kZH_YJERKXsMR3Cpka3oQQJvCSEURm5MB',cITimeS: '1785733782',cN: '79i5QZvVhya1hOqH6SkUhZ',cRay: 'a252cfc9aab806a1',cTplB: '0',cTplC:0,cTplO:0,cTplV:5,cType: 'managed',cUPMDTk:"/privacy-policy?__cf_chl_tk=qKwCgMYRjxeD11e5LLXWGjEaqs6rpB2EQ0kVsKNP7DE-1785733782-1.0.1.1-w6udq0dU.7.vEBTnjc6GBhooJpGb4MZTjFMNvN0H3fc",cvId: '3',cZone: 'ifwglobal.com',fa:"/privacy-policy?__cf_chl_f_tk=qKwCgMYRjxeD11e5LLXWGjEaqs6rpB2EQ0kVsKNP7DE-1785733782-1.0.1.1-w6udq0dU.7.vEBTnjc6GBhooJpGb4MZTjFMNvN0H3fc",md: 'TbQhIz1P9ORHBt4jjvJWQ5QE.0wjhdrD30whdKElGns-1785733782-1.2.1.1-vo_9rn2d0vDQb0onjD6z_MXQxHXtvcJ1Us0GJkWMP2xrSzTxvOARDEZtxY8cXQvTAe_slE88zchb7X3g5Sk6pce9xX7CNZM_WzYyJClEirlvpxttXpzoz_I_9iD98jidiQIAaFjv.LEvl4a3fgO9UcDvVmH7px7sgY0nqJVmK36yySuAVHoAx3ZTyZbfa7KGDCZO6ksO89BtcOZh1I8HHRqku.l36hzeh0esxWSCEioSPYGkY8d2uqMsY5.ObLHjlRfee_js9niIRF629qnGe2TraJyiB_gQI8aW0bfa3SYBj61zFj7Zf.nSoiZyQKV26jnzHRj1wBYoL4QvWm5lOCk_SeiZblTxbXHOayPC0gshqU68ip0X3qUXi.bnGvmdWWewfO214lIUc7yL2Nx9CLC6VP5bpPM2o7xH.wh.liC3VTaEyjn8E4GRm6PE4EvMY.7h5a_XLGt5gmQ_q.AspKiXIXUsZQ3xzVkBs1bgmXnoMY4EPHseiTyjqpVIrwyJFkEu5ggbfp21JDj1Bhqx4uxzhbyNkpAywDsf2BFZhCo6Ca9IdYTIP.yAiEbA.N5._W90cn6978bP6gsoDwpbI5G420fhIEL8FBbZ7O1OAVl8KI2xl10VfSSrQJptqGI9LR5IbBMbz88KRNgoYu7Hl1CLLdZ9XKUMhnx1OF0Wut69kbvtg9Ydxw.3IiV9JSx7oFTkPlRDhy7bCvRGRaynZzlfxXUA18Dvq.oFucERIES1H3AdIriIOsw0kDnyFpFpGX357wL0x2NFMDWOCvbVJX9STb0njbHoTN.rDnnEP.7RVjfK02c4kBZLcwgEsvYo3.l3rnxJ.fV3cRfECwgRJCjDAs11RiE501fV.uJSOeWr2zJSwhJgfCNJPztuGHfJJ8r_CiLRqE9QJxbCzCLKKpSzH9xsrDVFGpS57aYyyH1KcPgPaRmRAHIzOn2MyDrJpIEu_hhWjHWPprxOT5_Ebnl2XldKFVmKlCd0XHEbUpiTw7FLv6fOk6bWNF5cHCFVBOipPCo8JRiVjymnIdI2cyO.qXY4nQjUyHAHlJV3487mOLuPM.tMBCmFnDW97wdfuN8XcO2FqCbDLq2kXz9uLPBAJdEKtn7qU5HAtgO6HEmCaAnvD8wt0wG.99Pvn2rq',mdrd: 'EUX9B3sMwZbYkNcUhRcebnaydvt3qOrH7jg6B_rb3BE-1785733782-1.2.1.1-3i9jF4qixHVUu1ov5Yj41r8tdOcmD7GfAWxZkd5AIVLagAz2pQg1OdkWCqr8YUxgKdbDaYkbkQQmdtlH2.D7X7M52PPorZiU_tDx7_k.OZeasns6szi9zhbLSNouQYwCNQXSg4PI2RZEpM4mY.42dnY_YPxWh11sd55QZTwpZiFlAPFFSNKm.tPUDxZ_SQacQa4FuaRbGT9_IodWXew6Tc0Q.8ajYZSBUaQ_m3gStpFS8ehBIoQR76RAQFekV_82zO9SIk1V2Obr8kOALpHArfifNthOLHuB17ohZwNuzga2XvA0U03L8F8ioSyl7VxMgmf03DzRT72PE6SNdZHWcGdoTQjsI9T42bZ_dn4xlFU',};var a = document.createElement('script');a.nonce = '79i5QZvVhya1hOqH6SkUhZ';a.src = '/cdn-cgi/challenge-platform/h/g/orchestrate/chl_page/v1?ray=a252cfc9aab806a1';window._cf_chl_opt.cOgUHash = location.hash === '' && location.href.indexOf('#') !== -1 ? '#' : location.hash;window._cf_chl_opt.cOgUQuery = location.search === '' && location.href.slice(0, location.href.length - window._cf_chl_opt.cOgUHash.length).indexOf('?') !== -1 ? '?' : location.search;if (window.history && window.history.replaceState) {var ogU = location.pathname + window._cf_chl_opt.cOgUQuery + window._cf_chl_opt.cOgUHash;history.replaceState(null, null,"/privacy-policy?__cf_chl_rt_tk=qKwCgMYRjxeD11e5LLXWGjEaqs6rpB2EQ0kVsKNP7DE-1785733782-1.0.1.1-w6udq0dU.7.vEBTnjc6GBhooJpGb4MZTjFMNvN0H3fc"+ window._cf_chl_opt.cOgUHash);a.onload = function() {history.replaceState(null, null, ogU);}}document.getElementsByTagName('head')[0].appendChild(a);}());</script>
+<div class="policy-container">
+    <div class="policy-card">
+        <h2>1. Commitment to Privacy & Confidentiality</h2>
+        <p>IFW Global ("we", "our", or "the Company") is committed to protecting the privacy, confidentiality, and data integrity of all clients, claimants, and corporate entities. In the conduct of international asset recovery, private intelligence, blockchain forensics, and litigation support, all confidential transmissions are handled under strict legal non-disclosure frameworks.</p>
+
+        <h2>2. Collection & Forensic Handling of Information</h2>
+        <p>We collect information provided directly by clients during case intake, preliminary consultations, KYC identity verification, and evidence dossier submissions. This may include:</p>
+        <ul>
+            <li>Government-issued identification credentials and identity verification documents.</li>
+            <li>Financial loss records, transaction receipts, bank wire records, and blockchain transaction identifiers (TXIDs).</li>
+            <li>Correspondences, rogue entity communications, and contract agreements.</li>
+        </ul>
+
+        <h2>3. Cryptographic & Security Safeguards</h2>
+        <p>All sensitive client evidence and case data are protected utilizing 256-bit AES cryptographic encryption at rest and in transit via TLS 1.3 protocol. Access to active case files is restricted strictly to authorized investigators and legal counsel assigned to the respective jurisdiction.</p>
+
+        <h2>4. Disclosure to Regulatory & Law Enforcement Agencies</h2>
+        <p>Where authorized by the client or instructed under judicial subpoena, IFW Global submits certified evidentiary briefs to international law enforcement agencies, cybercrime task forces, and national financial regulatory bodies to effectuate asset freeze orders and settlement recoveries.</p>
+
+        <h2>5. Client Rights & Data Retention</h2>
+        <p>Clients maintain the right to inspect, verify, and request redaction of their personal records within our secure portal, subject to legal compliance and statutory retention requirements for financial crime investigations.</p>
+
+        <h2>6. Contact Legal & Compliance Department</h2>
+        <p>For any inquiries regarding data protection policies or regulatory compliance, contact our Compliance Directorate at <strong>compliance@ifwglobal.com</strong> or via the secure live case line.</p>
+    </div>
+</div>
+
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
-</body></html>
-
-
-
-
-
+</body>
+</html>
