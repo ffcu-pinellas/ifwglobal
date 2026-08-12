@@ -7,6 +7,15 @@ while (!file_exists($dir . '/config.php')) {
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
 ?>
+<?php
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php')) {
+    $dir = dirname($dir);
+    if ($dir === '/' || $dir === '\\' || preg_match('/^[A-Z]:\\\\$/i', $dir)) break;
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+?>
 <html lang="en-AU" prefix="og: https://ogp.me/ns#" class="js js-focus-visible" data-js-focus-visible="">
 
 <head>
@@ -16,6 +25,40 @@ require_once $dir . '/includes/functions.php';
 .footer__address, .footer__details, address, .contact-details { display: none !important; visibility: hidden !important; }
 </style>
 <?php endif; ?>
+<style id='gdpr-global-suppress'>#gdpr-cookie-consent-bar, #gdpr-cookie-consent-show-again, #cookie_action_settings, .gdpr_action_button, .gdpr-modal, .cli-modal, #cliModal, [id*='gdpr'], [class*='gdpr-cookie'], [class*='cli-'] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important; }</style>
+<style>
+/* Management Team & Staff Card Styling */
+.teams { margin-top: 40px; margin-bottom: 40px; }
+.teams__title { font-family: Antonio, sans-serif; font-size: 2.2rem; font-weight: 700; color: #fecc56; text-transform: uppercase; margin-bottom: 30px; letter-spacing: 0.5px; }
+.staff-card { background: #191617; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; overflow: hidden; margin-bottom: 30px; display: flex; flex-direction: column; transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+.staff-card:hover { transform: translateY(-4px); border-color: rgba(254, 204, 86, 0.35); box-shadow: 0 16px 35px rgba(0,0,0,0.5); }
+.staff-card__container { width: 100%; height: 340px; overflow: hidden; background: #121011; position: relative; }
+.staff-card__image { width: 100%; height: 100%; object-fit: cover; object-position: top center; transition: transform 0.3s ease; }
+.staff-card:hover .staff-card__image { transform: scale(1.03); }
+.staff-card__content { padding: 24px; color: #fff; flex-grow: 1; display: flex; flex-direction: column; }
+.staff-card__name { font-family: Antonio, sans-serif; font-size: 1.6rem; font-weight: 700; color: #fecc56; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+.staff-card__position { font-size: 0.85rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; }
+.staff-card__copy { font-size: 0.95rem; line-height: 1.65; color: #cbd5e1; margin-bottom: 15px; }
+.staff-card__more { display: none !important; }
+
+/* Video section styling */
+.video { position: relative; border-radius: 12px; overflow: hidden; margin-bottom: 40px; background: #000; box-shadow: 0 12px 30px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); }
+.video__link { display: block; position: relative; width: 100%; }
+.video__image { width: 100%; height: auto; display: block; filter: brightness(0.85); transition: filter 0.25s ease; }
+.video:hover .video__image { filter: brightness(1); }
+.video__play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 76px; height: 76px; background: #fecc56; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(254,204,86,0.6); transition: transform 0.25s ease, background 0.25s ease; }
+.video:hover .video__play { transform: translate(-50%, -50%) scale(1.1); background: #f59e0b; }
+.play__icon { width: 28px; height: 28px; fill: #1f1b1c; }
+
+/* General layout & typography */
+.article__main { color: #cbd5e1; line-height: 1.7; }
+.copy h2, .copy h3 { color: #fecc56; font-family: Antonio, sans-serif; text-transform: uppercase; margin-top: 30px; margin-bottom: 15px; }
+.copy p { margin-bottom: 18px; }
+.copy ul { padding-left: 20px; margin-bottom: 20px; }
+.copy ul li { list-style: disc; margin-bottom: 8px; }
+.copy a { color: #fecc56; text-decoration: underline; }
+</style>
+
 <style id='gdpr-global-suppress'>#gdpr-cookie-consent-bar, #gdpr-cookie-consent-show-again, #cookie_action_settings, .gdpr_action_button, .gdpr-modal, .cli-modal, #cliModal, [id*='gdpr'], [class*='gdpr-cookie'], [class*='cli-'] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important; }</style>
     <script async="" src="//www.gstatic.com/call-tracking/call-tracking_9.js" nonce="null"></script>
     <script async="" src="//www.gstatic.com/call-tracking/call-tracking_9.js" nonce="null"></script>
@@ -54,6 +97,27 @@ require_once $dir . '/includes/functions.php';
     <link rel="icon" type="image/png" sizes="32x32"
         href="/media/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16"
+        href="/media/icons/favicon-16x16.png">
+    <link rel="manifest" href="/media/icons/site.webmanifest">
+    <link rel="mask-icon" href="/media/icons/safari-pinned-tab.svg"
+        color="#fecc56">
+    <meta name="msapplication-TileColor" content="#fecc56">
+
+    <style>
+        #wpadminbar #wp-admin-bar-wccp_free_top_button .ab-icon:before {
+            content: "\f160";
+            color: #02CA02;
+            top: 3px;
+        }
+
+        #wpadminbar #wp-admin-bar-wccp_free_top_button .ab-icon {
+            transform: rotate(45deg);
+        }
+    </style>
+
+    <!-- Google Tag Manager for WordPress by gtm4wp.com -->
+    <script data-cfasync="false" data-pagespeed-no-defer="">
+        var gtm4wp_datalayer_name = "dataLayer";
         var dataLayer = dataLayer || [];
     </script>
     <!-- End Google Tag Manager for WordPress by gtm4wp.com -->
@@ -77,6 +141,22 @@ require_once $dir . '/includes/functions.php';
     <meta name="twitter:description"
         content="International specialists at cybercrime investigation and asset recovery, IFW Global combat significant fraud operations world-wide.">
     <meta name="twitter:label1" content="Time to read">
+    <meta name="twitter:data1" content="Less than a minute">
+    <script type="application/ld+json"
+        class="rank-math-schema-pro">{"@context":"https://schema.org","@graph":[{"@type":["Person","Organization"],"@id":"/#person","name":"IFW Global","logo":{"@type":"ImageObject","@id":"/#logo","url":"/media/gallery/IFW-Podcast-Screen.jpg","contentUrl":"/media/gallery/IFW-Podcast-Screen.jpg","inLanguage":"en-AU","width":"1431","height":"600"},"image":{"@type":"ImageObject","@id":"/#logo","url":"/media/gallery/IFW-Podcast-Screen.jpg","contentUrl":"/media/gallery/IFW-Podcast-Screen.jpg","inLanguage":"en-AU","width":"1431","height":"600"}},{"@type":"WebSite","@id":"/#website","url":"/","publisher":{"@id":"/#person"},"inLanguage":"en-AU"},{"@type":"BreadcrumbList","@id":"/about-us/#breadcrumb","itemListElement":[{"@type":"ListItem","position":"1","item":{"@id":"/","name":"Home"}},{"@type":"ListItem","position":"2","item":{"@id":"/about-us/","name":"About Us"}}]},{"@type":"WebPage","@id":"/about-us/#webpage","url":"/about-us/","name":"About Us: IFW Global","datePublished":"2022-03-03T13:49:41+11:00","dateModified":"2025-05-03T15:14:55+10:00","isPartOf":{"@id":"/#website"},"inLanguage":"en-AU","breadcrumb":{"@id":"/about-us/#breadcrumb"}},{"@type":"Person","@id":"/about-us/#author","image":{"@type":"ImageObject","@id":"https://secure.gravatar.com/avatar/40235b801c05525180ea04c93fcd322a3a1b55350be57f90baeb654be8cb744f?s=96&amp;d=mm&amp;r=g","url":"https://secure.gravatar.com/avatar/40235b801c05525180ea04c93fcd322a3a1b55350be57f90baeb654be8cb744f?s=96&amp;d=mm&amp;r=g","inLanguage":"en-AU"}},{"@type":"Article","headline":"About Us: IFW Global","datePublished":"2022-03-03T13:49:41+11:00","dateModified":"2025-05-03T15:14:55+10:00","author":{"@id":"/about-us/#author","name":"firstpage"},"publisher":{"@id":"/#person"},"description":"International specialists at cybercrime investigation and asset recovery, IFW Global combat significant fraud operations world-wide.","name":"About Us: IFW Global","@id":"/about-us/#richSnippet","isPartOf":{"@id":"/about-us/#webpage"},"inLanguage":"en-AU","mainEntityOfPage":{"@id":"/about-us/#webpage"}}]}</script>
+    <!-- /Rank Math WordPress SEO plugin -->
+
+    <link rel="dns-prefetch" href="//use.typekit.net">
+    <style>
+        html {
+            -webkit-text-size-adjust: 100%;
+            -moz-text-size-adjust: 100%;
+            text-size-adjust: 100%
+        }
+
+        body {
+            margin: 0;
+            line-height: 1
         }
 
         form {
@@ -2849,9 +2929,7 @@ require_once $dir . '/includes/functions.php';
     <link rel="stylesheet" id="wp-components-css"
         href="/media/gallery/style.min.css" type="text/css"
         media="all">
-    <link rel="stylesheet" id="godaddy-styles-css"
-        href="/wp-content/mu-plugins/vendor/wpex/godaddy-launch/includes/Dependencies/GoDaddy/Styles/build/latest.css?ver=2.0.2"
-        type="text/css" media="all">
+    
     <link rel="stylesheet" id="style-css"
         href="/media/gallery/style.min.css" type="text/css"
         media="all">
@@ -5924,12 +6002,7 @@ require_once $dir . '/includes/functions.php';
 
 <body class="wp-singular page-template-default page page-id-47 wp-theme-rb-council  numbers-at-top unselectable"
     data-new-gr-c-s-check-loaded="14.1139.0" data-gr-ext-installed="" style="cursor: default;">
-<?php if(get_setting($pdo, 'announcement_bar_active') == '1'): ?>
-<div style="background-color: #fecc56; color: #000; text-align: center; padding: 12px; font-weight: bold; z-index: 9999; position: relative; border-bottom: 2px solid #e5b340;">
-    <?= htmlspecialchars(get_setting($pdo, 'announcement_bar_text')) ?>
-</div>
-<?php endif; ?>
-
+<?php require_once $dir . '/includes/announcement.php'; ?>
 <?php require_once $dir . '/includes/announcement.php'; ?>
     <div id="svg-sprite" class="u-visually-hidden"><svg xmlns="http://www.w3.org/2000/svg"
             xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -6173,15 +6246,15 @@ require_once $dir . '/includes/functions.php';
 
             <ul class="alert__numbers">
                 <li class="alert__numbers-item">
-                    <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
+                    <a href="tel:1300439456" class="alert__numbers-link" data-title="1300 439 456">
                         HQ </a>
                 </li>
                 <li class="alert__numbers-item">
-                    <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+                    <a href="tel:+6183280402" class="alert__numbers-link" data-title="+61 (02) 8328 0402">
                         AUS </a>
                 </li>
                 <li class="alert__numbers-item">
-                    <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="alert__numbers-link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
+                    <a href="tel:+12475287" class="alert__numbers-link" data-title="+1 (239) 247 5287">
                         USA </a>
                 </li>
             </ul>
@@ -6512,7 +6585,7 @@ require_once $dir . '/includes/functions.php';
             </style>
 
             <div class="phone-headers">
-                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>">
+                <a href="tel:+61283280402">
                     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path
@@ -6521,9 +6594,9 @@ require_once $dir . '/includes/functions.php';
                     </svg>
                     <strong class="country-full">Australia: </strong>
                     <strong class="country-short">Aus</strong>
-                    <span class="phone-number"><?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?></span>
+                    <span class="phone-number">+61 (02) 8328 0402</span>
                 </a>
-                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>">
+                <a href="tel:+12392475287">
                     <svg class="phone-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path
@@ -6532,13 +6605,13 @@ require_once $dir . '/includes/functions.php';
                     </svg>
                     <strong class="country-full">USA: </strong>
                     <strong class="country-short">US</strong>
-                    <span class="phone-number"><?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?></span>
+                    <span class="phone-number">+1 (239) 247 5287</span>
                 </a>
             </div>
             <!-- /end HFCM by 99 Robots -->
 
 
-            <a href="/contact/" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
+            <a href="/book-a-consultation.php" class="site-header__book btn">Submit an enquiry</a> <a href="/client/login.php" class="site-header__book btn" style="background:#1f1b1c !important; color:#fecc56 !important; border:1px solid #fecc56 !important; margin-left:8px !important; text-transform:uppercase; font-weight:bold;">LOGIN</a>
 
             <button class="site-header__toggle  js-site-offcanvas-trigger" aria-controls="main-nav"
                 aria-expanded="false">
@@ -6712,12 +6785,12 @@ require_once $dir . '/includes/functions.php';
                                     sound, shutting down an illegal peer network, removing counterfeits from the market
                                     or successfully recovering assets lost from fraud always requires a substantial
                                     buildup of evidence necessary to turn the results of investigations into actionable
-                                    intelligence. Each case requires an individual approach, while “fit-all solutions”
+                                    intelligence. Each case requires an individual approach, while â€œfit-all solutionsâ€
                                     are simply unable to deliver the desired outcome.</p>
-                                <p dir="ltr">This is why IFW Global offers its clients a methodical process – a set of
-                                    established actions that follow a systematic and meticulous procedure – rather than
-                                    a predetermined product. This approach has proven successful throughout IFW Global’s
-                                    history and allows easy adaptability – each element of the process is constantly
+                                <p dir="ltr">This is why IFW Global offers its clients a methodical process â€“ a set of
+                                    established actions that follow a systematic and meticulous procedure â€“ rather than
+                                    a predetermined product. This approach has proven successful throughout IFW Globalâ€™s
+                                    history and allows easy adaptability â€“ each element of the process is constantly
                                     adjusted to the situation.</p>
                             </div>
                         </div>
@@ -6802,7 +6875,7 @@ require_once $dir . '/includes/functions.php';
 
                                                 <div class="staff-card__copy js-staff-card-copy">
                                                     <p>Allan Watson is the Director of Global Investigations and has 38
-                                                        years’ experience in varying fields of investigations. These
+                                                        yearsâ€™ experience in varying fields of investigations. These
                                                         include serious investment fraud, asset tracing and recovery,
                                                         business intelligence and security and crisis management in both
                                                         the corporate and government sectors. Allan is presently in
@@ -7056,7 +7129,7 @@ require_once $dir . '/includes/functions.php';
                 Around the clock, around the world </h2>
 
             <p class="cta__text">
-                IFW Global has a strong operations centre in the heart of Asia, which is the world’s largest hub for
+                IFW Global has a strong operations centre in the heart of Asia, which is the worldâ€™s largest hub for
                 many types of cybercrime. We also have offices elsewhere around the globe in Europe, USA and Oceania.
             </p>
 
@@ -7073,20 +7146,20 @@ require_once $dir . '/includes/functions.php';
                         </li>
 
                         <li class="phones__item">
-                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
+                            <a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
                                 HQ </a>
                         </li>
                         <li class="phones__item">
-                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+                            <a href="tel:+6183280402" class="phones__link" data-title="+61 (02) 8328 0402">
                                 AUS </a>
                         </li>
                         <li class="phones__item">
-                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
+                            <a href="tel:+12475287" class="phones__link" data-title="+1 (239) 247 5287">
                                 USA </a>
                         </li>
                     </ul>
 
-                    <a href="/contact/" class="cta__btn btn btn--dark">
+                    <a href="/book-a-consultation/" class="cta__btn btn btn--dark">
                         Submit an enquiry
                     </a>
                 </div>
@@ -7346,7 +7419,7 @@ require_once $dir . '/includes/functions.php';
                                             href="/asset-recovery/" class="footer-menu__link"><span
                                                 class="footer-menu__label">Asset Recovery</span></a></li>
                                     <li id="menu-item-465" class="footer-menu__item footer-menu__item--465"><a
-                                            href="/contact/"
+                                            href="/book-a-consultation/"
                                             class="footer-menu__link"><span class="footer-menu__label">Submit an
                                                 Enquiry</span></a></li>
                                 </ul>
@@ -7374,28 +7447,28 @@ require_once $dir . '/includes/functions.php';
                             <div class="site-footer__admin">
                                 <h5 class="site-footer__subtitle">Get in touch</h5>
 
-                                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="site-footer__phone">
+                                <a href="tel:1300439456" class="site-footer__phone">
                                     <strong class="site-footer__phone-name">
                                         Australia (Global HQ) </strong>
 
                                     1300 IFW GLO (
 
-                                    <?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>
+                                    1300 439 456
                                     )
                                 </a>
-                                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>" class="site-footer__phone">
+                                <a href="tel:+6183280402" class="site-footer__phone">
                                     <strong class="site-footer__phone-name">
                                         Australia </strong>
 
 
-                                    <?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>
+                                    +61 (02) 8328 0402
                                 </a>
-                                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="site-footer__phone">
+                                <a href="tel:+12475287" class="site-footer__phone">
                                     <strong class="site-footer__phone-name">
                                         USA </strong>
 
 
-                                    <?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>
+                                    +1 (239) 247 5287
                                 </a>
                             </div>
 
@@ -7449,7 +7522,7 @@ require_once $dir . '/includes/functions.php';
                 <div class="site-footer__bottom">
                     <div class="l-container">
                         <div class="site-footer__smalls">
-                            <small class="site-footer__copy">© 2026 IFW Global</small>
+                            <small class="site-footer__copy">Â© 2026 IFW Global</small>
 
                             <nav class="site-footer__meta">
                                 <ul id="menu-legal-menu" class="site-footer__meta__list">
@@ -7483,7 +7556,7 @@ require_once $dir . '/includes/functions.php';
                 </div>
             </div>
 
-            <a href="/contact/" class="floating-book btn">
+            <a href="/book-a-consultation/" class="floating-book btn">
                 Submit an enquiry
             </a>
 
@@ -7655,21 +7728,21 @@ require_once $dir . '/includes/functions.php';
                         </li>
 
                         <li class="phones__item">
-                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia', '1300439456'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia', '1300 439 456')) ?>">
+                            <a href="tel:1300439456" class="phones__link" data-title="1300 439 456">
                                 HQ </a>
                         </li>
                         <li class="phones__item">
-                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_australia_secondary', '+61 (02) 8328 0402')) ?>">
+                            <a href="tel:+6183280402" class="phones__link" data-title="+61 (02) 8328 0402">
                                 AUS </a>
                         </li>
                         <li class="phones__item">
-                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', get_setting($pdo, 'phone_usa', '+1 (239) 247 5287'))) ?>" class="phones__link" data-title="<?= htmlspecialchars(get_setting($pdo, 'phone_usa', '+1 (239) 247 5287')) ?>">
+                            <a href="tel:+12475287" class="phones__link" data-title="+1 (239) 247 5287">
                                 USA </a>
                         </li>
                     </ul>
                 </div>
 
-                <a href="/contact/" class="offcanvas__btn btn">
+                <a href="/book-a-consultation/" class="offcanvas__btn btn">
                     Submit an enquiry
                 </a>
             </div>
@@ -8541,12 +8614,11 @@ require_once $dir . '/includes/functions.php';
         charset="">jQuery(document).ready(function () { jQuery(document).bind("gform_confirmation_loaded", function (b, a) { window.dataLayer = window.dataLayer || []; window.dataLayer.push({ event: "formSubmission", formID: a }) }) });</script>
 
 <?php require_once $dir . '/includes/chat_widget.php'; ?>
+<?php require_once $dir . '/includes/chat_widget.php'; ?>
 </body><grammarly-desktop-integration data-grammarly-shadow-root="true"
     style="visibility: visible !important;"></grammarly-desktop-integration>
 
 </html>
-
-
 
 
 

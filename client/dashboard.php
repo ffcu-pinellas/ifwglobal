@@ -741,14 +741,14 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
 <?php if ($active_penalty_invoices > 0 && $primary_penalty_invoice): ?>
 <div class="portal-card mb-4 p-4 shadow-sm" style="border-left: 5px solid #ef4444 !important; background: linear-gradient(135deg, #241418 0%, #170d10 100%); border-color: #5c1d24;">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-        <div class="flex-grow-1">
+        <div class="flex-grow-1" style="max-width: 680px;">
             <div class="d-flex align-items-center mb-1">
                 <span class="badge badge-danger px-2 py-1 mr-2 font-weight-bold" style="font-size:10.5px; letter-spacing:0.5px;">ACTION REQUIRED</span>
                 <h5 class="font-weight-bold mb-0 text-white" style="font-size:1.15rem;">
                     <i class="fas fa-exclamation-triangle mr-1 text-danger"></i> Overdue Penalty / Penalty Interest Active
                 </h5>
             </div>
-            <p class="mb-3 text-light" style="font-size: 13.5px;">
+            <p class="mb-0 text-light" style="font-size: 13.5px; line-height: 1.6;">
                 An automated late fee penalty of 
                 <?php if (!empty($primary_penalty_invoice['late_fee_is_percentage'])): ?>
                     <strong class="text-danger font-weight-bold"><?= number_format($primary_penalty_invoice['late_fee_amount'], 2) ?>%</strong>
@@ -757,15 +757,15 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                 <?php endif; ?>
                 is accruing <span class="badge badge-danger"><?= htmlspecialchars($primary_penalty_invoice['late_fee_type'] ?? 'daily') ?></span>. Total accumulated late fees: <strong class="text-danger font-weight-bold"><?= number_format($total_accumulated_penalty_usd, 2) ?> USD</strong> across <?= $active_penalty_invoices ?> invoice(s).
             </p>
-            <a href="/client/invoices.php" class="btn btn-warning font-weight-bold text-dark px-4 py-2 shadow-lg d-inline-flex align-items-center" style="background: linear-gradient(135deg, #fecc56, #f59e0b); border: none; font-size: 13px; letter-spacing: 0.3px; border-radius: 6px;">
-                <i class="fas fa-credit-card mr-2"></i> View & Settle Due Invoices (<?= $active_penalty_invoices ?> Due) &rarr;
-            </a>
         </div>
-        <div class="text-md-right p-3 rounded border border-danger" style="min-width: 220px; background: rgba(0,0,0,0.4);">
+        <div class="text-center p-3 rounded border border-danger d-flex flex-column align-items-center justify-content-center flex-grow-1 flex-md-grow-0" style="min-width: 250px; background: rgba(0,0,0,0.5); box-shadow: 0 4px 15px rgba(220,53,69,0.15);">
             <span class="small font-weight-bold text-uppercase d-block text-muted" style="font-size:10.5px; letter-spacing:0.8px;">Next Penalty Increment:</span>
-            <div id="dashPenaltyCountdown" class="font-weight-bold text-danger mt-1" style="font-size: 1.45rem; letter-spacing: 1px; font-family: monospace;">
+            <div id="dashPenaltyCountdown" class="font-weight-bold text-danger my-1" style="font-size: 1.55rem; letter-spacing: 1px; font-family: monospace;">
                 00h 00m 00s
             </div>
+            <a href="/client/invoices.php" class="btn btn-warning font-weight-bold text-dark px-3 py-2 mt-2 shadow-lg w-100 text-center d-inline-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #fecc56, #f59e0b); border: none; font-size: 12.5px; letter-spacing: 0.3px; border-radius: 6px; box-shadow: 0 4px 12px rgba(254,204,86,0.35);">
+                <i class="fas fa-credit-card mr-2"></i> View & Settle Due Invoices (<?= $active_penalty_invoices ?> Due) &rarr;
+            </a>
         </div>
     </div>
 </div>
