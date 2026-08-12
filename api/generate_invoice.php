@@ -6,12 +6,6 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-?>
-require_once '../config.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     http_response_code(403);
@@ -42,4 +36,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     echo json_encode(['status' => 'error', 'message' => 'Invalid amount.']);
 }
-?>

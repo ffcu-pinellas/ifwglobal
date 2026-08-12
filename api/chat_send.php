@@ -6,15 +6,7 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-?>
-require_once '../config.php';
-require_once '../includes/mailer.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Support both frontend widget (frontend_client_id) and Client Portal (client_portal_id)
+require_once $dir . '/includes/mailer.php';
 $client_id = $_SESSION['client_portal_id'] ?? $_SESSION['frontend_client_id'] ?? null;
 
 if (!$client_id) {

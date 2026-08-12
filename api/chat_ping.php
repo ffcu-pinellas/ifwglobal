@@ -6,13 +6,6 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-?>
-// api/chat_ping.php
-require_once '../config.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 
 header('Content-Type: application/json');
 
@@ -53,8 +46,6 @@ $stmt->execute([$client_id, $sender_to_mark]);
 
 // 3. Get the other party's status
 $other_type = ($user_type === 'client') ? 'admin' : 'client';
-// Note: for admin, we need the assigned agent's user_id, but the client only knows the admin_id if we fetch it.
-// Actually, IFW_chat_status tracks by `admin` and `user_id`. The client needs to know if their *assigned agent* is online.
 $other_typing = 0;
 $other_online = 0;
 
@@ -95,4 +86,3 @@ echo json_encode([
     'other_online' => $other_online,
     'all_read' => ($unread_count == 0)
 ]);
-?>

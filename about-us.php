@@ -54,27 +54,6 @@ require_once $dir . '/includes/functions.php';
     <link rel="icon" type="image/png" sizes="32x32"
         href="/media/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16"
-        href="/media/icons/favicon-16x16.png">
-    <link rel="manifest" href="/media/icons/site.webmanifest">
-    <link rel="mask-icon" href="/media/icons/safari-pinned-tab.svg"
-        color="#fecc56">
-    <meta name="msapplication-TileColor" content="#fecc56">
-
-    <style>
-        #wpadminbar #wp-admin-bar-wccp_free_top_button .ab-icon:before {
-            content: "\f160";
-            color: #02CA02;
-            top: 3px;
-        }
-
-        #wpadminbar #wp-admin-bar-wccp_free_top_button .ab-icon {
-            transform: rotate(45deg);
-        }
-    </style>
-
-    <!-- Google Tag Manager for WordPress by gtm4wp.com -->
-    <script data-cfasync="false" data-pagespeed-no-defer="">
-        var gtm4wp_datalayer_name = "dataLayer";
         var dataLayer = dataLayer || [];
     </script>
     <!-- End Google Tag Manager for WordPress by gtm4wp.com -->
@@ -98,22 +77,6 @@ require_once $dir . '/includes/functions.php';
     <meta name="twitter:description"
         content="International specialists at cybercrime investigation and asset recovery, IFW Global combat significant fraud operations world-wide.">
     <meta name="twitter:label1" content="Time to read">
-    <meta name="twitter:data1" content="Less than a minute">
-    <script type="application/ld+json"
-        class="rank-math-schema-pro">{"@context":"https://schema.org","@graph":[{"@type":["Person","Organization"],"@id":"/#person","name":"IFW Global","logo":{"@type":"ImageObject","@id":"/#logo","url":"/media/gallery/IFW-Podcast-Screen.jpg","contentUrl":"/media/gallery/IFW-Podcast-Screen.jpg","inLanguage":"en-AU","width":"1431","height":"600"},"image":{"@type":"ImageObject","@id":"/#logo","url":"/media/gallery/IFW-Podcast-Screen.jpg","contentUrl":"/media/gallery/IFW-Podcast-Screen.jpg","inLanguage":"en-AU","width":"1431","height":"600"}},{"@type":"WebSite","@id":"/#website","url":"/","publisher":{"@id":"/#person"},"inLanguage":"en-AU"},{"@type":"BreadcrumbList","@id":"/about-us/#breadcrumb","itemListElement":[{"@type":"ListItem","position":"1","item":{"@id":"/","name":"Home"}},{"@type":"ListItem","position":"2","item":{"@id":"/about-us/","name":"About Us"}}]},{"@type":"WebPage","@id":"/about-us/#webpage","url":"/about-us/","name":"About Us: IFW Global","datePublished":"2022-03-03T13:49:41+11:00","dateModified":"2025-05-03T15:14:55+10:00","isPartOf":{"@id":"/#website"},"inLanguage":"en-AU","breadcrumb":{"@id":"/about-us/#breadcrumb"}},{"@type":"Person","@id":"/about-us/#author","image":{"@type":"ImageObject","@id":"https://secure.gravatar.com/avatar/40235b801c05525180ea04c93fcd322a3a1b55350be57f90baeb654be8cb744f?s=96&amp;d=mm&amp;r=g","url":"https://secure.gravatar.com/avatar/40235b801c05525180ea04c93fcd322a3a1b55350be57f90baeb654be8cb744f?s=96&amp;d=mm&amp;r=g","inLanguage":"en-AU"}},{"@type":"Article","headline":"About Us: IFW Global","datePublished":"2022-03-03T13:49:41+11:00","dateModified":"2025-05-03T15:14:55+10:00","author":{"@id":"/about-us/#author","name":"firstpage"},"publisher":{"@id":"/#person"},"description":"International specialists at cybercrime investigation and asset recovery, IFW Global combat significant fraud operations world-wide.","name":"About Us: IFW Global","@id":"/about-us/#richSnippet","isPartOf":{"@id":"/about-us/#webpage"},"inLanguage":"en-AU","mainEntityOfPage":{"@id":"/about-us/#webpage"}}]}</script>
-    <!-- /Rank Math WordPress SEO plugin -->
-
-    <link rel="dns-prefetch" href="//use.typekit.net">
-    <style>
-        html {
-            -webkit-text-size-adjust: 100%;
-            -moz-text-size-adjust: 100%;
-            text-size-adjust: 100%
-        }
-
-        body {
-            margin: 0;
-            line-height: 1
         }
 
         form {

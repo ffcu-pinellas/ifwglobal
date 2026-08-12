@@ -327,8 +327,18 @@ function trigger_background_cron_tasks($pdo) {
  * Send a notification message to Telegram using Bot API configured in settings
  */
 function send_telegram_notification($pdo, $message) {
+    global $env;
     $token = get_setting($pdo, 'telegram_bot_token', '');
     $chat_id = get_setting($pdo, 'telegram_chat_id', '');
+    
+    // Fallback to .env configuration if DB setting is empty
+    if (empty($token)) {
+        $token = $env['TELEGRAM_BOT_TOKEN'] ?? getenv('TELEGRAM_BOT_TOKEN') ?? $_ENV['TELEGRAM_BOT_TOKEN'] ?? $_SERVER['TELEGRAM_BOT_TOKEN'] ?? '';
+    }
+    if (empty($chat_id)) {
+        $chat_id = $env['TELEGRAM_CHAT_ID'] ?? getenv('TELEGRAM_CHAT_ID') ?? $_ENV['TELEGRAM_CHAT_ID'] ?? $_SERVER['TELEGRAM_CHAT_ID'] ?? '';
+    }
+    
     if (empty($token) || empty($chat_id)) {
         return false;
     }
@@ -340,12 +350,32 @@ function send_telegram_notification($pdo, $message) {
         'parse_mode' => 'HTML'
     ];
     
+    // Use cURL if available (most reliable on cPanel)
+    if (function_exists('curl_init')) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        return ($http_code === 200 && $response !== false);
+    }
+    
     $options = [
         'http' => [
             'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
             'method'  => 'POST',
             'content' => http_build_query($data),
             'timeout' => 10
+        ],
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false
         ]
     ];
     

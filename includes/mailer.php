@@ -87,8 +87,15 @@ HTML;
             $mail->SMTPAuth   = true;
             $mail->Username   = $env['MAIL_USERNAME'];
             $mail->Password   = $env['MAIL_PASSWORD'];
-            $mail->SMTPSecure = $env['MAIL_ENCRYPTION'] == 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = $env['MAIL_PORT'];
+            $mail->SMTPSecure = (strtolower($env['MAIL_ENCRYPTION'] ?? '') === 'ssl' || ($env['MAIL_PORT'] ?? 0) == 465) ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = $env['MAIL_PORT'] ?? 465;
+            $mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                ]
+            ];
         }
         
         $fromAddress = !empty($env['MAIL_FROM_ADDRESS']) ? $env['MAIL_FROM_ADDRESS'] : 'no-reply@' . parse_url($app_url, PHP_URL_HOST);
