@@ -133,6 +133,18 @@ if (isset($pdo)) {
         $unread_notifications_count = 0;
     }
 }
+
+// Resolve portal avatar for header/sidebar display
+$portal_avatar_url = '/admin_assets/img/profile/blank.png';
+if (isset($pdo)) {
+    try {
+        if ($user_role === 'client' && !empty($_SESSION['client_portal_id'])) {
+            $portal_avatar_url = get_portal_avatar_url($pdo, 'client', (int)$_SESSION['client_portal_id']);
+        } elseif (!empty($_SESSION['admin_id'])) {
+            $portal_avatar_url = get_portal_avatar_url($pdo, 'admin', (int)$_SESSION['admin_id']);
+        }
+    } catch (Exception $e) {}
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -225,6 +237,8 @@ if (isset($pdo)) {
             #wrapper-content {
                 margin-left: 0 !important;
                 padding-top: 68px !important;
+                padding-left: 12px !important;
+                padding-right: 12px !important;
             }
             #wrapper-header .navbar {
                 padding: 6px 10px !important;
@@ -246,6 +260,73 @@ if (isset($pdo)) {
                 width: calc(100vw - 20px) !important;
                 max-width: 320px !important;
             }
+            #mobileSidebarBackdrop {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0,0,0,0.55);
+                z-index: 1035;
+            }
+            #wrapper.toggled #mobileSidebarBackdrop {
+                display: block;
+            }
+            .sidebar-nav .nav-link {
+                padding: 14px 18px !important;
+                font-size: 14px !important;
+                min-height: 48px;
+            }
+            .card { margin-bottom: 1rem; }
+            .table-responsive {
+                -webkit-overflow-scrolling: touch;
+                border-radius: 6px;
+            }
+            .table-responsive::after {
+                content: '← scroll →';
+                display: block;
+                text-align: center;
+                font-size: 10px;
+                color: #64748b;
+                padding: 4px 0 2px;
+                letter-spacing: 0.5px;
+            }
+            .modal-dialog {
+                margin: 10px auto !important;
+                max-width: calc(100vw - 20px) !important;
+            }
+            .btn, button[type="submit"] {
+                min-height: 44px;
+            }
+        }
+        @media (max-width: 576px) {
+            #wrapper-header .dropdown-menu {
+                width: calc(100vw - 16px) !important;
+                right: 8px !important;
+                max-width: none !important;
+            }
+            #wrapper-content {
+                padding-top: 64px !important;
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+            }
+            .card-body { padding: 1rem !important; }
+            h3, .h3 { font-size: 1.25rem !important; }
+        }
+        @media (max-width: 390px) {
+            #wrapper-header .navbar-nav .nav-item.dropdown .nav-link {
+                padding: 4px 6px !important;
+            }
+            #portalCurrencyDropdown span.d-none.d-sm-inline {
+                display: none !important;
+            }
+        }
+
+        /* Global responsive table wrapper hint (desktop) */
+        .table-responsive-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .sidebar { height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; background-color: #1f1b1c !important; }
@@ -281,6 +362,7 @@ if (isset($pdo)) {
 </head>
 <body>
     <div id="wrapper" class="bg-dark">
+        <div id="mobileSidebarBackdrop" onclick="document.getElementById('wrapper').classList.remove('toggled');" aria-hidden="true"></div>
         <!-- WRAPPER HEADER -->
         <div id="wrapper-header">
             <nav class="navbar navbar-expand navbar-dark navbar-danger bg-dark">
@@ -381,7 +463,7 @@ if (isset($pdo)) {
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle no-caret d-flex align-items-center p-1" href="javascript:void(0);" id="settings" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <img src="/admin_assets/img/profile/blank.png" class="rounded-circle border border-warning" width="30px" height="30px">
+                            <img src="<?= htmlspecialchars($portal_avatar_url) ?>" id="portalAvatarImg" class="rounded-circle border border-warning" width="30px" height="30px" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
                             <span class="ml-2 text-white font-weight-bold d-none d-sm-inline" style="font-size:12px;"><?php echo htmlspecialchars($user_name); ?></span>
                             <span class="badge badge-warning ml-1 text-dark d-none d-md-inline" style="font-size: 9px;"><?php echo strtoupper($user_role); ?></span>
                         </a>
@@ -424,39 +506,97 @@ if (isset($pdo)) {
         </div>
 
         <script>
-        // High-Tech Web Audio API Chime Synthesizer
+        // High-Tech Web Audio API Chime — mobile-safe (requires user-gesture unlock on iOS/Android)
+        var sharedAudioCtx = null;
+        function unlockAudioContext() {
+            try {
+                var AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                if (!sharedAudioCtx) sharedAudioCtx = new AudioCtx();
+                if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume();
+            } catch (e) {}
+        }
+        ['touchstart', 'touchend', 'click', 'keydown'].forEach(function(evt) {
+            document.addEventListener(evt, unlockAudioContext, { once: false, passive: true });
+        });
+
         function playNotificationChime() {
             try {
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                if (!AudioCtx) return;
-                const ctx = new AudioCtx();
-                
-                const now = ctx.currentTime;
-                const osc1 = ctx.createOscillator();
-                const osc2 = ctx.createOscillator();
-                const gain = ctx.createGain();
-                
+                unlockAudioContext();
+                var ctx = sharedAudioCtx;
+                if (!ctx) {
+                    var AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioCtx) return;
+                    ctx = sharedAudioCtx = new AudioCtx();
+                }
+                if (ctx.state === 'suspended') {
+                    ctx.resume().then(function() { playNotificationChime(); });
+                    return;
+                }
+                var now = ctx.currentTime;
+                var osc1 = ctx.createOscillator();
+                var osc2 = ctx.createOscillator();
+                var gain = ctx.createGain();
                 osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(587.33, now); // D5
-                osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.12); // A5
-                
+                osc1.frequency.setValueAtTime(587.33, now);
+                osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.12);
                 osc2.type = 'triangle';
                 osc2.frequency.setValueAtTime(880.00, now + 0.12);
-                osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.28); // D6
-                
+                osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.28);
                 gain.gain.setValueAtTime(0.01, now);
-                gain.gain.linearRampToValueAtTime(0.18, now + 0.05);
+                gain.gain.linearRampToValueAtTime(0.22, now + 0.05);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-                
                 osc1.connect(gain);
                 osc2.connect(gain);
                 gain.connect(ctx.destination);
-                
                 osc1.start(now);
                 osc2.start(now + 0.12);
                 osc1.stop(now + 0.12);
                 osc2.stop(now + 0.45);
-            } catch(e) {}
+            } catch(e) {
+                try {
+                    var fallback = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUKzn8LllHAU7k9n0y3kpBSZ8yPDdkEILEF+16OyrWBUIQ5/h8r1sIAUsgs/z2Yk2CBtpvfDknE4MDlCs5/C5ZRwFO5PZ9M');
+                    fallback.volume = 0.35;
+                    fallback.play().catch(function(){});
+                } catch(x) {}
+            }
+            if (navigator.vibrate) {
+                try { navigator.vibrate([120, 60, 120]); } catch(v) {}
+            }
+        }
+        var playNotificationSound = playNotificationChime;
+
+        // Tab title blink for unread messages
+        var originalTitle = document.title;
+        var titleBlinkTimer = null;
+        function startTitleBlink(label) {
+            if (titleBlinkTimer) return;
+            var showAlt = true;
+            titleBlinkTimer = setInterval(function() {
+                document.title = showAlt ? ('💬 ' + (label || 'New Message') + ' — IFW Portal') : originalTitle;
+                showAlt = !showAlt;
+            }, 1200);
+        }
+        function stopTitleBlink() {
+            if (titleBlinkTimer) {
+                clearInterval(titleBlinkTimer);
+                titleBlinkTimer = null;
+            }
+            document.title = originalTitle;
+        }
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) stopTitleBlink();
+        });
+
+        function showDesktopNotification(title, body, url) {
+            if (!('Notification' in window)) return;
+            var iconUrl = '/media/logos/logo.svg';
+            if (Notification.permission === 'granted') {
+                var n = new Notification(title, { body: body, icon: iconUrl, badge: iconUrl, tag: 'ifw-portal-msg', renotify: true });
+                n.onclick = function() { window.focus(); if (url) window.location.href = url; n.close(); };
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
         }
 
         // Real-Time Notification & Live Chat Poller
@@ -466,21 +606,24 @@ if (isset($pdo)) {
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Check if new incoming message arrived
                     if (data.latest_message && data.latest_message.id > trackedLastMsgId) {
                         trackedLastMsgId = data.latest_message.id;
                         playNotificationChime();
-                        
+                        startTitleBlink(data.latest_message.sender_name);
+
+                        var toastMsg = data.latest_message.message;
+                        var toastTitle = '💬 New Message from ' + data.latest_message.sender_name;
                         if (typeof toastr !== 'undefined') {
                             toastr.options = {
                                 "closeButton": true,
                                 "progressBar": true,
                                 "positionClass": "toast-top-right",
-                                "timeOut": "6000",
+                                "timeOut": "8000",
                                 "onclick": function() { window.location.href = data.latest_message.url; }
                             };
-                            toastr.info(data.latest_message.message, '💬 New Message from ' + data.latest_message.sender_name);
+                            toastr.info(toastMsg, toastTitle);
                         }
+                        showDesktopNotification(toastTitle, toastMsg, data.latest_message.url);
                     } else if (data.latest_message) {
                         trackedLastMsgId = Math.max(trackedLastMsgId, data.latest_message.id);
                     }
@@ -489,6 +632,12 @@ if (isset($pdo)) {
             .catch(() => {});
         }
         setInterval(pollRealtimeUpdates, 4500);
+        if ('Notification' in window && Notification.permission === 'default') {
+            document.addEventListener('click', function reqNotifOnce() {
+                Notification.requestPermission();
+                document.removeEventListener('click', reqNotifOnce);
+            }, { once: true });
+        }
 
         // 10-Minute Auto-Inactivity Lock
         let idleTimer = null;
@@ -526,6 +675,8 @@ if (isset($pdo)) {
                     document.getElementById('sessionInactivityOverlay').style.display = 'none';
                     err.style.display = 'none';
                     resetIdleTimer();
+                    // Soft reload to refresh stale data after PIN unlock
+                    setTimeout(function() { location.reload(); }, 300);
                 } else {
                     err.innerText = 'Incorrect Security PIN.';
                     err.style.display = 'block';
@@ -595,6 +746,30 @@ if (isset($pdo)) {
         }
 
         document.addEventListener('DOMContentLoaded', initPrivacyShield);
+
+        function uploadPortalAvatar(input) {
+            if (!input.files || !input.files[0]) return;
+            var formData = new FormData();
+            formData.append('avatar', input.files[0]);
+            var preview = document.getElementById('avatarPreviewImg');
+            if (preview) preview.style.opacity = '0.5';
+            fetch('/api/upload_avatar.php', { method: 'POST', body: formData })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.status === 'success' && data.avatar_url) {
+                    var imgs = document.querySelectorAll('#portalAvatarImg, #avatarPreviewImg, .sidebar-profile-img, .chat-avatar-me');
+                    imgs.forEach(function(img) { img.src = data.avatar_url + '?t=' + Date.now(); });
+                    if (typeof toastr !== 'undefined') toastr.success('Profile photo updated.');
+                } else if (typeof toastr !== 'undefined') {
+                    toastr.error(data.message || 'Upload failed.');
+                }
+                if (preview) preview.style.opacity = '1';
+            })
+            .catch(function() {
+                if (typeof toastr !== 'undefined') toastr.error('Upload failed.');
+                if (preview) preview.style.opacity = '1';
+            });
+        }
         </script>
 
 <?php if(isset($_GET['profile_updated'])): ?>
@@ -633,6 +808,16 @@ if (isset($pdo)) {
       <form method="POST">
         <input type="hidden" name="client_action" value="edit_profile">
         <div class="modal-body">
+            <div class="text-center mb-4 pb-3 border-bottom border-secondary">
+                <img src="<?= htmlspecialchars($portal_avatar_url) ?>" id="avatarPreviewImg" class="rounded-circle border border-warning mb-2" width="80" height="80" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
+                <div>
+                    <label class="btn btn-sm btn-outline-warning font-weight-bold mb-0">
+                        <i class="fas fa-camera mr-1"></i> Change Photo
+                        <input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" onchange="uploadPortalAvatar(this)">
+                    </label>
+                </div>
+                <small class="text-muted d-block mt-1">JPG, PNG or WEBP — max 3MB</small>
+            </div>
             <div class="row">
                 <div class="col-md-6 form-group mb-3">
                     <label class="small text-muted font-weight-bold">First Name <span class="text-danger">*</span></label>

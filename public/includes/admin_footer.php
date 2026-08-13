@@ -38,6 +38,43 @@
                 "responsive": true
             });
         }
+
+        // Bootstrap tooltips (layman-friendly explanations)
+        if (typeof $.fn.tooltip === 'function') {
+            $('[data-toggle="tooltip"]').tooltip({ container: 'body' });
+        }
+
+        // Universal form submit & button loading spinners
+        $(document).on('submit', 'form', function() {
+            var $form = $(this);
+            if ($form.data('no-spinner')) return;
+            var $btn = $form.find('button[type="submit"], input[type="submit"]').first();
+            if ($btn.length && !$btn.prop('disabled') && !$btn.data('spinner-active')) {
+                $btn.data('spinner-active', true);
+                $btn.data('original-html', $btn.html());
+                $btn.prop('disabled', true);
+                $btn.html('<span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span> Processing...');
+            }
+        });
+
+        $(document).on('click', 'button.btn:not([type="submit"]), a.btn[data-loading="true"]', function(e) {
+            var $btn = $(this);
+            if ($btn.data('spinner-active') || $btn.hasClass('no-spinner') || $btn.attr('data-toggle')) return;
+            if ($btn.closest('form').length && $btn.attr('type') === 'submit') return;
+            if ($btn.is('[data-dismiss], [data-toggle], .dropdown-toggle, #privacyShieldToggle')) return;
+            $btn.data('spinner-active', true);
+            $btn.data('original-html', $btn.html());
+            var origDisabled = $btn.prop('disabled');
+            $btn.prop('disabled', true);
+            $btn.html('<span class="spinner-border spinner-border-sm mr-1"></span> Processing...');
+            setTimeout(function() {
+                if ($btn.data('spinner-active')) {
+                    $btn.prop('disabled', origDisabled);
+                    $btn.html($btn.data('original-html'));
+                    $btn.data('spinner-active', false);
+                }
+            }, 15000);
+        });
     });
 </script>
 

@@ -1,6 +1,6 @@
 <?php
 // includes/chat_widget.php
-// Tawk.to Integration — Always renders from clean property ID, never dumps raw script as text
+// Tawk.to Integration — only renders when a valid, non-placeholder property ID is configured
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -13,26 +13,40 @@ while (!file_exists($dir . '/config.php')) {
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
 
-// ALWAYS extract clean property ID — never echo raw stored code directly
-$tawkto_raw = get_setting($pdo, 'tawkto_property_id', '6a742dd38875351d455643d1/default');
+$tawkto_raw = trim(get_setting($pdo, 'tawkto_property_id', ''));
 
-// Strip any HTML tags, script wrappers, comments from stored value to get clean property ID
+// Do not inject widget when chat provider is not tawkto or setting is empty/placeholder
+$chat_provider = get_setting($pdo, 'chat_provider', 'none');
+if ($chat_provider !== 'tawkto' && $chat_provider !== 'none') {
+    return;
+}
+
 $clean_id = $tawkto_raw;
-$clean_id = strip_tags($clean_id);                             // Remove any <script> tags
-$clean_id = preg_replace('/<!--.*?-->/s', '', $clean_id);      // Remove HTML comments
-$clean_id = preg_replace('/var\s+Tawk_API[\s\S]*?embed\.tawk\.to\//i', '', $clean_id); // Strip JS preamble
-$clean_id = preg_replace('/[\'"];.*$/s', '', $clean_id);       // Remove trailing JS
+$clean_id = strip_tags($clean_id);
+$clean_id = preg_replace('/<!--.*?-->/s', '', $clean_id);
+$clean_id = preg_replace('/var\s+Tawk_API[\s\S]*?embed\.tawk\.to\//i', '', $clean_id);
+$clean_id = preg_replace('/[\'"];.*$/s', '', $clean_id);
 $clean_id = trim($clean_id, " \t\n\r;'\"/");
 
-// If the stored value looks like a full URL, extract just the path part after embed.tawk.to/
 if (strpos($clean_id, 'embed.tawk.to/') !== false) {
     $clean_id = preg_replace('/.*embed\.tawk\.to\//', '', $clean_id);
     $clean_id = trim($clean_id, " \t\n\r;'\"");
 }
 
-// Validate: should look like "XXXXXXXX/YYYYY" or "hash/default"  
-if (empty($clean_id) || !preg_match('/^[a-zA-Z0-9_\/\-]{10,}$/', $clean_id)) {
-    $clean_id = '6a742dd38875351d455643d1/default'; // fallback
+// Known placeholder / demo IDs — skip injection to prevent console 404s
+$placeholder_ids = [
+    '6a742dd38875351d455643d1/default',
+    'YOUR_TAWKTO_PROPERTY_ID',
+    'your_property_id/default',
+    'placeholder/default',
+];
+
+$is_valid = !empty($clean_id)
+    && preg_match('/^[a-zA-Z0-9_\/\-]{10,}$/', $clean_id)
+    && !in_array(strtolower($clean_id), array_map('strtolower', $placeholder_ids), true);
+
+if (!$is_valid) {
+    return;
 }
 
 $tawkto_src = 'https://embed.tawk.to/' . $clean_id;

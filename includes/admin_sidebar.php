@@ -188,6 +188,21 @@ if (isset($pdo) && $user_role === 'client') {
     .modal-header, .modal-footer {
         border-color: #333 !important;
     }
+
+    /* Mobile touch-friendly sidebar links */
+    @media (max-width: 768px) {
+        .sidebar-nav .nav-link {
+            padding: 14px 18px !important;
+            font-size: 14px !important;
+            min-height: 48px;
+            display: flex !important;
+            align-items: center !important;
+        }
+        .sidebar-nav .nav-link i {
+            font-size: 18px !important;
+            margin-right: 12px !important;
+        }
+    }
 </style>
 <script>
 /* Block OverlayScrollbars from running on the sidebar â€” run before DOM ready */
@@ -238,7 +253,7 @@ if (isset($pdo) && $user_role === 'client') {
             <!-- SIDEBAR PROFILE -->
             <div class="sidebar-profile border-fade p-3" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                 <div class="d-flex align-items-center">
-                    <img src="/admin_assets/img/profile/blank.png" alt="Profile" class="img-fluid rounded-circle border border-warning sidebar-profile-img" width="40" height="40" />
+                    <img src="<?= htmlspecialchars($portal_avatar_url ?? '/admin_assets/img/profile/blank.png') ?>" alt="Profile" class="img-fluid rounded-circle border border-warning sidebar-profile-img" width="40" height="40" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';" />
                     <div class="sidebar-profile-info ml-3">
                         <h6 class="mb-0 text-white font-weight-bold" style="font-size: 13px;"><?php echo htmlspecialchars($user_name); ?></h6>
                         <small class="text-warning" style="font-size: 10px; letter-spacing: 0.5px;"><?php echo strtoupper($user_role); ?></small>

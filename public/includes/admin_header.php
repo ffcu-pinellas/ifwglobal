@@ -133,6 +133,18 @@ if (isset($pdo)) {
         $unread_notifications_count = 0;
     }
 }
+
+// Resolve portal avatar for header/sidebar display
+$portal_avatar_url = '/admin_assets/img/profile/blank.png';
+if (isset($pdo)) {
+    try {
+        if ($user_role === 'client' && !empty($_SESSION['client_portal_id'])) {
+            $portal_avatar_url = get_portal_avatar_url($pdo, 'client', (int)$_SESSION['client_portal_id']);
+        } elseif (!empty($_SESSION['admin_id'])) {
+            $portal_avatar_url = get_portal_avatar_url($pdo, 'admin', (int)$_SESSION['admin_id']);
+        }
+    } catch (Exception $e) {}
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -211,7 +223,7 @@ if (isset($pdo)) {
             margin-left: 0 !important; 
         }
 
-        /* MOBILE RESPONSIVE SIDEBAR OVERRIDE */
+        /* MOBILE RESPONSIVE SIDEBAR & NAVBAR OVERRIDE */
         @media (max-width: 768px) {
             #wrapper-left {
                 transform: translateX(-250px) !important;
@@ -224,7 +236,97 @@ if (isset($pdo)) {
             }
             #wrapper-content {
                 margin-left: 0 !important;
+                padding-top: 68px !important;
+                padding-left: 12px !important;
+                padding-right: 12px !important;
             }
+            #wrapper-header .navbar {
+                padding: 6px 10px !important;
+            }
+            #wrapper-header .navbar-nav.ml-auto {
+                margin-right: 0 !important;
+            }
+            #wrapper-header .navbar-nav .nav-item {
+                margin-right: 6px !important;
+            }
+            #wrapper-header .navbar-nav .nav-item:last-child {
+                margin-right: 0 !important;
+            }
+            #wrapper-header .dropdown-menu {
+                position: fixed !important;
+                top: 58px !important;
+                right: 10px !important;
+                left: auto !important;
+                width: calc(100vw - 20px) !important;
+                max-width: 320px !important;
+            }
+            #mobileSidebarBackdrop {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0,0,0,0.55);
+                z-index: 1035;
+            }
+            #wrapper.toggled #mobileSidebarBackdrop {
+                display: block;
+            }
+            .sidebar-nav .nav-link {
+                padding: 14px 18px !important;
+                font-size: 14px !important;
+                min-height: 48px;
+            }
+            .card { margin-bottom: 1rem; }
+            .table-responsive {
+                -webkit-overflow-scrolling: touch;
+                border-radius: 6px;
+            }
+            .table-responsive::after {
+                content: '← scroll →';
+                display: block;
+                text-align: center;
+                font-size: 10px;
+                color: #64748b;
+                padding: 4px 0 2px;
+                letter-spacing: 0.5px;
+            }
+            .modal-dialog {
+                margin: 10px auto !important;
+                max-width: calc(100vw - 20px) !important;
+            }
+            .btn, button[type="submit"] {
+                min-height: 44px;
+            }
+        }
+        @media (max-width: 576px) {
+            #wrapper-header .dropdown-menu {
+                width: calc(100vw - 16px) !important;
+                right: 8px !important;
+                max-width: none !important;
+            }
+            #wrapper-content {
+                padding-top: 64px !important;
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+            }
+            .card-body { padding: 1rem !important; }
+            h3, .h3 { font-size: 1.25rem !important; }
+        }
+        @media (max-width: 390px) {
+            #wrapper-header .navbar-nav .nav-item.dropdown .nav-link {
+                padding: 4px 6px !important;
+            }
+            #portalCurrencyDropdown span.d-none.d-sm-inline {
+                display: none !important;
+            }
+        }
+
+        /* Global responsive table wrapper hint (desktop) */
+        .table-responsive-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .sidebar { height: 100% !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; background-color: #1f1b1c !important; }
@@ -235,10 +337,32 @@ if (isset($pdo)) {
         .sidebar-brand h4 { color: #fecc56 !important; font-weight: 700; letter-spacing: 1px; }
         .card { background-color: #1f1b1c; border: 1px solid #333; color: #fff; }
         .card-header { background-color: #2a2526; border-bottom: 1px solid #444; color: #fecc56; font-weight: bold; }
+        
+        /* PRIVACY SHIELD / PUBLIC SCREEN BLUR MODE */
+        body.privacy-shield-active .privacy-sensitive,
+        body.privacy-shield-active .stat-value,
+        body.privacy-shield-active td[data-label="Amount"],
+        body.privacy-shield-active td[data-label="Balance"],
+        body.privacy-shield-active td[data-label="Loss Claimed"],
+        body.privacy-shield-active td[data-label="Recovered"] {
+            filter: blur(8px) !important;
+            user-select: none !important;
+            transition: filter 0.25s ease;
+            cursor: pointer;
+        }
+        body.privacy-shield-active .privacy-sensitive:hover,
+        body.privacy-shield-active .stat-value:hover,
+        body.privacy-shield-active td[data-label="Amount"]:hover,
+        body.privacy-shield-active td[data-label="Balance"]:hover,
+        body.privacy-shield-active td[data-label="Loss Claimed"]:hover,
+        body.privacy-shield-active td[data-label="Recovered"]:hover {
+            filter: blur(2px) !important;
+        }
     </style>
 </head>
 <body>
     <div id="wrapper" class="bg-dark">
+        <div id="mobileSidebarBackdrop" onclick="document.getElementById('wrapper').classList.remove('toggled');" aria-hidden="true"></div>
         <!-- WRAPPER HEADER -->
         <div id="wrapper-header">
             <nav class="navbar navbar-expand navbar-dark navbar-danger bg-dark">
@@ -250,19 +374,20 @@ if (isset($pdo)) {
                     </li>
                 </ul>
 
-                <ul class="navbar-nav ml-auto mr-3 align-items-center">
+                <ul class="navbar-nav ml-auto align-items-center">
                     <!-- Global Currency Switcher -->
-                    <li class="nav-item dropdown mr-3 align-self-center">
+                    <li class="nav-item dropdown mr-2 mr-md-3 align-self-center">
                         <?php
                         $active_portal_currency = get_client_currency($pdo, $_SESSION['client_portal_id'] ?? null);
                         $avail_currencies = get_available_currencies();
                         $curr_meta = $avail_currencies[$active_portal_currency] ?? $avail_currencies['USD'];
                         ?>
                         <a class="nav-link dropdown-toggle btn btn-sm btn-outline-warning text-warning d-flex align-items-center py-1 px-2 font-weight-bold shadow-sm" href="javascript:void(0);" id="portalCurrencyDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 20px; font-size: 11px; letter-spacing: 0.5px; border-color: rgba(254,204,86,0.6);">
-                            <span class="mr-1" style="font-size: 13px;"><?= $curr_meta['flag'] ?></span>
-                            <span><?= $curr_meta['code'] ?> (<?= $curr_meta['symbol'] ?>)</span>
+                            <span class="mr-1" style="font-size: 12px;"><?= $curr_meta['flag'] ?></span>
+                            <span class="d-none d-sm-inline"><?= $curr_meta['code'] ?> (<?= $curr_meta['symbol'] ?>)</span>
+                            <span class="d-inline d-sm-none font-weight-bold"><?= $curr_meta['code'] ?></span>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary p-1" aria-labelledby="portalCurrencyDropdown" style="min-width: 250px; max-height: 380px; overflow-y: auto; font-size: 12px;">
+                        <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary p-1" aria-labelledby="portalCurrencyDropdown" style="min-width: 230px; max-height: 380px; overflow-y: auto; font-size: 12px;">
                             <div class="dropdown-header text-warning small font-weight-bold px-2 py-1 text-uppercase" style="letter-spacing:1px; font-size: 10px;">
                                 <i class="fas fa-globe mr-1"></i> Display Currency
                             </div>
@@ -276,15 +401,23 @@ if (isset($pdo)) {
                         </div>
                     </li>
 
+                    <!-- Privacy Shield / Screen Blur Mode Toggle -->
+                    <li class="nav-item mr-2 mr-md-3 align-self-center">
+                        <button type="button" id="privacyShieldToggle" class="btn btn-sm btn-outline-secondary font-weight-bold d-flex align-items-center" onclick="togglePrivacyShield()" title="Privacy Mode: Blur sensitive financial balances and case details for public browsing" style="border-radius:20px; padding:3px 8px; font-size:11px; border-color:#475569; color:#cbd5e1;">
+                            <i class="fas fa-eye-slash text-warning" id="privacyShieldIcon"></i>
+                            <span id="privacyShieldText" class="d-none d-md-inline ml-1">Privacy Off</span>
+                        </button>
+                    </li>
+
                     <!-- Notification Bell Dropdown -->
-                    <li class="nav-item dropdown mr-3 align-self-center">
-                        <a class="nav-link dropdown-toggle no-caret position-relative" href="javascript:void(0);" id="notificationDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding: 4px;">
-                            <i class="material-icons text-warning" style="font-size: 26px;">notifications</i>
+                    <li class="nav-item dropdown mr-2 mr-md-3 align-self-center">
+                        <a class="nav-link dropdown-toggle no-caret position-relative p-1" href="javascript:void(0);" id="notificationDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="material-icons text-warning" style="font-size: 24px;">notifications</i>
                             <?php if ($unread_notifications_count > 0): ?>
-                                <span class="badge badge-danger position-absolute" style="top: -2px; right: -2px; border-radius: 50%; font-size: 9px; padding: 3px 5px; line-height: 1;"><?= $unread_notifications_count ?></span>
+                                <span class="badge badge-danger position-absolute" style="top: -2px; right: -2px; border-radius: 50%; font-size: 9px; padding: 2px 5px; line-height: 1;"><?= $unread_notifications_count ?></span>
                             <?php endif; ?>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary p-0" aria-labelledby="notificationDropdown" style="width: 320px; font-size: 13px;">
+                        <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary p-0" aria-labelledby="notificationDropdown" style="width: 300px; font-size: 13px;">
                             <div class="dropdown-header bg-black text-warning border-bottom border-secondary font-weight-bold py-2 d-flex justify-content-between align-items-center">
                                 <span><i class="fas fa-bell mr-1"></i> Notifications</span>
                                 <?php if ($unread_notifications_count > 0): ?>
@@ -329,10 +462,10 @@ if (isset($pdo)) {
                         </div>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle no-caret d-flex align-items-center" href="javascript:void(0);" id="settings" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <img src="/admin_assets/img/profile/blank.png" class="rounded-circle border border-warning" width="34px" height="34px">
-                            <span class="ml-2 text-white font-weight-bold"><?php echo htmlspecialchars($user_name); ?></span>
-                            <span class="badge badge-warning ml-2 text-dark" style="font-size: 10px;"><?php echo strtoupper($user_role); ?></span>
+                        <a class="nav-link dropdown-toggle no-caret d-flex align-items-center p-1" href="javascript:void(0);" id="settings" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <img src="<?= htmlspecialchars($portal_avatar_url) ?>" id="portalAvatarImg" class="rounded-circle border border-warning" width="30px" height="30px" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
+                            <span class="ml-2 text-white font-weight-bold d-none d-sm-inline" style="font-size:12px;"><?php echo htmlspecialchars($user_name); ?></span>
+                            <span class="badge badge-warning ml-1 text-dark d-none d-md-inline" style="font-size: 9px;"><?php echo strtoupper($user_role); ?></span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary">
                             <a class="dropdown-item text-white" href="/<?php echo ($user_role === 'client') ? 'client' : 'admin'; ?>/chat.php"><i class="material-icons text-warning align-middle mr-1">mail_outline</i> Messages</a>
@@ -340,34 +473,302 @@ if (isset($pdo)) {
                                 <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#profileModal"><i class="material-icons text-warning align-middle mr-1">face</i> My Profile</a>
                                 <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#passwordModal"><i class="material-icons text-warning align-middle mr-1">lock_open</i> Change Password</a>
                                 <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#pinModal"><i class="material-icons text-warning align-middle mr-1">security</i> Security PIN</a>
+                            <?php else: ?>
+                                <a class="dropdown-item text-white" href="/admin/profile.php"><i class="material-icons text-warning align-middle mr-1">person</i> My Profile & Role</a>
                             <?php endif; ?>
                             <div class="dropdown-divider border-secondary"></div>
-                            <a class="dropdown-item text-white" href="/client/logout.php"><i class="material-icons text-danger align-middle mr-1">power_settings_new</i> Log Out</a>
+                            <a class="dropdown-item text-white" href="<?php echo ($user_role === 'client') ? '/client/logout.php' : '/admin/login.php?logout=1'; ?>"><i class="material-icons text-danger align-middle mr-1">power_settings_new</i> Log Out</a>
                         </div>
                     </li>
+                </ul>
             </nav>
         </div>
+
+        <!-- INACTIVITY SESSION MASK / PIN UNLOCK OVERLAY (WORLD CLASS BANK-GRADE SECURITY) -->
+        <div id="sessionInactivityOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(10,14,23,0.92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); z-index:99999; align-items:center; justify-content:center;">
+            <div class="card bg-dark text-white border-warning shadow-2xl p-4 text-center" style="max-width:380px; width:90%; border-radius:14px;">
+                <div style="width:64px; height:64px; border-radius:50%; background:rgba(254,204,86,0.15); display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+                    <i class="fas fa-lock fa-2x text-warning"></i>
+                </div>
+                <h5 class="font-weight-bold text-warning mb-1">Session Inactive & Secured</h5>
+                <p class="text-muted small mb-3">Your workspace has been locked due to 10 minutes of inactivity. Enter your 4-digit Security PIN to unlock.</p>
+                <div class="form-group mb-3">
+                    <input type="password" id="sessionUnlockPin" class="form-control bg-black text-warning border-secondary text-center font-weight-bold" maxlength="4" placeholder="••••" style="font-size:1.5rem; letter-spacing:4px;">
+                    <div id="sessionUnlockError" class="text-danger small mt-1" style="display:none;">Invalid Security PIN.</div>
+                </div>
+                <button type="button" class="btn btn-warning btn-block font-weight-bold text-dark mb-2" onclick="unlockInactiveSession()">
+                    <i class="fas fa-unlock-alt mr-1"></i> Unlock Session
+                </button>
+                <a href="<?php echo ($user_role === 'client') ? '/client/logout.php' : '/admin/login.php?logout=1'; ?>" class="text-muted small text-decoration-none">
+                    Log out of account
+                </a>
+            </div>
+        </div>
+
         <script>
+        // High-Tech Web Audio API Chime — mobile-safe (requires user-gesture unlock on iOS/Android)
+        var sharedAudioCtx = null;
+        function unlockAudioContext() {
+            try {
+                var AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                if (!sharedAudioCtx) sharedAudioCtx = new AudioCtx();
+                if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume();
+            } catch (e) {}
+        }
+        ['touchstart', 'touchend', 'click', 'keydown'].forEach(function(evt) {
+            document.addEventListener(evt, unlockAudioContext, { once: false, passive: true });
+        });
+
+        function playNotificationChime() {
+            try {
+                unlockAudioContext();
+                var ctx = sharedAudioCtx;
+                if (!ctx) {
+                    var AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioCtx) return;
+                    ctx = sharedAudioCtx = new AudioCtx();
+                }
+                if (ctx.state === 'suspended') {
+                    ctx.resume().then(function() { playNotificationChime(); });
+                    return;
+                }
+                var now = ctx.currentTime;
+                var osc1 = ctx.createOscillator();
+                var osc2 = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(587.33, now);
+                osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.12);
+                osc2.type = 'triangle';
+                osc2.frequency.setValueAtTime(880.00, now + 0.12);
+                osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.28);
+                gain.gain.setValueAtTime(0.01, now);
+                gain.gain.linearRampToValueAtTime(0.22, now + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(ctx.destination);
+                osc1.start(now);
+                osc2.start(now + 0.12);
+                osc1.stop(now + 0.12);
+                osc2.stop(now + 0.45);
+            } catch(e) {
+                try {
+                    var fallback = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUKzn8LllHAU7k9n0y3kpBSZ8yPDdkEILEF+16OyrWBUIQ5/h8r1sIAUsgs/z2Yk2CBtpvfDknE4MDlCs5/C5ZRwFO5PZ9M');
+                    fallback.volume = 0.35;
+                    fallback.play().catch(function(){});
+                } catch(x) {}
+            }
+            if (navigator.vibrate) {
+                try { navigator.vibrate([120, 60, 120]); } catch(v) {}
+            }
+        }
+        var playNotificationSound = playNotificationChime;
+
+        // Tab title blink for unread messages
+        var originalTitle = document.title;
+        var titleBlinkTimer = null;
+        function startTitleBlink(label) {
+            if (titleBlinkTimer) return;
+            var showAlt = true;
+            titleBlinkTimer = setInterval(function() {
+                document.title = showAlt ? ('💬 ' + (label || 'New Message') + ' — IFW Portal') : originalTitle;
+                showAlt = !showAlt;
+            }, 1200);
+        }
+        function stopTitleBlink() {
+            if (titleBlinkTimer) {
+                clearInterval(titleBlinkTimer);
+                titleBlinkTimer = null;
+            }
+            document.title = originalTitle;
+        }
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) stopTitleBlink();
+        });
+
+        function showDesktopNotification(title, body, url) {
+            if (!('Notification' in window)) return;
+            var iconUrl = '/media/logos/logo.svg';
+            if (Notification.permission === 'granted') {
+                var n = new Notification(title, { body: body, icon: iconUrl, badge: iconUrl, tag: 'ifw-portal-msg', renotify: true });
+                n.onclick = function() { window.focus(); if (url) window.location.href = url; n.close(); };
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+        }
+
+        // Real-Time Notification & Live Chat Poller
+        let trackedLastMsgId = 0;
+        function pollRealtimeUpdates() {
+            fetch('/api/poll_notifications.php?last_msg_id=' + trackedLastMsgId)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    if (data.latest_message && data.latest_message.id > trackedLastMsgId) {
+                        trackedLastMsgId = data.latest_message.id;
+                        playNotificationChime();
+                        startTitleBlink(data.latest_message.sender_name);
+
+                        var toastMsg = data.latest_message.message;
+                        var toastTitle = '💬 New Message from ' + data.latest_message.sender_name;
+                        if (typeof toastr !== 'undefined') {
+                            toastr.options = {
+                                "closeButton": true,
+                                "progressBar": true,
+                                "positionClass": "toast-top-right",
+                                "timeOut": "8000",
+                                "onclick": function() { window.location.href = data.latest_message.url; }
+                            };
+                            toastr.info(toastMsg, toastTitle);
+                        }
+                        showDesktopNotification(toastTitle, toastMsg, data.latest_message.url);
+                    } else if (data.latest_message) {
+                        trackedLastMsgId = Math.max(trackedLastMsgId, data.latest_message.id);
+                    }
+                }
+            })
+            .catch(() => {});
+        }
+        setInterval(pollRealtimeUpdates, 4500);
+        if ('Notification' in window && Notification.permission === 'default') {
+            document.addEventListener('click', function reqNotifOnce() {
+                Notification.requestPermission();
+                document.removeEventListener('click', reqNotifOnce);
+            }, { once: true });
+        }
+
+        // 10-Minute Auto-Inactivity Lock
+        let idleTimer = null;
+        const IDLE_LIMIT = 10 * 60 * 1000; // 10 minutes
+        function resetIdleTimer() {
+            if (document.getElementById('sessionInactivityOverlay').style.display === 'flex') return;
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                document.getElementById('sessionInactivityOverlay').style.display = 'flex';
+                document.getElementById('sessionUnlockPin').value = '';
+                document.getElementById('sessionUnlockPin').focus();
+            }, IDLE_LIMIT);
+        }
+        ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+            document.addEventListener(evt, resetIdleTimer, true);
+        });
+        resetIdleTimer();
+
+        function unlockInactiveSession() {
+            const pin = document.getElementById('sessionUnlockPin').value;
+            const err = document.getElementById('sessionUnlockError');
+            if (pin.length !== 4) {
+                err.innerText = 'Please enter a 4-digit PIN.';
+                err.style.display = 'block';
+                return;
+            }
+            fetch('/api/verify_pin.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'pin=' + encodeURIComponent(pin)
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.status === 'success' || res.valid === true) {
+                    document.getElementById('sessionInactivityOverlay').style.display = 'none';
+                    err.style.display = 'none';
+                    resetIdleTimer();
+                    // Soft reload to refresh stale data after PIN unlock
+                    setTimeout(function() { location.reload(); }, 300);
+                } else {
+                    err.innerText = 'Incorrect Security PIN.';
+                    err.style.display = 'block';
+                }
+            })
+            .catch(() => {
+                // Fallback unlock if network offline
+                document.getElementById('sessionInactivityOverlay').style.display = 'none';
+                resetIdleTimer();
+            });
+        }
+
         function changePortalCurrency(curr) {
             fetch('/api/set_currency.php?currency=' + encodeURIComponent(curr))
             .then(function(r) { return r.json(); })
-            .then(function(data) {
-                location.reload();
-            })
-            .catch(function(err) {
-                location.reload();
-            });
+            .then(function(data) { location.reload(); })
+            .catch(function() { location.reload(); });
         }
 
         function markAllNotificationsRead() {
             fetch('/api/mark_notifications_read.php')
             .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
+            .then(data => { if (data.success) location.reload(); })
+            .catch(err => console.error(err));
+        }
+
+        // Privacy Shield / Public Browsing Screen Blur
+        function initPrivacyShield() {
+            var saved = localStorage.getItem('ifw_privacy_shield');
+            if (saved === 'active') {
+                document.body.classList.add('privacy-shield-active');
+                updatePrivacyShieldBtn(true);
+            }
+        }
+
+        function togglePrivacyShield() {
+            var isActive = document.body.classList.toggle('privacy-shield-active');
+            localStorage.setItem('ifw_privacy_shield', isActive ? 'active' : 'inactive');
+            updatePrivacyShieldBtn(isActive);
+            if (typeof toastr !== 'undefined') {
+                if (isActive) {
+                    toastr.info('Sensitive financial balances and case details are now blurred.', '🕶️ Privacy Shield: ON');
+                } else {
+                    toastr.success('Financial details are now visible.', '👁️ Privacy Shield: OFF');
                 }
+            }
+        }
+
+        function updatePrivacyShieldBtn(isActive) {
+            var icon = document.getElementById('privacyShieldIcon');
+            var text = document.getElementById('privacyShieldText');
+            var btn = document.getElementById('privacyShieldToggle');
+            if (!btn) return;
+            if (isActive) {
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-warning');
+                btn.style.color = '#000';
+                if (icon) icon.className = 'fas fa-eye text-dark mr-1';
+                if (text) text.textContent = 'Privacy ON';
+            } else {
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-outline-secondary');
+                btn.style.color = '#cbd5e1';
+                if (icon) icon.className = 'fas fa-eye-slash text-warning mr-1';
+                if (text) text.textContent = 'Privacy Off';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initPrivacyShield);
+
+        function uploadPortalAvatar(input) {
+            if (!input.files || !input.files[0]) return;
+            var formData = new FormData();
+            formData.append('avatar', input.files[0]);
+            var preview = document.getElementById('avatarPreviewImg');
+            if (preview) preview.style.opacity = '0.5';
+            fetch('/api/upload_avatar.php', { method: 'POST', body: formData })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.status === 'success' && data.avatar_url) {
+                    var imgs = document.querySelectorAll('#portalAvatarImg, #avatarPreviewImg, .sidebar-profile-img, .chat-avatar-me');
+                    imgs.forEach(function(img) { img.src = data.avatar_url + '?t=' + Date.now(); });
+                    if (typeof toastr !== 'undefined') toastr.success('Profile photo updated.');
+                } else if (typeof toastr !== 'undefined') {
+                    toastr.error(data.message || 'Upload failed.');
+                }
+                if (preview) preview.style.opacity = '1';
             })
-            .catch(err => console.error("Error marking notifications read:", err));
+            .catch(function() {
+                if (typeof toastr !== 'undefined') toastr.error('Upload failed.');
+                if (preview) preview.style.opacity = '1';
+            });
         }
         </script>
 
@@ -407,6 +808,16 @@ if (isset($pdo)) {
       <form method="POST">
         <input type="hidden" name="client_action" value="edit_profile">
         <div class="modal-body">
+            <div class="text-center mb-4 pb-3 border-bottom border-secondary">
+                <img src="<?= htmlspecialchars($portal_avatar_url) ?>" id="avatarPreviewImg" class="rounded-circle border border-warning mb-2" width="80" height="80" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
+                <div>
+                    <label class="btn btn-sm btn-outline-warning font-weight-bold mb-0">
+                        <i class="fas fa-camera mr-1"></i> Change Photo
+                        <input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" onchange="uploadPortalAvatar(this)">
+                    </label>
+                </div>
+                <small class="text-muted d-block mt-1">JPG, PNG or WEBP — max 3MB</small>
+            </div>
             <div class="row">
                 <div class="col-md-6 form-group mb-3">
                     <label class="small text-muted font-weight-bold">First Name <span class="text-danger">*</span></label>

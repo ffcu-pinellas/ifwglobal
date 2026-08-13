@@ -101,12 +101,16 @@ require_once '../includes/admin_sidebar.php';
     <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
             <div class="d-flex align-items-center mb-1">
-                <h4 class="font-weight-bold text-white mb-0 mr-3"><i class="fas fa-cubes text-warning mr-2"></i>Blockchain Forensic Watcher</h4>
+                <h4 class="font-weight-bold text-white mb-0 mr-3"><i class="fas fa-cubes text-warning mr-2"></i>Blockchain Forensic Watcher
+                    <i class="fas fa-info-circle text-muted ml-1" style="font-size:14px;cursor:help;" data-toggle="tooltip" data-placement="top" title="We track stolen crypto as it moves between wallets — like following footprints on a digital trail. This helps identify where your funds went and who may be holding them."></i>
+                </h4>
                 <span class="badge badge-success px-2 py-1 font-weight-bold" style="font-size:11px; letter-spacing:0.5px;">
                     <i class="fas fa-satellite-dish mr-1"></i> ON-CHAIN TELEMETRY LIVE
                 </span>
             </div>
-            <p class="text-muted small mb-0">Real-time cryptocurrency tracing, fraudster wallet monitoring, and exchange deposit clustering.</p>
+            <p class="text-muted small mb-0">Real-time cryptocurrency tracing, fraudster wallet monitoring, and exchange deposit clustering.
+                <span class="d-block mt-1" style="font-size:11px;opacity:0.85;"><i class="fas fa-lightbulb text-warning mr-1"></i><strong>In plain English:</strong> We watch blockchain addresses linked to your case and alert our team when suspicious transfers occur.</span>
+            </p>
         </div>
         
         <?php if (count($cases) > 1): ?>
@@ -202,7 +206,7 @@ require_once '../includes/admin_sidebar.php';
                             </span>
                             <h6 class="font-weight-bold text-white mb-0"><?= htmlspecialchars($w['wallet_label'] ?: 'Monitored Target Address') ?></h6>
                         </div>
-                        <span class="badge badge-<?= ($w['risk_score'] >= 80) ? 'danger' : 'warning' ?> px-2 py-1 font-weight-bold">
+                        <span class="badge badge-<?= ($w['risk_score'] >= 80) ? 'danger' : 'warning' ?> px-2 py-1 font-weight-bold" data-toggle="tooltip" title="A score from 0–100 showing how likely this wallet is connected to fraud. Higher = more suspicious.">
                             Threat Score: <?= (int)$w['risk_score'] ?>/100
                         </span>
                     </div>

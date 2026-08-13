@@ -47,9 +47,7 @@ require_once $dir . '/includes/admin_sidebar.php';
             <div class="card shadow-lg bg-dark border-secondary">
                 <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3">
                     <div class="d-flex align-items-center">
-                        <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center mr-3 font-weight-bold" style="width: 38px; height: 38px; font-size: 1.1rem;">
-                            <i class="fas fa-headset"></i>
-                        </div>
+                        <img src="<?= htmlspecialchars($portal_avatar_url ?? '/admin_assets/img/profile/blank.png') ?>" class="rounded-circle border border-warning mr-3 chat-avatar-me" width="38" height="38" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
                         <div>
                             <span class="text-warning font-weight-bold" style="font-size: 1.05rem;">Case Investigation & Legal Support Desk</span>
                             <div class="text-muted small" style="font-size: 11px;"><span class="text-success mr-1">●</span> Active Live Channel &bull; Direct Case Line</div>

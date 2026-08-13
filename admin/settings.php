@@ -244,7 +244,7 @@ while ($row = $stmt->fetch()) {
 
                     <div class="form-group mb-0">
                         <label class="font-weight-bold text-light">Site & Invoice Brand Logo URL</label>
-                        <input type="text" name="logo_url" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['logo_url'] ?? '/admin_assets/img/logo/logo.svg'); ?>" placeholder="e.g. /admin_assets/img/logo/logo.svg">
+                        <input type="text" name="logo_url" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['logo_url'] ?? '/media/logos/logo.svg'); ?>" placeholder="e.g. /media/logos/logo.svg">
                         <small class="text-muted" style="font-size:10px;">Enter a custom image URL for the logo displayed on invoices, PDFs, and client portals.</small>
                     </div>
                 </div>

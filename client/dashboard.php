@@ -66,6 +66,8 @@ try {
     $pdo->exec("ALTER TABLE IFW_users ADD COLUMN full_name VARCHAR(255) NULL");
     $pdo->exec("ALTER TABLE IFW_users ADD COLUMN phone VARCHAR(50) NULL");
     $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN preferred_currency VARCHAR(10) DEFAULT 'USD'");
+    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_chat_messages ADD COLUMN IF NOT EXISTS email_reminder_sent TINYINT(1) DEFAULT 0");
 } catch(Exception $e) {}
 
 // Fetch client directly (fail-safe)
@@ -702,7 +704,9 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
 <div class="progress-track-container mb-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
         <div>
-            <h6 class="font-weight-bold mb-0 text-warning"><i class="fas fa-stream mr-2"></i>Investigation & Asset Recovery Lifecycle</h6>
+            <h6 class="font-weight-bold mb-0 text-warning"><i class="fas fa-stream mr-2"></i>Investigation & Asset Recovery Lifecycle
+                <i class="fas fa-info-circle text-muted ml-1" style="font-size:12px;cursor:help;" data-toggle="tooltip" title="Your case moves through clear stages — from intake to recovery. Each step shows where your investigation stands today."></i>
+            </h6>
             <small class="text-muted">Case: <strong><?= htmlspecialchars($latest_case['case_number'] ?? 'IFW-'.$latest_case['id']) ?></strong> — <?= htmlspecialchars($latest_case['title']) ?></small>
         </div>
         <div>
@@ -746,6 +750,7 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                 <span class="badge badge-danger px-2 py-1 mr-2 font-weight-bold" style="font-size:10.5px; letter-spacing:0.5px;">ACTION REQUIRED</span>
                 <h5 class="font-weight-bold mb-0 text-white" style="font-size:1.15rem;">
                     <i class="fas fa-exclamation-triangle mr-1 text-danger"></i> Overdue Penalty / Penalty Interest Active
+                    <i class="fas fa-info-circle text-muted ml-1" style="font-size:13px;cursor:help;" data-toggle="tooltip" title="If an invoice is past due, a late fee adds on automatically at set intervals (daily, weekly, etc.) until the balance is paid. Paying now stops further charges."></i>
                 </h5>
             </div>
             <p class="mb-0 text-light" style="font-size: 13.5px; line-height: 1.6;">
@@ -759,7 +764,7 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
             </p>
         </div>
         <div class="text-center p-3 rounded border border-danger d-flex flex-column align-items-center justify-content-center flex-grow-1 flex-md-grow-0" style="min-width: 250px; background: rgba(0,0,0,0.5); box-shadow: 0 4px 15px rgba(220,53,69,0.15);">
-            <span class="small font-weight-bold text-uppercase d-block text-muted" style="font-size:10.5px; letter-spacing:0.8px;">Next Penalty Increment:</span>
+            <span class="small font-weight-bold text-uppercase d-block text-muted" style="font-size:10.5px; letter-spacing:0.8px;" data-toggle="tooltip" title="Countdown until the next late fee is added to your outstanding balance.">Next Penalty Increment:</span>
             <div id="dashPenaltyCountdown" class="font-weight-bold text-danger my-1" style="font-size: 1.55rem; letter-spacing: 1px; font-family: monospace;">
                 00h 00m 00s
             </div>

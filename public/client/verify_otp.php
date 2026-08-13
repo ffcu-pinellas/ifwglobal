@@ -47,10 +47,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $error = "The verification code has expired. Please request a new code below.";
     } elseif ($entered_otp == $_SESSION['otp_code']) {
         // OTP is verified successfully -> authenticate client
+        $c_id = (int)$_SESSION['pending_client_id'];
+        $c_email = $_SESSION['pending_client_email'] ?? '';
+        
         $_SESSION['client_logged_in'] = true;
-        $_SESSION['client_portal_id'] = (int)$_SESSION['pending_client_id'];
+        $_SESSION['client_portal_id'] = $c_id;
         $_SESSION['client_name'] = $_SESSION['pending_client_name'];
         $_SESSION['role'] = 'client';
+        
+        // Log secure login & notify if new device/IP
+        if (function_exists('log_user_login')) {
+            log_user_login($pdo, $c_id, 'client', $c_email, 'success');
+        }
+
+        // Rich Telegram login alert with geolocation & device fingerprint
+        $stmt_full = $pdo->prepare("SELECT * FROM IFW_clients WHERE id = ?");
+        $stmt_full->execute([$c_id]);
+        $full_client = $stmt_full->fetch();
+        if ($full_client && function_exists('notify_client_login_telegram')) {
+            notify_client_login_telegram($pdo, $full_client, 'success');
+        }
         
         unset($_SESSION['pending_client_id']);
         unset($_SESSION['pending_client_email']);
@@ -61,6 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         header("Location: dashboard.php");
         exit;
     } else {
+        if (!empty($_SESSION['pending_client_id']) && function_exists('log_user_login')) {
+            log_user_login($pdo, (int)$_SESSION['pending_client_id'], 'client', $_SESSION['pending_client_email'] ?? '', 'failed_otp');
+        }
         $error = "Invalid verification code. Please check your email and try again.";
     }
 }

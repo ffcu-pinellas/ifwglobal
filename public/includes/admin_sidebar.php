@@ -29,6 +29,27 @@ if (isset($pdo)) {
         $global_unread_chat = 0;
     }
 }
+
+// Client Feature Enablement Flags (Disabled by default: 0)
+$has_blockchain_watcher = false;
+$has_settlement_escrow = false;
+$has_recovery_map = false;
+
+if (isset($pdo) && $user_role === 'client') {
+    $client_id = $_SESSION['client_portal_id'] ?? 0;
+    if ($client_id > 0) {
+        try {
+            $feat_stmt = $pdo->prepare("SELECT SUM(COALESCE(show_blockchain_watcher, 0)) as bw, SUM(COALESCE(show_settlement_escrow, 0)) as se, SUM(COALESCE(show_recovery_map, 0)) as rm FROM IFW_cases WHERE client_id = ?");
+            $feat_stmt->execute([$client_id]);
+            $feat_row = $feat_stmt->fetch();
+            if ($feat_row) {
+                $has_blockchain_watcher = ((int)$feat_row['bw'] > 0);
+                $has_settlement_escrow = ((int)$feat_row['se'] > 0);
+                $has_recovery_map = ((int)$feat_row['rm'] > 0);
+            }
+        } catch (Exception $e) {}
+    }
+}
 ?>
 <style>
     /* ============================================================
@@ -167,6 +188,21 @@ if (isset($pdo)) {
     .modal-header, .modal-footer {
         border-color: #333 !important;
     }
+
+    /* Mobile touch-friendly sidebar links */
+    @media (max-width: 768px) {
+        .sidebar-nav .nav-link {
+            padding: 14px 18px !important;
+            font-size: 14px !important;
+            min-height: 48px;
+            display: flex !important;
+            align-items: center !important;
+        }
+        .sidebar-nav .nav-link i {
+            font-size: 18px !important;
+            margin-right: 12px !important;
+        }
+    }
 </style>
 <script>
 /* Block OverlayScrollbars from running on the sidebar â€” run before DOM ready */
@@ -217,7 +253,7 @@ if (isset($pdo)) {
             <!-- SIDEBAR PROFILE -->
             <div class="sidebar-profile border-fade p-3" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                 <div class="d-flex align-items-center">
-                    <img src="/admin_assets/img/profile/blank.png" alt="Profile" class="img-fluid rounded-circle border border-warning sidebar-profile-img" width="40" height="40" />
+                    <img src="<?= htmlspecialchars($portal_avatar_url ?? '/admin_assets/img/profile/blank.png') ?>" alt="Profile" class="img-fluid rounded-circle border border-warning sidebar-profile-img" width="40" height="40" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';" />
                     <div class="sidebar-profile-info ml-3">
                         <h6 class="mb-0 text-white font-weight-bold" style="font-size: 13px;"><?php echo htmlspecialchars($user_name); ?></h6>
                         <small class="text-warning" style="font-size: 10px; letter-spacing: 0.5px;"><?php echo strtoupper($user_role); ?></small>
@@ -265,16 +301,62 @@ if (isset($pdo)) {
                 <!-- CLIENT PORTAL LINKS -->
                 <li class="nav-item <?php echo ($current_page == 'my_cases.php') ? 'active' : ''; ?>">
                     <a href="<?php echo BASE_URL; ?>/client/my_cases.php" class="nav-link d-flex align-items-center px-3 py-2">
-                        <i class="fas fa-file-invoice text-warning mr-3" style="width: 20px;"></i>
+                        <i class="fas fa-briefcase text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">My Cases</span>
                     </a>
                 </li>
+
+                <!-- NAV ITEM Billing & Invoices -->
+                <li class="nav-item <?php echo ($current_page == 'invoices.php' || $current_page == 'invoice_view.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>/client/invoices.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-file-invoice-dollar text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Billing & Invoices</span>
+                    </a>
+                </li>
+
+                <?php if ($has_blockchain_watcher): ?>
+                <!-- NAV ITEM Blockchain Watcher -->
+                <li class="nav-item <?php echo ($current_page == 'blockchain_tracker.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>/client/blockchain_tracker.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-cubes text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Blockchain Watcher</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+
+                <?php if ($has_settlement_escrow): ?>
+                <!-- NAV ITEM Escrow & Settlement -->
+                <li class="nav-item <?php echo ($current_page == 'settlement_payout.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>/client/settlement_payout.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-vault text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Escrow & Settlement</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+
+                <?php if ($has_recovery_map): ?>
+                <!-- NAV ITEM Global Recovery Radar -->
+                <li class="nav-item <?php echo ($current_page == 'recovery_map.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>/client/recovery_map.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-globe-americas text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Recovery Radar</span>
+                    </a>
+                </li>
+                <?php endif; ?>
                 
                 <!-- NAV ITEM Client KYC -->
                 <li class="nav-item <?php echo ($current_page == 'kyc.php') ? 'active' : ''; ?>">
                     <a href="<?php echo BASE_URL; ?>/client/kyc.php" class="nav-link d-flex align-items-center px-3 py-2">
-                        <i class="fas fa-shield-alt text-warning mr-3" style="width: 20px;"></i>
+                        <i class="fas fa-id-card text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">Identity Verification</span>
+                    </a>
+                </li>
+
+                <!-- NAV ITEM Security Desk -->
+                <li class="nav-item <?php echo ($current_page == 'security.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>/client/security.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-user-shield text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Security & Sessions</span>
                     </a>
                 </li>
                 <?php endif; ?>
@@ -315,6 +397,14 @@ if (isset($pdo)) {
                     </a>
                 </li>
 
+                <!-- NAV ITEM Profile -->
+                <li class="nav-item <?php echo ($current_page == 'profile.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>/admin/profile.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-user-circle text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">My Profile</span>
+                    </a>
+                </li>
+
                 <!-- NAV ITEM Settings -->
                 <li class="nav-item <?php echo ($current_page == 'settings.php') ? 'active' : ''; ?>">
                     <a href="<?php echo BASE_URL; ?>/admin/settings.php" class="nav-link d-flex align-items-center px-3 py-2">
@@ -338,14 +428,10 @@ if (isset($pdo)) {
                         <i class="fas fa-comments text-warning mr-3" style="width: 20px;"></i>
                         <span class="link-text text-white">
                             <?php 
-                            if ($chat_provider === 'tawkto' || $chat_provider === 'tawk') {
-                                echo 'Tawk.to Chat';
-                            } elseif ($chat_provider === 'manychat') {
-                                echo 'ManyChat Support';
-                            } elseif ($chat_provider === 'custom') {
-                                echo 'Support Chat';
+                            if ($user_role === 'client') {
+                                echo 'Live Chat';
                             } else {
-                                echo 'Secure Messaging';
+                                echo 'Client Chat';
                             }
                             ?>
                         </span>

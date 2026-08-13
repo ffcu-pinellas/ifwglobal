@@ -178,6 +178,15 @@ try {
 $global_payment_info = get_setting($pdo, 'payment_instructions', '');
 $app_name = get_setting($pdo, 'app_name', 'IFW Global Intelligence');
 
+// First unpaid invoice for quick "Make a Payment" button
+$first_unpaid_invoice = null;
+foreach ($invoices as $inv) {
+    if (($inv['balance_due'] ?? 0) > 0) {
+        $first_unpaid_invoice = $inv;
+        break;
+    }
+}
+
 require_once $dir . '/includes/admin_header.php';
 require_once $dir . '/includes/admin_sidebar.php';
 ?>
@@ -306,6 +315,7 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
     <div class="col-md-7">
         <h3 class="font-weight-bold mb-1 text-white" style="letter-spacing: -0.5px;">
             <i class="fas fa-file-invoice-dollar text-warning mr-2"></i> Billing, Invoices & Escrow Hub
+            <i class="fas fa-info-circle text-muted ml-1" style="font-size:14px;cursor:help;" data-toggle="tooltip" title="Escrow means recovered funds are held securely by a neutral third party until your case settles — protecting both you and the investigation team."></i>
         </h3>
         <p class="text-muted small mb-0">
             Certified legal invoices, retainer instalments, banking details, and cryptographic payment proofs.
@@ -315,7 +325,7 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
         <a href="/client/dashboard.php" class="btn btn-sm btn-outline-secondary text-light font-weight-bold mr-2">
             <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
         </a>
-        <button type="button" class="btn btn-sm btn-warning text-dark font-weight-bold" onclick="$('#quickPaymentModal').modal('show')">
+        <button type="button" class="btn btn-sm btn-warning text-dark font-weight-bold" onclick="openQuickPayment()" <?= empty($first_unpaid_invoice) ? 'disabled title="No outstanding balance"' : '' ?>>
             <i class="fas fa-credit-card mr-1"></i> Make a Payment
         </button>
     </div>
@@ -437,7 +447,9 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
 <div class="portal-card mb-4 shadow-sm">
     <div class="portal-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h5 class="mb-0 font-weight-bold text-warning"><i class="fas fa-file-invoice mr-2"></i>Official Invoices & Retainers</h5>
+            <h5 class="mb-0 font-weight-bold text-warning"><i class="fas fa-file-invoice mr-2"></i>Official Invoices & Retainers
+                <i class="fas fa-info-circle text-muted ml-1" style="font-size:13px;cursor:help;" data-toggle="tooltip" title="Invoices are formal bills for investigation work. Retainers are upfront payments held in trust and applied as your case progresses."></i>
+            </h5>
             <small class="text-muted">Itemized legal retainer contracts and investigative cost schedules.</small>
         </div>
         <span class="badge badge-warning text-dark font-weight-bold px-3 py-1"><?= count($invoices) ?> Total</span>
@@ -774,6 +786,32 @@ function showPayModal(invoiceId, ref, balanceDue, currency, paymentInfo, prefCur
     document.getElementById('cryptoPaymentDetailsBox').style.display = 'none';
     
     $('#payNowModal').modal('show');
+}
+
+function openQuickPayment() {
+    <?php if ($first_unpaid_invoice):
+        $fu = $first_unpaid_invoice;
+        $fu_curr = $fu['currency'] ?? 'USD';
+        $fu_pref = convert_currency($fu['balance_due'], $fu_curr, $client_currency);
+        $fu_ref = $fu['invoice_number'] ?? '#INV-' . str_pad($fu['id'], 5, '0', STR_PAD_LEFT);
+        $fu_info = $fu['payment_info'] ?? $global_payment_info;
+    ?>
+    showPayModal(
+        <?= (int)$fu['id'] ?>,
+        <?= json_encode($fu_ref) ?>,
+        <?= (float)$fu['balance_due'] ?>,
+        <?= json_encode($fu_curr) ?>,
+        <?= json_encode($fu_info) ?>,
+        <?= json_encode($client_currency) ?>,
+        <?= (float)$fu_pref ?>
+    );
+    <?php else: ?>
+    if (typeof toastr !== 'undefined') {
+        toastr.info('You have no outstanding invoices at this time.');
+    } else {
+        alert('You have no outstanding invoices at this time.');
+    }
+    <?php endif; ?>
 }
 </script>
 

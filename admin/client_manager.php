@@ -151,7 +151,8 @@ require_once '../includes/admin_sidebar.php';
 
 <div class="card shadow-lg bg-dark border-secondary">
     <div class="card-header bg-dark border-secondary text-warning font-weight-bold">
-        <i class="fas fa-list mr-2"></i>Client Directory Overview (<?= count($clients) ?> Active Clients)
+        <i class="fas fa-list mr-2"></i>Client Directory Overview (<span id="clientDirectoryCount"><?= count($clients) ?></span> Active Clients)
+        <span class="badge badge-success ml-2 d-none d-md-inline" id="clientLiveSyncBadge" style="font-size:10px;"><i class="fas fa-circle mr-1" style="font-size:7px;"></i> Live</span>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -167,7 +168,7 @@ require_once '../includes/admin_sidebar.php';
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="clientDirectoryBody">
                     <?php if (empty($clients)): ?>
                         <tr><td colspan="7" class="text-center p-5 text-muted"><i class="fas fa-users-slash text-warning mb-2 d-block" style="font-size: 2rem;"></i>No client records registered yet. Click "Add New Client Account" above to create one.</td></tr>
                     <?php else: ?>
@@ -328,6 +329,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Auto-refresh client directory when new clients or updates appear (every 20s)
+    var clientPollSince = <?= time() ?>;
+    setInterval(function() {
+        fetch('/api/poll_clients.php?since=' + clientPollSince)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.status === 'success') {
+                if (data.latest_ts) clientPollSince = Math.max(clientPollSince, data.latest_ts);
+                var countEl = document.getElementById('clientDirectoryCount');
+                if (countEl && typeof data.total === 'number') countEl.textContent = data.total;
+                if (data.changed) {
+                    if (typeof toastr !== 'undefined') {
+                        toastr.info('Refreshing client list with latest updates…', '🔄 Live Sync');
+                    }
+                    setTimeout(function() { location.reload(); }, 600);
+                }
+            }
+        })
+        .catch(function() {});
+    }, 20000);
 });
 </script>
 

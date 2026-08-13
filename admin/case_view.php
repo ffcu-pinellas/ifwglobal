@@ -4,6 +4,9 @@ require_once '../includes/functions.php';
 require_admin_login();
 require_permission('view_cases');
 
+ensure_case_status_varchar($pdo);
+$case_status_options = get_case_status_options();
+
 $case_id = (int)($_GET['id'] ?? 0);
 if (!$case_id) die("Invalid case ID.");
 
@@ -54,7 +57,7 @@ try {
 
 // Handle Case Lifecycle & Details Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_case_stage') {
-    $new_status = trim($_POST['status'] ?? 'Active');
+    $new_status = normalize_case_status($_POST['status'] ?? 'Investigating');
     $stage = max(1, min(5, (int)($_POST['lifecycle_stage'] ?? 1)));
     $custom_percent = isset($_POST['progress_percent']) && $_POST['progress_percent'] !== '' ? (int)$_POST['progress_percent'] : null;
     $default_percent = [1 => 20, 2 => 40, 3 => 60, 4 => 85, 5 => 100][$stage] ?? ($stage * 20);
@@ -457,14 +460,11 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
                         </div>
                         <div class="col-md-3 form-group">
                             <label class="small text-light font-weight-bold text-uppercase">Case Status</label>
-                            <?php $c_stat = strtolower($case['status'] ?? 'pending'); ?>
+                            <?php $c_stat = normalize_case_status($case['status'] ?? 'Received'); ?>
                             <select name="status" class="form-control bg-dark text-white border-secondary">
-                                <option value="Pending" <?= $c_stat === 'pending' ? 'selected' : '' ?>>Pending</option>
-                                <option value="Active" <?= in_array($c_stat, ['active', 'in progress', 'open']) ? 'selected' : '' ?>>Active / In Progress</option>
-                                <option value="Under Investigation" <?= $c_stat === 'under investigation' ? 'selected' : '' ?>>Under Investigation</option>
-                                <option value="Suspended" <?= $c_stat === 'suspended' ? 'selected' : '' ?>>Suspended</option>
-                                <option value="Resolved" <?= $c_stat === 'resolved' ? 'selected' : '' ?>>Resolved</option>
-                                <option value="Closed" <?= $c_stat === 'closed' ? 'selected' : '' ?>>Closed</option>
+                                <?php foreach ($case_status_options as $val => $label): ?>
+                                    <option value="<?= htmlspecialchars($val) ?>" <?= $c_stat === $val ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                     </div>

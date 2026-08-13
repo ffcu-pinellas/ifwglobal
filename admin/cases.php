@@ -4,6 +4,9 @@ require_once '../config.php';
 require_once '../includes/functions.php';
 require_admin_login();
 
+ensure_case_status_varchar($pdo);
+$case_status_options = get_case_status_options();
+
 $is_agent = isset($_SESSION['admin_role']) && in_array($_SESSION['admin_role'], ['agent', 'staff']);
 $admin_id = $_SESSION['admin_id'];
 
@@ -15,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $client_id = (int)$_POST['client_id'];
         $attorney_id = !empty($_POST['attorney_id']) ? (int)$_POST['attorney_id'] : null;
         $court_date = !empty($_POST['court_date']) ? $_POST['court_date'] : null;
-        $status = $_POST['status'];
+        $status = normalize_case_status($_POST['status']);
         $desc = trim($_POST['description']);
         
         $stmt = $pdo->prepare("INSERT INTO IFW_cases (case_number, title, client_id, attorney_id, court_date, status, description) VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -32,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
     
     if ($_POST['action'] === 'update_status') {
-        $new_stat = trim($_POST['status']);
+        $new_stat = normalize_case_status($_POST['status']);
         $c_id = (int)$_POST['case_id'];
         $stmt = $pdo->prepare("UPDATE IFW_cases SET status = ? WHERE id = ?");
         $stmt->execute([$new_stat, $c_id]);
@@ -123,18 +126,14 @@ require_once '../includes/admin_sidebar.php';
                                 <td><?= htmlspecialchars($case['attorney_name'] ?: 'Unassigned') ?></td>
                                 <td><?= $case['court_date'] ? date('M j, Y H:i', strtotime($case['court_date'])) : '<em class="text-muted">None</em>' ?></td>
                                 <td>
-                                    <?php $cur_st = strtolower($case['status'] ?? 'pending'); ?>
+                                    <?php $cur_st = normalize_case_status($case['status'] ?? 'Received'); ?>
                                     <form method="POST">
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="case_id" value="<?= $case['id'] ?>">
-                                        <select name="status" class="form-control form-control-sm bg-dark text-white border-secondary font-weight-bold" style="width:135px;" onchange="this.form.submit()">
-                                            <option value="Pending" <?= $cur_st === 'pending' ? 'selected' : '' ?>>Pending</option>
-                                            <option value="Active" <?= in_array($cur_st, ['active', 'open']) ? 'selected' : '' ?>>Active</option>
-                                            <option value="In Progress" <?= $cur_st === 'in progress' ? 'selected' : '' ?>>In Progress</option>
-                                            <option value="Under Investigation" <?= $cur_st === 'under investigation' ? 'selected' : '' ?>>Investigation</option>
-                                            <option value="Suspended" <?= $cur_st === 'suspended' ? 'selected' : '' ?>>Suspended</option>
-                                            <option value="Resolved" <?= $cur_st === 'resolved' ? 'selected' : '' ?>>Resolved</option>
-                                            <option value="Closed" <?= $cur_st === 'closed' ? 'selected' : '' ?>>Closed</option>
+                                        <select name="status" class="form-control form-control-sm bg-dark text-white border-secondary font-weight-bold" style="width:160px;" onchange="this.form.submit()">
+                                            <?php foreach ($case_status_options as $val => $label): ?>
+                                                <option value="<?= htmlspecialchars($val) ?>" <?= $cur_st === $val ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
+                                            <?php endforeach; ?>
                                         </select>
                                     </form>
                                 </td>
@@ -219,10 +218,9 @@ require_once '../includes/admin_sidebar.php';
                 <div class="col-md-6">
                     <label class="text-white font-weight-bold">Status <span class="text-warning">*</span></label>
                     <select name="status" class="form-control bg-dark text-white border-secondary" required>
-                        <option value="Pending">Pending</option>
-                        <option value="Active">Active</option>
-                        <option value="Suspended">Suspended</option>
-                        <option value="Resolved">Resolved</option>
+                        <?php foreach ($case_status_options as $val => $label): ?>
+                            <option value="<?= htmlspecialchars($val) ?>"><?= htmlspecialchars($label) ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
             </div>

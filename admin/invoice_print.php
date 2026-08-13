@@ -57,7 +57,7 @@ try {
 }
 
 $currency = $invoice['currency'] ?? 'USD';
-$logo_url = get_setting($pdo, 'logo_url', '/admin_assets/img/logo/logo.svg');
+$logo_url = get_brand_logo_url($pdo);
 ?>
 <!DOCTYPE html>
 <html lang="en">

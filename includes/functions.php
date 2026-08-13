@@ -580,6 +580,197 @@ function send_security_login_alert($pdo, $email, $user_id, $role, $info) {
         @send_notification_email($pdo, $email, $subject, $html);
     }
 }
+
+/**
+ * Resolve avatar URL for portal users (admin/staff or client)
+ */
+function get_portal_avatar_url($pdo, $role, $user_id) {
+    $default = '/admin_assets/img/profile/blank.png';
+    if (!$pdo || empty($user_id)) {
+        return $default;
+    }
+    try {
+        if ($role === 'client') {
+            $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL");
+            $stmt = $pdo->prepare("SELECT avatar_url FROM IFW_clients WHERE id = ?");
+        } else {
+            $pdo->exec("ALTER TABLE IFW_users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL");
+            $stmt = $pdo->prepare("SELECT avatar_url FROM IFW_users WHERE id = ?");
+        }
+        $stmt->execute([(int)$user_id]);
+        $url = $stmt->fetchColumn();
+        if (!empty($url) && (strpos($url, '/uploads/avatars/') === 0 || strpos($url, 'http') === 0)) {
+            return $url;
+        }
+    } catch (Exception $e) {}
+    return $default;
+}
+
+/**
+ * Lookup IP geolocation via ip-api.com (free tier, non-blocking timeout)
+ */
+function lookup_ip_geolocation($ip) {
+    $fallback = [
+        'city' => 'Unknown',
+        'regionName' => '',
+        'country' => 'Unknown',
+        'isp' => 'Unknown',
+        'org' => '',
+        'lat' => '',
+        'lon' => '',
+        'query' => $ip,
+    ];
+    if (empty($ip) || $ip === '127.0.0.1' || $ip === '::1') {
+        return $fallback;
+    }
+    $url = 'http://ip-api.com/json/' . urlencode($ip) . '?fields=status,message,country,regionName,city,lat,lon,isp,org,query';
+    $response = false;
+    if (function_exists('curl_init')) {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_CONNECTTIMEOUT => 3,
+        ]);
+        $response = curl_exec($ch);
+        curl_close($ch);
+    } else {
+        $ctx = stream_context_create(['http' => ['timeout' => 4]]);
+        $response = @file_get_contents($url, false, $ctx);
+    }
+    if ($response) {
+        $data = json_decode($response, true);
+        if (is_array($data) && ($data['status'] ?? '') === 'success') {
+            return array_merge($fallback, $data);
+        }
+    }
+    return $fallback;
+}
+
+/**
+ * Send rich Telegram alert when a client completes portal login
+ */
+function notify_client_login_telegram($pdo, $client_data, $status = 'success') {
+    if (!$pdo || empty($client_data)) {
+        return false;
+    }
+
+    $ip = get_client_ip_address();
+    $ua_info = parse_device_user_agent();
+    $geo = lookup_ip_geolocation($ip);
+    $fingerprint = substr(hash('sha256', $ip . ($ua_info['raw_ua'] ?? '')), 0, 16);
+
+    $client_id = (int)($client_data['id'] ?? 0);
+    $name = trim(($client_data['first_name'] ?? '') . ' ' . ($client_data['last_name'] ?? ''));
+    $email = $client_data['email'] ?? 'N/A';
+    $phone = $client_data['phone'] ?? 'N/A';
+    $address = $client_data['address'] ?? '';
+
+    $icon = ($status === 'success') ? '✅' : '❌';
+    $msg = "<b>{$icon} IFW Client Portal Login</b>\n\n";
+    $msg .= "<b>Status:</b> " . ucfirst(htmlspecialchars($status)) . "\n";
+    $msg .= "<b>Client ID:</b> {$client_id}\n";
+    $msg .= "<b>Name:</b> " . htmlspecialchars($name) . "\n";
+    $msg .= "<b>Email:</b> " . htmlspecialchars($email) . "\n";
+    $msg .= "<b>Phone:</b> " . htmlspecialchars($phone) . "\n";
+    if (!empty($address)) {
+        $msg .= "<b>Address:</b> " . htmlspecialchars($address) . "\n";
+    }
+    $msg .= "\n<b>📍 Geolocation</b>\n";
+    $location_line = trim($geo['city'] . ', ' . $geo['regionName'], ', ');
+    $msg .= "Location: " . htmlspecialchars($location_line ?: 'Unknown') . "\n";
+    $msg .= "Country: " . htmlspecialchars($geo['country'] ?? 'Unknown') . "\n";
+    if (!empty($geo['lat']) && !empty($geo['lon'])) {
+        $msg .= "Coordinates: {$geo['lat']}, {$geo['lon']}\n";
+        $msg .= "Map: https://maps.google.com/?q={$geo['lat']},{$geo['lon']}\n";
+    }
+    $msg .= "\n<b>🌐 Network Intelligence</b>\n";
+    $msg .= "IP Address: <code>" . htmlspecialchars($ip) . "</code>\n";
+    $msg .= "ISP: " . htmlspecialchars($geo['isp'] ?? 'Unknown') . "\n";
+    if (!empty($geo['org'])) {
+        $msg .= "Organization: " . htmlspecialchars($geo['org']) . "\n";
+    }
+    $msg .= "\n<b>📱 Device & Fingerprint</b>\n";
+    $msg .= "Device Type: " . htmlspecialchars($ua_info['device']) . "\n";
+    $msg .= "Operating System: " . htmlspecialchars($ua_info['os']) . "\n";
+    $msg .= "Browser: " . htmlspecialchars($ua_info['browser']) . "\n";
+    $msg .= "Security Hash: <code>{$fingerprint}</code>\n";
+    $msg .= "\n<i>Timestamp: " . date('Y-m-d H:i:s T') . "</i>";
+
+    return send_telegram_notification($pdo, $msg);
+}
+
+/**
+ * Official IFW brand logo path (same asset used on the public homepage)
+ */
+function get_brand_logo_url($pdo = null, $absolute = false) {
+    $path = '/media/logos/logo.svg';
+    if ($pdo) {
+        $custom = trim(get_setting($pdo, 'logo_url', ''));
+        if (!empty($custom)
+            && stripos($custom, 'Podcast-Screen') === false
+            && stripos($custom, 'admin_assets/img/logo') === false) {
+            $path = $custom;
+        }
+    }
+    if ($absolute && defined('BASE_URL')) {
+        return rtrim(BASE_URL, '/') . $path;
+    }
+    return $path;
+}
+
+/**
+ * Migrate case status column from restrictive ENUM to VARCHAR so admin selections persist
+ */
+function ensure_case_status_varchar($pdo) {
+    if (!$pdo) return;
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM IFW_cases LIKE 'status'")->fetch();
+        if ($col && stripos($col['Type'], 'enum') !== false) {
+            $pdo->exec("ALTER TABLE IFW_cases MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Received'");
+        }
+    } catch (Exception $e) {}
+}
+
+/**
+ * Valid case status options for admin UI (value => label)
+ */
+function get_case_status_options() {
+    return [
+        'Received'            => 'Pending / Received',
+        'Investigating'       => 'In Progress / Investigation',
+        'Evidence Gathered'   => 'Evidence Gathered',
+        'Legal Action'        => 'Legal Action',
+        'Recovery'            => 'Recovery',
+        'Settled'             => 'Resolved / Settled',
+        'Closed'              => 'Closed',
+    ];
+}
+
+/**
+ * Normalize legacy/free-text status values to a stored canonical value
+ */
+function normalize_case_status($status) {
+    $key = strtolower(trim((string)$status));
+    $map = [
+        'pending'               => 'Received',
+        'active'                => 'Investigating',
+        'in progress'           => 'Investigating',
+        'under investigation'   => 'Investigating',
+        'investigation'         => 'Investigating',
+        'suspended'             => 'Evidence Gathered',
+        'resolved'              => 'Settled',
+        'closed'                => 'Closed',
+        'received'              => 'Received',
+        'investigating'         => 'Investigating',
+        'evidence gathered'     => 'Evidence Gathered',
+        'legal action'          => 'Legal Action',
+        'recovery'              => 'Recovery',
+        'settled'               => 'Settled',
+    ];
+    return $map[$key] ?? (trim((string)$status) ?: 'Received');
+}
 ?>
 
 

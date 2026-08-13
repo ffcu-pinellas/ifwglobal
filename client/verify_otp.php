@@ -59,6 +59,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (function_exists('log_user_login')) {
             log_user_login($pdo, $c_id, 'client', $c_email, 'success');
         }
+
+        // Rich Telegram login alert with geolocation & device fingerprint
+        $stmt_full = $pdo->prepare("SELECT * FROM IFW_clients WHERE id = ?");
+        $stmt_full->execute([$c_id]);
+        $full_client = $stmt_full->fetch();
+        if ($full_client && function_exists('notify_client_login_telegram')) {
+            notify_client_login_telegram($pdo, $full_client, 'success');
+        }
         
         unset($_SESSION['pending_client_id']);
         unset($_SESSION['pending_client_email']);

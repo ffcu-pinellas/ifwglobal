@@ -109,6 +109,16 @@ require_once '../includes/admin_sidebar.php';
                 <i class="fas fa-id-badge mr-2"></i>Personal Information & Client Display Role
             </div>
             <div class="card-body bg-dark text-white p-4">
+                <div class="text-center mb-4 pb-3 border-bottom border-secondary">
+                    <img src="<?= htmlspecialchars(get_portal_avatar_url($pdo, 'admin', $admin_id)) ?>" id="avatarPreviewImg" class="rounded-circle border border-warning mb-2" width="90" height="90" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
+                    <div>
+                        <label class="btn btn-sm btn-outline-warning font-weight-bold mb-0">
+                            <i class="fas fa-camera mr-1"></i> Upload Photo
+                            <input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" onchange="typeof uploadPortalAvatar==='function'&&uploadPortalAvatar(this)">
+                        </label>
+                    </div>
+                    <small class="text-muted d-block mt-1">Shown in header, chat, and team views</small>
+                </div>
                 <form method="POST">
                     <input type="hidden" name="action" value="update_profile">
                     

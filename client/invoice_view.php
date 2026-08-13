@@ -163,7 +163,7 @@ $app_name = get_setting($pdo, 'app_name', 'IFW Global');
 $company_address = get_setting($pdo, 'company_address', '');
 $company_email   = get_setting($pdo, 'contact_email', '');
 $company_phone   = get_setting($pdo, 'contact_phone', '');
-$logo_url        = get_setting($pdo, 'logo_url', '/admin_assets/img/logo/logo.svg');
+$logo_url        = get_brand_logo_url($pdo);
 
 $is_print = isset($_GET['print']);
 
