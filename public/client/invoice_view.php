@@ -330,69 +330,144 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
             <?php endif; ?>
         </div>
 
+        <style>
+        .invoice-table {
+            background: #161a23;
+            color: #f1f5f9;
+            border-color: #28303f;
+        }
+        .invoice-table thead th {
+            background: #1f2533;
+            color: #fecc56 !important;
+            border-color: #2e3849;
+        }
+        .invoice-table tbody td {
+            background: #161a23;
+            color: #ffffff !important;
+            border-color: #28303f;
+        }
+        .invoice-tfoot-subtotal td,
+        .invoice-tfoot-discount td,
+        .invoice-tfoot-late td,
+        .invoice-tfoot-paid td {
+            background: #1f2533;
+            color: #ffffff;
+            border-color: #2e3849;
+        }
+        .invoice-tfoot-total td {
+            background: #242c3d;
+            color: #ffffff !important;
+            border-color: #374151;
+        }
+        .invoice-tfoot-balance {
+            background: #111827 !important;
+            border: 2px solid #fecc56 !important;
+        }
+
+        /* Light Mode Overrides */
+        html.light-mode .invoice-table,
+        body.light-mode .invoice-table {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        html.light-mode .invoice-table thead th,
+        body.light-mode .invoice-table thead th {
+            background: #f1f5f9 !important;
+            color: #9a3412 !important;
+            border-color: #cbd5e1 !important;
+        }
+        html.light-mode .invoice-table tbody td,
+        body.light-mode .invoice-table tbody td {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #e2e8f0 !important;
+        }
+        html.light-mode .invoice-tfoot-subtotal td,
+        html.light-mode .invoice-tfoot-discount td,
+        html.light-mode .invoice-tfoot-late td,
+        html.light-mode .invoice-tfoot-paid td {
+            background: #f8fafc !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        html.light-mode .invoice-tfoot-total td {
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        html.light-mode .invoice-tfoot-balance {
+            background: #fffbeb !important;
+            border: 2px solid #d97706 !important;
+        }
+        html.light-mode .invoice-tfoot-balance td {
+            color: #9a3412 !important;
+        }
+        </style>
+
         <!-- LINE ITEMS -->
-        <div class="table-responsive mb-4" style="border-radius:8px; border:1px solid #28303f; overflow:hidden;">
-            <table class="table table-bordered mb-0" style="font-size:14px; border-color:#28303f; background:#161a23; color:#f1f5f9;">
-                <thead style="background:#1f2533; color:#fecc56; border-color:#2e3849;">
+        <div class="table-responsive mb-4 invoice-table-wrap" style="border-radius:8px; border:1px solid #28303f; overflow:hidden;">
+            <table class="table table-bordered mb-0 invoice-table" style="font-size:14px;">
+                <thead>
                     <tr>
-                        <th style="width:5%; border-color:#2e3849; color:#fecc56 !important;">#</th>
-                        <th style="border-color:#2e3849; color:#fecc56 !important;">Description</th>
-                        <th style="width:12%; text-align:right; border-color:#2e3849; color:#fecc56 !important;">Qty</th>
-                        <th style="width:16%; text-align:right; border-color:#2e3849; color:#fecc56 !important;">Unit Price</th>
-                        <th style="width:16%; text-align:right; border-color:#2e3849; color:#fecc56 !important;">Total</th>
+                        <th style="width:5%;">#</th>
+                        <th>Description</th>
+                        <th style="width:12%; text-align:right;">Qty</th>
+                        <th style="width:16%; text-align:right;">Unit Price</th>
+                        <th style="width:16%; text-align:right;">Total</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!empty($items)): ?>
                         <?php foreach($items as $i => $item): ?>
                         <tr>
-                            <td style="border-color:#28303f; color:#ffffff !important;"><?= $i+1 ?></td>
-                            <td style="border-color:#28303f; color:#ffffff !important;"><?= htmlspecialchars($item['description']) ?><?= !empty($item['notes']) ? '<br><small class="text-muted">'.$item['notes'].'</small>' : '' ?></td>
-                            <td class="text-right" style="border-color:#28303f; color:#ffffff !important;"><?= htmlspecialchars($item['qty'] ?? 1) ?></td>
-                            <td class="text-right" style="border-color:#28303f; color:#ffffff !important;"><?= $symbol ?><?= number_format($item['rate'] ?? ($base_amount / max(1, count($items))), 2) ?></td>
-                            <td class="text-right font-weight-bold" style="border-color:#28303f; color:#ffffff !important;"><?= $symbol ?><?= number_format($item['amount'] ?? ($item['qty'] * $item['rate']), 2) ?></td>
+                            <td><?= $i+1 ?></td>
+                            <td><?= htmlspecialchars($item['description']) ?><?= !empty($item['notes']) ? '<br><small class="text-muted">'.$item['notes'].'</small>' : '' ?></td>
+                            <td class="text-right"><?= htmlspecialchars($item['qty'] ?? 1) ?></td>
+                            <td class="text-right"><?= $symbol ?><?= number_format($item['rate'] ?? ($base_amount / max(1, count($items))), 2) ?></td>
+                            <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($item['amount'] ?? ($item['qty'] * $item['rate']), 2) ?></td>
                         </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td style="border-color:#28303f; color:#ffffff !important;">1</td>
-                            <td style="border-color:#28303f; color:#ffffff !important;"><?= htmlspecialchars($invoice['description'] ?? 'Professional Services') ?></td>
-                            <td class="text-right" style="border-color:#28303f; color:#ffffff !important;">1</td>
-                            <td class="text-right" style="border-color:#28303f; color:#ffffff !important;"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
-                            <td class="text-right font-weight-bold" style="border-color:#28303f; color:#ffffff !important;"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
+                            <td>1</td>
+                            <td><?= htmlspecialchars($invoice['description'] ?? 'Professional Services') ?></td>
+                            <td class="text-right">1</td>
+                            <td class="text-right"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
+                            <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
                 <tfoot>
-                    <tr style="background:#1f2533; border-top:2px solid #2e3849;">
-                        <td colspan="4" class="text-right font-weight-bold" style="color:#ffffff !important; font-size:14px; border-color:#2e3849;">Subtotal</td>
-                        <td class="text-right font-weight-bold" style="color:#ffffff !important; font-size:14px; border-color:#2e3849;"><?= $symbol ?><?= number_format($subtotal_amount, 2) ?></td>
+                    <tr class="invoice-tfoot-subtotal">
+                        <td colspan="4" class="text-right font-weight-bold">Subtotal</td>
+                        <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($subtotal_amount, 2) ?></td>
                     </tr>
                     <?php if (!empty($invoice['discount_amount']) && $invoice['discount_amount'] > 0): ?>
-                    <tr style="background:#1f2533;">
-                        <td colspan="4" class="text-right font-weight-bold text-success" style="color:#22c55e !important; border-color:#2e3849;">Discount</td>
-                        <td class="text-right font-weight-bold text-success" style="color:#22c55e !important; border-color:#2e3849;">-<?= $symbol ?><?= number_format($invoice['discount_amount'], 2) ?></td>
+                    <tr class="invoice-tfoot-discount">
+                        <td colspan="4" class="text-right font-weight-bold text-success">Discount</td>
+                        <td class="text-right font-weight-bold text-success">-<?= $symbol ?><?= number_format($invoice['discount_amount'], 2) ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php if ($late_fee > 0): ?>
-                    <tr style="background:#1f2533;">
-                        <td colspan="4" class="text-right font-weight-bold text-danger" style="color:#ef4444 !important; border-color:#2e3849;">Late Fee Penalty Interest</td>
-                        <td class="text-right font-weight-bold text-danger" style="color:#ef4444 !important; border-color:#2e3849;">+<?= $symbol ?><?= number_format($late_fee, 2) ?></td>
+                    <tr class="invoice-tfoot-late">
+                        <td colspan="4" class="text-right font-weight-bold text-danger">Late Fee Penalty Interest</td>
+                        <td class="text-right font-weight-bold text-danger">+<?= $symbol ?><?= number_format($late_fee, 2) ?></td>
                     </tr>
                     <?php endif; ?>
-                    <tr style="background:#242c3d; border-top:1px solid #374151; border-bottom:1px solid #374151;">
-                        <td colspan="4" class="text-right font-weight-bold" style="color:#ffffff !important; font-size:15px; border-color:#374151;">Total Invoiced Amount</td>
-                        <td class="text-right font-weight-bold" style="color:#ffffff !important; font-size:15px; border-color:#374151;"><?= $symbol ?><?= number_format($total_billed, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
+                    <tr class="invoice-tfoot-total">
+                        <td colspan="4" class="text-right font-weight-bold" style="font-size:15px;">Total Invoiced Amount</td>
+                        <td class="text-right font-weight-bold" style="font-size:15px;"><?= $symbol ?><?= number_format($total_billed, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
                     </tr>
                     <?php if ($total_paid > 0): ?>
-                    <tr style="background:#1f2533;">
-                        <td colspan="4" class="text-right font-weight-bold text-success" style="color:#22c55e !important; border-color:#2e3849;"><i class="fas fa-check-circle mr-1"></i>Less Verified Payments Received</td>
-                        <td class="text-right font-weight-bold text-success" style="color:#22c55e !important; border-color:#2e3849;">-<?= $symbol ?><?= number_format($total_paid, 2) ?></td>
+                    <tr class="invoice-tfoot-paid">
+                        <td colspan="4" class="text-right font-weight-bold text-success"><i class="fas fa-check-circle mr-1"></i>Less Verified Payments Received</td>
+                        <td class="text-right font-weight-bold text-success">-<?= $symbol ?><?= number_format($total_paid, 2) ?></td>
                     </tr>
                     <?php endif; ?>
-                    <tr style="background:#111827; border:2px solid #fecc56; color:#fecc56 !important;">
-                        <td colspan="4" class="text-right font-weight-bold" style="font-size:1.1rem; color:#fecc56 !important; border-color:#fecc56;">REMAINING BALANCE DUE</td>
-                        <td class="text-right font-weight-bold" style="font-size:1.25rem; color:#fecc56 !important; border-color:#fecc56;"><?= $symbol ?><?= number_format($balance_due, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
+                    <tr class="invoice-tfoot-balance">
+                        <td colspan="4" class="text-right font-weight-bold" style="font-size:1.1rem; color:#fecc56 !important;">REMAINING BALANCE DUE</td>
+                        <td class="text-right font-weight-bold" style="font-size:1.25rem; color:#fecc56 !important;"><?= $symbol ?><?= number_format($balance_due, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
                     </tr>
                 </tfoot>
             </table>

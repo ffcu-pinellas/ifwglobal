@@ -247,29 +247,39 @@ require_once '../includes/admin_sidebar.php';
                                     <?php endif; ?>
                                 </td>
                                 <td data-label="Actions">
-                                    <?php if (!$is_agent): ?>
-                                        <form method="POST" class="d-inline mr-1" onsubmit="return confirm('Launch secure impersonation session as <?= htmlspecialchars($client['first_name']) ?> <?= htmlspecialchars($client['last_name']) ?>?');">
-                                            <input type="hidden" name="action" value="impersonate_client">
-                                            <input type="hidden" name="client_id" value="<?= $client['id'] ?>">
-                                            <button type="submit" class="btn btn-sm btn-outline-success font-weight-bold" title="Log into Client Portal as this client"><i class="fas fa-user-secret mr-1"></i> Login As</button>
-                                        </form>
-                                    <?php endif; ?>
+                                    <div class="d-inline-flex flex-wrap align-items-center" style="gap: 4px;">
+                                        <?php if (!$is_agent): ?>
+                                            <form method="POST" class="d-inline mb-0" onsubmit="return confirm('Launch secure impersonation session as <?= htmlspecialchars($client['first_name']) ?> <?= htmlspecialchars($client['last_name']) ?>?');">
+                                                <input type="hidden" name="action" value="impersonate_client">
+                                                <input type="hidden" name="client_id" value="<?= $client['id'] ?>">
+                                                <button type="submit" class="btn btn-sm btn-outline-success font-weight-bold px-2" title="Log into Client Portal as this client">
+                                                    <i class="fas fa-user-secret"></i><span class="d-none d-xl-inline ml-1">Login As</span>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
 
-                                    <a href="chat.php?client_id=<?= $client['id'] ?>" class="btn btn-sm btn-info text-white mr-1" title="Direct Messaging Workspace"><i class="fas fa-comments"></i> Chat</a>
-                                    
-                                    <?php if (!$is_agent): ?>
-                                        <form method="POST" class="d-inline mr-1" onsubmit="return confirm('Generate a new portal login password for <?= htmlspecialchars($client['first_name']) ?>?');">
-                                            <input type="hidden" name="action" value="invite_client">
-                                            <input type="hidden" name="client_id" value="<?= $client['id'] ?>">
-                                            <button type="submit" class="btn btn-sm btn-warning font-weight-bold text-dark" title="Generate Password / Invite"><i class="fas fa-key"></i> Credentials</button>
-                                        </form>
+                                        <a href="chat.php?client_id=<?= $client['id'] ?>" class="btn btn-sm btn-info text-white px-2" title="Direct Messaging Workspace">
+                                            <i class="fas fa-comments"></i><span class="d-none d-xl-inline ml-1">Chat</span>
+                                        </a>
                                         
-                                        <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete client <?= htmlspecialchars($client['first_name']) ?>?');">
-                                            <input type="hidden" name="action" value="delete_client">
-                                            <input type="hidden" name="client_id" value="<?= $client['id'] ?>">
-                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete Account"><i class="fas fa-trash"></i></button>
-                                        </form>
-                                    <?php endif; ?>
+                                        <?php if (!$is_agent): ?>
+                                            <form method="POST" class="d-inline mb-0" onsubmit="return confirm('Generate a new portal login password for <?= htmlspecialchars($client['first_name']) ?>?');">
+                                                <input type="hidden" name="action" value="invite_client">
+                                                <input type="hidden" name="client_id" value="<?= $client['id'] ?>">
+                                                <button type="submit" class="btn btn-sm btn-warning font-weight-bold text-dark px-2" title="Generate Password / Credentials">
+                                                    <i class="fas fa-key"></i><span class="d-none d-xl-inline ml-1">Credentials</span>
+                                                </button>
+                                            </form>
+                                            
+                                            <form method="POST" class="d-inline mb-0" onsubmit="return confirm('Are you sure you want to delete client <?= htmlspecialchars($client['first_name']) ?>?');">
+                                                <input type="hidden" name="action" value="delete_client">
+                                                <input type="hidden" name="client_id" value="<?= $client['id'] ?>">
+                                                <button type="submit" class="btn btn-sm btn-danger px-2" title="Delete Account">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

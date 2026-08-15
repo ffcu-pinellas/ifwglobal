@@ -935,7 +935,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 		<h3><strong>Contact IFW Global Today</strong></h3>
 <p>If you believe you are a victim, <strong>submit an enquiry now</strong> via IFW Global’s secure online form:</p>
 <p><a href="/contact/">/book-a-consultation/</a></p>
-<p><strong>Email:</strong> <a href="mailto:investigations@ifwglobal.com">investigations@ifwglobal.com</a><br>
+<p><strong>Email:</strong> <a href="mailto:investigations@ifwglobalrecovery.site">investigations@ifwglobalrecovery.site</a><br>
 <strong>Phone:</strong> +61 2 8328 0402</p>
 <p><strong>Website:</strong> <a href="/">www.ifwglobal.com</a></p>
 <p><strong>&nbsp;</strong><strong>Do not delay</strong>—the sooner you act, the higher the chance of tracking the scammers and recovering your money.</p>

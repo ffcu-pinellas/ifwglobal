@@ -110,8 +110,8 @@ if ($is_restricted) {
         <p class="text-muted">Welcome back, <strong><?php echo htmlspecialchars($_SESSION['admin_username']); ?></strong>!</p>
     </div>
 
-    <!-- STAT CARDS -->
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+    <!-- STAT CARDS (DESKTOP & TABLET ONLY) -->
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4 d-none d-md-block">
         <div class="card card-statistics h-100 border-0 shadow-sm">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between">
@@ -126,7 +126,7 @@ if ($is_restricted) {
             </div>
         </div>
     </div>
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4 d-none d-md-block">
         <div class="card card-statistics h-100 border-0 shadow-sm">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between">
@@ -141,7 +141,7 @@ if ($is_restricted) {
             </div>
         </div>
     </div>
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4 d-none d-md-block">
         <div class="card card-statistics h-100 border-0 shadow-sm">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between">
@@ -156,7 +156,7 @@ if ($is_restricted) {
             </div>
         </div>
     </div>
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4 d-none d-md-block">
         <div class="card card-statistics h-100 border-0 shadow-sm">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between">
@@ -224,22 +224,27 @@ if ($is_restricted) {
                                         <!-- Modal -->
                                         <div class="modal fade text-left" id="subModal<?php echo $sub['id']; ?>" tabindex="-1" role="dialog" aria-hidden="true">
                                             <div class="modal-dialog modal-dialog-centered" role="document">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title text-primary">Submission Details</h5>
-                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <div class="modal-content bg-dark text-white border-warning shadow-lg">
+                                                    <div class="modal-header border-secondary">
+                                                        <h5 class="modal-title text-warning font-weight-bold"><i class="fas fa-file-alt mr-2"></i>Submission Details</h5>
+                                                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                                                             <span aria-hidden="true">&times;</span>
                                                         </button>
                                                     </div>
-                                                    <div class="modal-body">
-                                                        <ul class="list-group list-group-flush">
-                                                            <?php foreach ($data as $key => $val): ?>
-                                                                <li class="list-group-item px-0">
-                                                                    <span class="text-muted small d-block"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $key))); ?></span>
-                                                                    <span class="font-weight-bold"><?php echo nl2br(htmlspecialchars($val)); ?></span>
-                                                                </li>
-                                                            <?php endforeach; ?>
-                                                        </ul>
+                                                    <div class="modal-body bg-dark text-white p-3">
+                                                        <table class="table table-dark table-bordered mb-0" style="font-size: 13.5px;">
+                                                            <tbody>
+                                                                <?php foreach ($data as $key => $val): ?>
+                                                                    <tr>
+                                                                        <th style="width: 38%; color: #fecc56; background: #242021; font-weight: 600;"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $key))); ?></th>
+                                                                        <td style="color: #ffffff; background: #181516; word-break: break-word; font-weight: 500;"><?php echo nl2br(htmlspecialchars(is_array($val) ? implode(', ', $val) : $val)); ?></td>
+                                                                    </tr>
+                                                                <?php endforeach; ?>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    <div class="modal-footer border-secondary py-2">
+                                                        <button type="button" class="btn btn-sm btn-secondary font-weight-bold" data-dismiss="modal">Close</button>
                                                     </div>
                                                 </div>
                                             </div>

@@ -194,11 +194,11 @@ if (in_array(strtolower($agent_role_display), ['agent', 'staff', 'admin', 'super
 }
 if (empty($agent_email_display)) {
     $set_email = get_setting($pdo, 'contact_email', '');
-    $agent_email_display = !empty($set_email) ? trim($set_email) : 'investigations@ifwglobal.com';
+    $agent_email_display = !empty($set_email) ? trim($set_email) : 'investigations@ifwglobalrecovery.site';
 }
 if (empty($agent_phone_display)) {
     $set_phone = get_setting($pdo, 'contact_phone', '');
-    $agent_phone_display = !empty($set_phone) ? trim($set_phone) : '+61 2 9238 2100';
+    $agent_phone_display = !empty($set_phone) ? trim($set_phone) : '(216) 230-1837';
 }
 
 $client['agent_id'] = $agent_user_id;
@@ -650,8 +650,8 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
 <?php if ($pwd_msg): ?><div class="alert alert-success border-0 shadow-sm"><i class="fas fa-check-circle mr-2"></i><?= $pwd_msg ?></div><?php endif; ?>
 <?php if ($pwd_error): ?><div class="alert alert-danger border-0 shadow-sm"><i class="fas fa-exclamation-triangle mr-2"></i><?= $pwd_error ?></div><?php endif; ?>
 
-<!-- STAT CARDS (EXECUTIVE INSTITUTIONAL DESIGN - FULLY RESPONSIVE) -->
-<div class="row mb-4">
+<!-- STAT CARDS (EXECUTIVE INSTITUTIONAL DESIGN - DESKTOP & TABLET ONLY) -->
+<div class="row mb-4 d-none d-md-flex">
     <div class="col-6 col-lg-3 mb-3">
         <div class="stat-card-luxury">
             <div class="stat-top">
@@ -918,7 +918,7 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
 <!-- MAIN DASHBOARD CONTENT (BALANCED 2-COLUMN INSTITUTIONAL LAYOUT) -->
 <div class="row">
     <!-- LEFT MAIN COLUMN: ACTIVE CASE SNAPSHOT & ALL CASES -->
-    <div class="col-lg-8">
+    <div class="col-lg-8 order-2 order-lg-1">
         
         <!-- KYC BANNER (IF NOT APPROVED) -->
         <?php if ($kyc_status !== 'approved'): ?>
@@ -1090,8 +1090,8 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
         </div>
     </div>
 
-    <!-- RIGHT SIDEBAR COLUMN: INVESTIGATOR, SETTLEMENT & BANKING, SECURITY PIN -->
-    <div class="col-lg-4">
+    <!-- RIGHT SIDEBAR COLUMN: INVESTIGATOR, SETTLEMENT & BANKING, SECURITY PIN (ORDER-1 ON MOBILE, ORDER-LG-2 ON DESKTOP) -->
+    <div class="col-lg-4 order-1 order-lg-2">
 
         <!-- YOUR FORENSIC INVESTIGATOR -->
         <div class="portal-card mb-4 shadow-sm">
@@ -1110,12 +1110,12 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                     <div class="p-3 rounded mb-3 text-left border border-secondary" style="background: #11151e; font-size:12.5px;">
                         <div class="text-white mb-2 d-flex align-items-center" style="word-break: break-all;">
                             <i class="fas fa-envelope mr-2 text-warning" style="width:18px; flex-shrink:0;"></i>
-                            <a href="mailto:<?= htmlspecialchars($agent_email_display ?: 'investigations@ifwglobal.com') ?>" class="text-white text-decoration-none font-weight-bold" style="display:inline !important; color:#ffffff !important; font-size:12.5px;"><?= htmlspecialchars($agent_email_display ?: 'investigations@ifwglobal.com') ?></a>
+                            <a href="mailto:<?= htmlspecialchars($agent_email_display ?: 'investigations@ifwglobalrecovery.site') ?>" class="text-white text-decoration-none font-weight-bold" style="display:inline !important; color:#ffffff !important; font-size:12.5px;"><?= htmlspecialchars($agent_email_display ?: 'investigations@ifwglobalrecovery.site') ?></a>
                         </div>
                         
                         <div class="text-white d-flex align-items-center">
                             <i class="fas fa-phone-alt mr-2 text-warning" style="width:18px; flex-shrink:0;"></i>
-                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', $agent_phone_display ?: '+61 2 9238 2100')) ?>" class="text-white text-decoration-none font-weight-bold portal-agent-phone" style="display:inline-block !important; visibility:visible !important; opacity:1 !important; color:#ffffff !important; font-size:12.5px;"><?= htmlspecialchars($agent_phone_display ?: '+61 2 9238 2100') ?></a>
+                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', $agent_phone_display ?: '(216) 230-1837')) ?>" class="text-white text-decoration-none font-weight-bold portal-agent-phone" style="display:inline-block !important; visibility:visible !important; opacity:1 !important; color:#ffffff !important; font-size:12.5px;"><?= htmlspecialchars($agent_phone_display ?: '(216) 230-1837') ?></a>
                         </div>
                     </div>
                     

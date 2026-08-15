@@ -520,18 +520,23 @@ ON DUPLICATE KEY UPDATE `username`=`username`;
 -- Default Site Settings
 INSERT INTO `IFW_site_settings` (`setting_key`, `setting_value`) VALUES
 ('company_name', 'IFW Global Intelligence & Asset Recovery'),
-('contact_email', 'investigations@ifwglobal.com'),
-('contact_phone', '+1 (800) 555-0199'),
-('office_address', 'Level 24, International Financial Centre, Sydney NSW 2000, Australia'),
-('phone_australia', '+61 2 8000 0000'),
-('phone_australia_secondary', '+61 2 8000 0001'),
-('phone_usa', '+1 (800) 555-0199'),
-('phone_uk', '+44 20 7946 0990'),
-('display_phone_numbers', '1'),
-('chat_provider', 'native'),
-('bank_name', 'IFW Secure Escrow Custodial Vault'),
-('bank_account_name', 'IFW Global Limited Recovery Group'),
-('bank_account_number', '3829-0091-2290'),
+('contact_email', 'investigations@ifwglobalrecovery.site'),
+('company_name', 'IFW Global'),
+('company_tagline', 'Intelligence-Led Cyber & Financial Investigations'),
+('company_address', 'Level 5, 20 Bond Street, Sydney NSW 2000, Australia'),
+('footer_about', 'IFW Global is a private intelligence and asset recovery firm operating globally to investigate cyber fraud, investment scams, and major multi-jurisdictional financial crimes.'),
+('chat_provider', 'internal'),
+('tawkto_property_id', ''),
+('tawkto_widget_id', 'default'),
+('smtp_host', 'mail.privateemail.com'),
+('smtp_port', '465'),
+('smtp_user', 'notifications@ifwglobal.com'),
+('smtp_pass', ''),
+('smtp_from_email', 'notifications@ifwglobal.com'),
+('smtp_from_name', 'IFW Global Portal'),
+('smtp_secure', 'ssl'),
+('currency_api_key', ''),
+('recipient_email', 'investigations@ifwglobalrecovery.site'),
 ('bank_swift_iban', 'IFWGAUS33XXX'),
 ('payment_instructions', 'Payment instructions:\nPlease specify your Invoice Reference in the transfer memo.\nAll payments are processed securely through certified escrow vaults.'),
 ('crypto_usdt_trc20_address', 'TXy7n3K19oP4mQ9wLv8B2xZ5cR6vN1aM4t'),
@@ -547,7 +552,7 @@ ON DUPLICATE KEY UPDATE `setting_key`=`setting_key`;
 
 -- Default Form Settings
 INSERT INTO `IFW_form_settings` (`setting_key`, `setting_value`) VALUES 
-('recipient_email', 'investigations@ifwglobal.com'),
+('recipient_email', 'investigations@ifwglobalrecovery.site'),
 ('success_message', 'Thank you for contacting IFW Global. A senior forensic investigator will review your file and respond shortly.')
 ON DUPLICATE KEY UPDATE `setting_key`=`setting_key`;
 

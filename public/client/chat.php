@@ -28,36 +28,36 @@ require_once $dir . '/includes/admin_header.php';
 require_once $dir . '/includes/admin_sidebar.php';
 ?>
 
-<div class="row">
-    <div class="col-12 mb-3 d-flex align-items-center justify-content-between">
+<div class="row chat-top-row">
+    <div class="col-12 mb-2 d-flex align-items-center justify-content-between">
         <div>
-            <h3 class="text-warning font-weight-bold mb-1">
-                <i class="fas fa-comments mr-2"></i>Live Chat & Support
+            <h3 class="text-warning font-weight-bold mb-1" style="font-size: 1.25rem;">
+                <i class="fas fa-comments mr-2"></i>Live Chat &amp; Support
             </h3>
-            <p class="text-muted mb-0">Send a message or ask a question. Our support team is here to help you.</p>
+            <p class="text-light small mb-0 d-none d-md-block">Send a message or ask a question. Our support team is here to help you.</p>
         </div>
         <a href="dashboard.php" class="btn btn-outline-warning btn-sm font-weight-bold"><i class="fas fa-arrow-left mr-1"></i> Back to Dashboard</a>
     </div>
 </div>
 
-<div class="row">
+<div class="row m-0">
     <?php if ($chat_provider === 'internal'): ?>
         <!-- INTERNAL LIVE CHAT (FULL WIDTH & MOBILE OPTIMIZED) -->
-        <div class="col-12 mb-4 client-chat-col">
+        <div class="col-12 p-0 mb-0 client-chat-col">
             <div class="card shadow-lg bg-dark border-secondary client-chat-card">
-                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3">
+                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-2 px-3">
                     <div class="d-flex align-items-center">
-                        <img src="<?= htmlspecialchars($portal_avatar_url ?? '/admin_assets/img/profile/blank.png') ?>" class="rounded-circle border border-warning mr-3 chat-avatar-me" width="38" height="38" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
+                        <img src="<?= htmlspecialchars($portal_avatar_url ?? '/admin_assets/img/profile/blank.png') ?>" class="rounded-circle border border-warning mr-2 chat-avatar-me" width="34" height="34" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
                         <div>
-                            <span class="text-warning font-weight-bold" style="font-size: 1.05rem;">Case Investigation & Legal Support Desk</span>
-                            <div class="text-white small" style="font-size: 11px; opacity: 0.9;"><span class="text-success mr-1">●</span> Active Live Channel &bull; Direct Case Line</div>
+                            <span class="text-warning font-weight-bold" style="font-size: 0.95rem;">Case Investigation &amp; Legal Support</span>
+                            <div class="text-white small" style="font-size: 10.5px; opacity: 0.9;"><span class="text-success mr-1">●</span> Active Live Channel &bull; Direct Case Line</div>
                         </div>
                     </div>
-                    <span class="badge badge-success px-3 py-2 d-none d-sm-inline-block" style="font-size: 12px;"><i class="fas fa-lock mr-1"></i>256-Bit Encrypted</span>
+                    <span class="badge badge-success px-2 py-1 d-none d-sm-inline-block" style="font-size: 11px;"><i class="fas fa-lock mr-1"></i>256-Bit Encrypted</span>
                 </div>
                 <div class="card-body bg-dark text-white p-2 p-md-3 d-flex flex-column" style="min-height: 580px;">
                     <!-- Message Area -->
-                    <div id="chat-messages" class="flex-grow-1 p-3 mb-3 border border-secondary rounded overflow-auto d-flex flex-column" style="min-height: 460px; height: 60vh; max-height: 720px; background-color: #0d0d0e; gap: 15px;">
+                    <div id="chat-messages" class="flex-grow-1 p-3 mb-2 border border-secondary rounded overflow-auto d-flex flex-column" style="min-height: 460px; height: 60vh; max-height: 720px; background-color: #0d0d0e; gap: 15px;">
                         <div class="text-center p-4 text-white"><i class="fas fa-spinner fa-spin text-warning mr-2"></i> Loading Secure Messaging Portal...</div>
                     </div>
 
@@ -70,9 +70,9 @@ require_once $dir . '/includes/admin_sidebar.php';
                     <!-- Input Form -->
                     <form id="chat-form" class="d-flex flex-wrap align-items-center mt-2" style="gap: 8px;" enctype="multipart/form-data">
                         <input type="file" id="chat-file-input" name="chat_file" style="display:none;" onchange="handleChatFileSelect(this)">
-                        <button type="button" class="btn btn-outline-warning text-warning px-3 flex-shrink-0" style="height: 48px;" onclick="document.getElementById('chat-file-input').click()" title="Send an image or document"><i class="fas fa-paperclip"></i></button>
-                        <input type="text" id="chat-input" class="form-control bg-dark text-white border-secondary p-3 flex-grow-1" placeholder="Type your message here..." autocomplete="off" required style="height: 48px; min-width: 160px; color: #ffffff !important;">
-                        <button type="submit" class="btn btn-warning font-weight-bold text-dark px-3 px-md-4 shadow flex-shrink-0" style="height: 48px;">
+                        <button type="button" class="btn btn-outline-warning text-warning px-3 flex-shrink-0" style="height: 44px;" onclick="document.getElementById('chat-file-input').click()" title="Send an image or document"><i class="fas fa-paperclip"></i></button>
+                        <input type="text" id="chat-input" class="form-control bg-dark text-white border-secondary p-2 flex-grow-1" placeholder="Type your message here..." autocomplete="off" required style="height: 44px; min-width: 160px; color: #ffffff !important;">
+                        <button type="submit" class="btn btn-warning font-weight-bold text-dark px-3 px-md-4 shadow flex-shrink-0" style="height: 44px;">
                             <i class="fas fa-paper-plane mr-1"></i> Send
                         </button>
                     </form>
@@ -105,40 +105,61 @@ require_once $dir . '/includes/admin_sidebar.php';
         .msg-admin .msg-sender-name { color: #fecc56; text-align: left; }
 
         @media (max-width: 768px) {
-            .client-chat-col {
+            #wrapper-content {
                 padding-left: 0 !important;
                 padding-right: 0 !important;
-                margin-left: -15px !important;
-                margin-right: -15px !important;
-                width: calc(100% + 30px) !important;
-                max-width: calc(100% + 30px) !important;
+                padding-top: 58px !important;
+            }
+            .chat-top-row {
+                padding: 6px 10px !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                margin-bottom: 2px !important;
+            }
+            .chat-top-row h3 {
+                font-size: 1.05rem !important;
+            }
+            .client-chat-col {
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
             }
             .client-chat-card {
                 border-radius: 0 !important;
-                border-left: none !important;
-                border-right: none !important;
+                border: none !important;
                 margin-bottom: 0 !important;
+                background: #000000 !important;
+            }
+            .client-chat-card .card-header {
+                padding: 8px 12px !important;
+                border-radius: 0 !important;
             }
             .client-chat-iframe-body {
-                height: calc(100dvh - 145px) !important;
-                min-height: 480px !important;
+                height: calc(100dvh - 115px) !important;
+                min-height: calc(100vh - 115px) !important;
                 max-height: none !important;
+                width: 100% !important;
             }
             .client-chat-iframe {
                 width: 100% !important;
                 height: 100% !important;
                 min-height: 100% !important;
+                border: none !important;
             }
             #chat-messages {
-                height: calc(100dvh - 240px) !important;
+                height: calc(100dvh - 185px) !important;
                 min-height: 380px !important;
                 max-height: none !important;
-                padding: 12px 10px !important;
+                padding: 10px 8px !important;
+                border-radius: 0 !important;
+                border-left: none !important;
+                border-right: none !important;
             }
             .msg-bubble {
-                max-width: 88% !important;
-                font-size: 0.9rem !important;
-                padding: 10px 14px !important;
+                max-width: 90% !important;
+                font-size: 0.88rem !important;
+                padding: 8px 12px !important;
             }
         }
         </style>

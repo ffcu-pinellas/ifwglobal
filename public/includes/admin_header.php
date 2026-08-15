@@ -267,28 +267,58 @@ if (isset($pdo)) {
             }
             #wrapper-content {
                 margin-left: 0 !important;
-                padding-top: 68px !important;
-                padding-left: 12px !important;
-                padding-right: 12px !important;
+                padding-top: 62px !important;
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+            }
+            #wrapper-header {
+                height: 52px !important;
             }
             #wrapper-header .navbar {
-                padding: 6px 10px !important;
+                padding: 4px 6px !important;
+                height: 52px !important;
             }
             #wrapper-header .navbar-nav.ml-auto {
                 margin-right: 0 !important;
+                gap: 4px !important;
             }
             #wrapper-header .navbar-nav .nav-item {
-                margin-right: 6px !important;
+                margin-right: 3px !important;
             }
             #wrapper-header .navbar-nav .nav-item:last-child {
                 margin-right: 0 !important;
             }
+            #portalCurrencyDropdown {
+                padding: 2px 6px !important;
+                font-size: 10.5px !important;
+                border-radius: 14px !important;
+            }
+            #privacyShieldToggle, #themeModeToggle {
+                padding: 2px 6px !important;
+                font-size: 10.5px !important;
+                border-radius: 14px !important;
+                min-width: 26px !important;
+                height: 26px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            #privacyShieldToggle i, #themeModeToggle i {
+                font-size: 11.5px !important;
+            }
+            #notificationDropdown i {
+                font-size: 20px !important;
+            }
+            #portalAvatarImg {
+                width: 26px !important;
+                height: 26px !important;
+            }
             #wrapper-header .dropdown-menu {
                 position: fixed !important;
-                top: 58px !important;
-                right: 10px !important;
+                top: 54px !important;
+                right: 8px !important;
                 left: auto !important;
-                width: calc(100vw - 20px) !important;
+                width: calc(100vw - 16px) !important;
                 max-width: 320px !important;
             }
             #mobileSidebarBackdrop {
@@ -593,6 +623,50 @@ if (isset($pdo)) {
         body.light-mode .table td {
             color: #1e293b !important;
             border-top: 1px solid #e2e8f0 !important;
+        }
+        html.light-mode .invoice-table,
+        body.light-mode .invoice-table,
+        html.light-mode .table-bordered,
+        body.light-mode .table-bordered {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        html.light-mode .invoice-table thead,
+        body.light-mode .invoice-table thead,
+        html.light-mode .table-bordered thead {
+            background-color: #f1f5f9 !important;
+        }
+        html.light-mode .invoice-table th,
+        body.light-mode .invoice-table th,
+        html.light-mode .table-bordered th {
+            background-color: #f1f5f9 !important;
+            color: #9a3412 !important;
+            border-color: #cbd5e1 !important;
+        }
+        html.light-mode .invoice-table td,
+        body.light-mode .invoice-table td,
+        html.light-mode .table-bordered td {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #e2e8f0 !important;
+        }
+        html.light-mode .invoice-table tfoot tr,
+        body.light-mode .invoice-table tfoot tr {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        html.light-mode .invoice-table tfoot td,
+        body.light-mode .invoice-table tfoot td {
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        html.light-mode .list-group-item,
+        body.light-mode .list-group-item {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #e2e8f0 !important;
         }
         html.light-mode .modal-content,
         body.light-mode .modal-content,

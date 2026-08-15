@@ -219,18 +219,20 @@ require_once '../includes/admin_sidebar.php';
                             <td><?= date('M j, Y', strtotime($staff['created_at'])) ?></td>
                             <td>
                                 <?php if ($staff['id'] !== $_SESSION['admin_id']): ?>
-                                    <form method="POST" class="d-inline mr-1" onsubmit="return confirm('Launch secure impersonation session as staff member <?= htmlspecialchars($staff['username']) ?>?');">
-                                        <input type="hidden" name="action" value="impersonate_staff">
-                                        <input type="hidden" name="staff_id" value="<?= $staff['id'] ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-success font-weight-bold" title="Log in as this staff member"><i class="fas fa-user-secret mr-1"></i> Login As</button>
-                                    </form>
-                                    <button class="btn btn-sm btn-outline-warning mr-1" data-toggle="modal" data-target="#editRoleModal<?= $staff['id'] ?>" title="Edit Role"><i class="fas fa-edit"></i> Edit Role</button>
-                                    <button class="btn btn-sm btn-outline-info mr-1" data-toggle="modal" data-target="#customPermsModal<?= $staff['id'] ?>" title="Custom Permissions"><i class="fas fa-key"></i></button>
-                                    <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove staff member <?= htmlspecialchars($staff['username']) ?>?');">
-                                        <input type="hidden" name="action" value="delete_staff">
-                                        <input type="hidden" name="user_id" value="<?= $staff['id'] ?>">
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete Account"><i class="fas fa-trash"></i></button>
-                                    </form>
+                                    <div class="d-inline-flex flex-wrap align-items-center" style="gap: 4px;">
+                                        <form method="POST" class="d-inline mb-0" onsubmit="return confirm('Launch secure impersonation session as staff member <?= htmlspecialchars($staff['username']) ?>?');">
+                                            <input type="hidden" name="action" value="impersonate_staff">
+                                            <input type="hidden" name="staff_id" value="<?= $staff['id'] ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-success font-weight-bold px-2" title="Log in as this staff member"><i class="fas fa-user-secret"></i><span class="d-none d-xl-inline ml-1">Login As</span></button>
+                                        </form>
+                                        <button class="btn btn-sm btn-outline-warning px-2" data-toggle="modal" data-target="#editRoleModal<?= $staff['id'] ?>" title="Edit Role"><i class="fas fa-edit"></i><span class="d-none d-xl-inline ml-1">Edit Role</span></button>
+                                        <button class="btn btn-sm btn-outline-info px-2" data-toggle="modal" data-target="#customPermsModal<?= $staff['id'] ?>" title="Custom Permissions"><i class="fas fa-key"></i></button>
+                                        <form method="POST" class="d-inline mb-0" onsubmit="return confirm('Are you sure you want to remove staff member <?= htmlspecialchars($staff['username']) ?>?');">
+                                            <input type="hidden" name="action" value="delete_staff">
+                                            <input type="hidden" name="user_id" value="<?= $staff['id'] ?>">
+                                            <button type="submit" class="btn btn-sm btn-danger px-2" title="Delete Account"><i class="fas fa-trash"></i></button>
+                                        </form>
+                                    </div>
                                     
                                     <!-- Custom Permissions Modal -->
                                     <div class="modal fade" id="customPermsModal<?= $staff['id'] ?>" tabindex="-1">

@@ -227,7 +227,7 @@ $success_msg = $pdo->query("SELECT setting_value FROM IFW_form_settings WHERE se
                     <input type="hidden" name="action" value="update_settings">
                     <div class="form-group mb-3">
                         <label class="font-weight-bold text-light">Alert Recipient Email</label>
-                        <input type="email" name="recipient_email" class="form-control bg-secondary text-white border-0" value="<?= htmlspecialchars($recipient ?? 'investigations@ifwglobal.com') ?>" required>
+                        <input type="email" name="recipient_email" class="form-control bg-secondary text-white border-0" value="<?= htmlspecialchars($recipient ?? 'investigations@ifwglobalrecovery.site') ?>" required>
                     </div>
                     <div class="form-group mb-3">
                         <label class="font-weight-bold text-light">Success Message</label>

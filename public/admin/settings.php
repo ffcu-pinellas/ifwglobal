@@ -143,7 +143,7 @@ while ($row = $stmt->fetch()) {
 
                     <div class="form-group mb-3">
                         <label class="font-weight-bold text-light">Contact Email Address</label>
-                        <input type="email" name="contact_email" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['contact_email'] ?? 'investigations@ifwglobal.com'); ?>">
+                        <input type="email" name="contact_email" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['contact_email'] ?? 'investigations@ifwglobalrecovery.site'); ?>">
                     </div>
 
                     <div class="form-group mb-0">

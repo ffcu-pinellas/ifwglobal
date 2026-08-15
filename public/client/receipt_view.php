@@ -201,14 +201,11 @@ $verification_hash = hash('sha256', $receipt_num . '|' . $amount_paid . '|' . $p
         <!-- HEADER -->
         <div class="row header-bar align-items-center">
             <div class="col-sm-7">
-                <div class="d-flex align-items-center mb-2">
-                    <div style="width:48px; height:48px; border-radius:10px; background:#111827; display:flex; align-items:center; justify-content:center; margin-right:12px; flex-shrink:0; border:2px solid #fecc56; box-shadow:0 3px 8px rgba(0,0,0,0.15);">
-                        <span style="font-size:24px;">🛡️</span>
-                    </div>
-                    <div>
-                        <h4 class="font-weight-bold text-dark mb-0" style="letter-spacing:1px; line-height:1.1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-transform:uppercase;">IFW GLOBAL</h4>
-                        <div style="color:#d97706; font-weight:800; font-size:10px; letter-spacing:1.2px; text-transform:uppercase;">Private Intelligence &bull; Asset Recovery</div>
-                    </div>
+                <div class="mb-2">
+                    <a href="/client/dashboard.php">
+                        <img src="/media/logos/logo.svg" alt="IFW Global" style="height: 48px; max-width: 220px; object-fit: contain; margin-bottom: 6px;" onerror="this.onerror=null; this.src='/media/gallery/IFW-Podcast-Screen.jpg';">
+                    </a>
+                    <div style="color:#d97706; font-weight:800; font-size:10.5px; letter-spacing:1.2px; text-transform:uppercase;">Private Intelligence &bull; Asset Recovery</div>
                 </div>
                 <p class="text-muted small mb-0 mt-2"><?= nl2br(htmlspecialchars($company_address)) ?></p>
                 <p class="text-muted small mb-0"><i class="fas fa-envelope mr-1"></i><?= htmlspecialchars($contact_email) ?> &bull; <i class="fas fa-phone mr-1"></i><?= htmlspecialchars($contact_phone) ?></p>

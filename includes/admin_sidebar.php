@@ -241,8 +241,8 @@ if (isset($pdo) && $user_role === 'client') {
     <div class="sidebar sidebar-dark sidebar-danger bg-dark">
         <!-- SIDEBAR HEADER -->
         <div class="sidebar-header border-fade p-3 d-flex align-items-center justify-content-between" style="border-bottom: 1px solid rgba(254, 204, 86, 0.2);">
-            <a href="<?php echo BASE_URL; ?>/<?php echo ($user_role === 'client') ? 'client/dashboard.php' : 'admin/index.php'; ?>" class="sidebar-brand text-decoration-none">
-                <h4 class="mb-0 text-warning font-weight-bold"><i class="fas fa-shield-alt mr-2"></i>IFW GLOBAL</h4>
+            <a href="<?php echo BASE_URL; ?>/<?php echo ($user_role === 'client') ? 'client/dashboard.php' : 'admin/index.php'; ?>" class="sidebar-brand text-decoration-none d-flex align-items-center">
+                <img src="/media/logos/logo.svg" alt="IFW Global" style="height: 32px; max-width: 160px; object-fit: contain;" onerror="this.onerror=null; this.src='/media/gallery/IFW-Podcast-Screen.jpg';">
             </a>
             <a href="javascript:void(0);" class="sidebar-close d-md-none text-warning" data-toggle="class" data-target="#wrapper" toggle-class="toggled">
                 <i class="material-icons icon-sm">close</i>
