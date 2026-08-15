@@ -158,6 +158,17 @@ if (isset($pdo)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IFW Global - Administrative & Case Intelligence Portal</title>
     
+    <script>
+        (function() {
+            try {
+                var savedTheme = localStorage.getItem('ifw_portal_theme') || 'dark';
+                if (savedTheme === 'light') {
+                    document.documentElement.classList.add('light-mode');
+                }
+            } catch(e) {}
+        })();
+    </script>
+    
     <!-- FAVICON -->
     <link rel="icon" type="image/png" href="/admin_assets/img/favicon.png" />
     <!-- VENDOR & DIST CSS -->
@@ -497,6 +508,145 @@ if (isset($pdo)) {
         body.privacy-shield-active td[data-label="Recovered"]:hover {
             filter: blur(2px) !important;
         }
+
+        /* LIGHT MODE DESIGN SYSTEM COMPATIBILITY */
+        html.light-mode body,
+        body.light-mode {
+            background-color: #f1f5f9 !important;
+            background-image: none !important;
+            color: #0f172a !important;
+        }
+        html.light-mode #wrapper,
+        body.light-mode #wrapper,
+        html.light-mode #wrapper.bg-dark,
+        body.light-mode #wrapper.bg-dark {
+            background-color: #f1f5f9 !important;
+        }
+        html.light-mode .navbar,
+        body.light-mode .navbar,
+        html.light-mode #wrapper-header .navbar,
+        body.light-mode #wrapper-header .navbar,
+        html.light-mode .navbar-dark.bg-dark,
+        body.light-mode .navbar-dark.bg-dark {
+            background-color: #ffffff !important;
+            border-bottom: 1px solid #cbd5e1 !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important;
+        }
+        html.light-mode .navbar .nav-link,
+        body.light-mode .navbar .nav-link {
+            color: #334155 !important;
+        }
+        html.light-mode .portal-card,
+        body.light-mode .portal-card,
+        html.light-mode .card,
+        body.light-mode .card {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+        }
+        html.light-mode .portal-card-header,
+        body.light-mode .portal-card-header,
+        html.light-mode .card-header,
+        body.light-mode .card-header {
+            background-color: #f8fafc !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            color: #b45309 !important;
+        }
+        html.light-mode .stat-card-luxury,
+        body.light-mode .stat-card-luxury {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06) !important;
+        }
+        html.light-mode .stat-card-luxury .stat-value,
+        body.light-mode .stat-card-luxury .stat-value {
+            color: #0f172a !important;
+        }
+        html.light-mode .stat-card-luxury .stat-label,
+        body.light-mode .stat-card-luxury .stat-label {
+            color: #475569 !important;
+        }
+        html.light-mode .table-portal,
+        body.light-mode .table-portal,
+        html.light-mode .table,
+        body.light-mode .table {
+            color: #0f172a !important;
+        }
+        html.light-mode .table-portal thead th,
+        body.light-mode .table-portal thead th,
+        html.light-mode .table thead th,
+        body.light-mode .table thead th {
+            background-color: #f1f5f9 !important;
+            color: #9a3412 !important;
+            border-bottom: 2px solid #cbd5e1 !important;
+        }
+        html.light-mode .table-portal tbody tr,
+        body.light-mode .table-portal tbody tr,
+        html.light-mode .table tbody tr,
+        body.light-mode .table tbody tr {
+            background-color: #ffffff !important;
+        }
+        html.light-mode .table-portal td,
+        body.light-mode .table-portal td,
+        html.light-mode .table td,
+        body.light-mode .table td {
+            color: #1e293b !important;
+            border-top: 1px solid #e2e8f0 !important;
+        }
+        html.light-mode .modal-content,
+        body.light-mode .modal-content,
+        html.light-mode .modal-content.bg-dark,
+        body.light-mode .modal-content.bg-dark {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.15) !important;
+        }
+        html.light-mode .modal-header,
+        body.light-mode .modal-header,
+        html.light-mode .modal-footer,
+        body.light-mode .modal-footer {
+            background-color: #f8fafc !important;
+            border-color: #e2e8f0 !important;
+        }
+        html.light-mode .dropdown-menu,
+        body.light-mode .dropdown-menu,
+        html.light-mode .dropdown-menu.bg-dark,
+        body.light-mode .dropdown-menu.bg-dark {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.12) !important;
+        }
+        html.light-mode .dropdown-item,
+        body.light-mode .dropdown-item {
+            color: #1e293b !important;
+        }
+        html.light-mode .dropdown-item:hover,
+        body.light-mode .dropdown-item:focus {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+        }
+        html.light-mode .form-control,
+        body.light-mode .form-control {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border: 1px solid #cbd5e1 !important;
+        }
+        html.light-mode .text-muted,
+        body.light-mode .text-muted {
+            color: #64748b !important;
+        }
+        @media (max-width: 991px) {
+            html.light-mode .table-portal tbody tr,
+            body.light-mode .table-portal tbody tr,
+            html.light-mode .table-responsive > table tbody tr,
+            body.light-mode .table-responsive > table tbody tr {
+                background-color: #ffffff !important;
+                border-color: #cbd5e1 !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -563,6 +713,14 @@ if (isset($pdo)) {
                         <button type="button" id="privacyShieldToggle" class="btn btn-sm btn-outline-secondary font-weight-bold d-flex align-items-center" onclick="togglePrivacyShield()" title="Privacy Mode: Blur sensitive financial balances and case details for public browsing" style="border-radius:20px; padding:3px 8px; font-size:11px; border-color:#475569; color:#cbd5e1;">
                             <i class="fas fa-eye-slash text-warning" id="privacyShieldIcon"></i>
                             <span id="privacyShieldText" class="d-none d-md-inline ml-1">Privacy Off</span>
+                        </button>
+                    </li>
+
+                    <!-- Dark / Light Theme Mode Switcher -->
+                    <li class="nav-item mr-2 mr-md-3 align-self-center">
+                        <button type="button" id="themeModeToggle" class="btn btn-sm btn-outline-secondary font-weight-bold d-flex align-items-center" onclick="toggleThemeMode()" title="Toggle Dark / Light Mode" style="border-radius:20px; padding:3px 8px; font-size:11px; border-color:#475569; color:#cbd5e1;">
+                            <i class="fas fa-sun text-warning" id="themeModeIcon"></i>
+                            <span id="themeModeText" class="d-none d-md-inline ml-1">Light Mode</span>
                         </button>
                     </li>
 
@@ -902,7 +1060,74 @@ if (isset($pdo)) {
             }
         }
 
-        document.addEventListener('DOMContentLoaded', initPrivacyShield);
+        // Theme Mode Engine (Dark / Light Switcher)
+        function initThemeMode() {
+            try {
+                var savedTheme = localStorage.getItem('ifw_portal_theme') || 'dark';
+                if (savedTheme === 'light') {
+                    document.documentElement.classList.add('light-mode');
+                    document.body.classList.add('light-mode');
+                    updateThemeModeBtn('light');
+                } else {
+                    document.documentElement.classList.remove('light-mode');
+                    document.body.classList.remove('light-mode');
+                    updateThemeModeBtn('dark');
+                }
+            } catch(e) {}
+        }
+
+        function toggleThemeMode() {
+            var isLight = document.documentElement.classList.contains('light-mode');
+            var newTheme = isLight ? 'dark' : 'light';
+            
+            if (newTheme === 'light') {
+                document.documentElement.classList.add('light-mode');
+                document.body.classList.add('light-mode');
+            } else {
+                document.documentElement.classList.remove('light-mode');
+                document.body.classList.remove('light-mode');
+            }
+            
+            try {
+                localStorage.setItem('ifw_portal_theme', newTheme);
+            } catch(e) {}
+            
+            updateThemeModeBtn(newTheme);
+            
+            if (typeof toastr !== 'undefined') {
+                if (newTheme === 'light') {
+                    toastr.info('Switched to Light Mode theme.', '☀️ Light Mode');
+                } else {
+                    toastr.info('Switched to Dark Mode theme.', '🌙 Dark Mode');
+                }
+            }
+        }
+
+        function updateThemeModeBtn(theme) {
+            var icon = document.getElementById('themeModeIcon');
+            var text = document.getElementById('themeModeText');
+            var btn = document.getElementById('themeModeToggle');
+            if (!btn) return;
+            
+            if (theme === 'light') {
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-warning');
+                btn.style.color = '#000';
+                if (icon) icon.className = 'fas fa-moon text-dark mr-1';
+                if (text) text.textContent = 'Dark Mode';
+            } else {
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-outline-secondary');
+                btn.style.color = '#cbd5e1';
+                if (icon) icon.className = 'fas fa-sun text-warning mr-1';
+                if (text) text.textContent = 'Light Mode';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initPrivacyShield();
+            initThemeMode();
+        });
 
         function uploadPortalAvatar(input) {
             if (!input.files || !input.files[0]) return;

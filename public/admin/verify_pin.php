@@ -33,17 +33,17 @@ if (!$user) {
     exit;
 }
 
-$user_email = !empty($user['email']) ? $user['email'] : ($admin_username . '@ifwglobal.com');
+$user_email = !empty($user['email']) ? $user['email'] : ($admin_username . '@ifwglobalrecovery.site');
 $mode = $_GET['mode'] ?? 'pin'; // 'pin' or 'email_otp'
 
 $error = '';
 $success = '';
 $lockout_seconds = 300; // 5 minutes
 
-// Check Lockout Status
+// Check Lockout Status Scoped Strictly Per Admin ID
 $now = time();
-$pin_lockout_until = $_SESSION['admin_pin_lockout_until'] ?? 0;
-$otp_lockout_until = $_SESSION['admin_otp_lockout_until'] ?? 0;
+$pin_lockout_until = $_SESSION['admin_pin_lockout_until_' . $admin_id] ?? 0;
+$otp_lockout_until = $_SESSION['admin_otp_lockout_until_' . $admin_id] ?? 0;
 
 $is_pin_locked = ($pin_lockout_until > $now);
 $pin_remaining_time = $is_pin_locked ? ($pin_lockout_until - $now) : 0;
@@ -54,7 +54,7 @@ $otp_remaining_time = $is_otp_locked ? ($otp_lockout_until - $now) : 0;
 // Handle Send/Resend Email OTP
 if (isset($_GET['action']) && in_array($_GET['action'], ['send_email_code', 'resend_code'])) {
     if ($is_otp_locked) {
-        $error = "Email verification is temporarily locked due to previous failed attempts. Please wait " . ceil($otp_remaining_time / 60) . " minute(s).";
+        $error = "Email verification is temporarily locked due to multiple failed attempts. Please wait " . ceil($otp_remaining_time / 60) . " minute(s).";
     } else {
         $otp = rand(100000, 999999);
         $_SESSION['admin_otp_code'] = (string)$otp;
@@ -71,7 +71,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['send_email_code', 'res
                  <p style='color: #64748b; font-size: 13px;'>This code is valid for 10 minutes. If you did not initiate this authentication request, please contact IT Security immediately.</p>";
 
         $mail_sent = @send_html_email($user_email, $subject, $body);
-        $success = "A 6-digit verification code has been dispatched to <strong>" . htmlspecialchars($user_email) . "</strong>.";
+        $success = "A 6-digit verification code has been sent to <strong>" . htmlspecialchars($user_email) . "</strong>.";
         $mode = 'email_otp';
     }
 }
@@ -108,7 +108,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($pin_valid) {
                     // Success - Clear failure states
-                    unset($_SESSION['admin_pin_failures'], $_SESSION['admin_pin_lockout_until']);
+                    unset(
+                        $_SESSION['admin_pin_failures_' . $admin_id],
+                        $_SESSION['admin_pin_lockout_until_' . $admin_id],
+                        $_SESSION['admin_pin_failures'],
+                        $_SESSION['admin_pin_lockout_until']
+                    );
 
                     $_SESSION['admin_logged_in'] = true;
                     $_SESSION['admin_id'] = $admin_id;
@@ -129,11 +134,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header("Location: index.php");
                     exit;
                 } else {
-                    $failures = ($_SESSION['admin_pin_failures'] ?? 0) + 1;
-                    $_SESSION['admin_pin_failures'] = $failures;
+                    $failures = ($_SESSION['admin_pin_failures_' . $admin_id] ?? 0) + 1;
+                    $_SESSION['admin_pin_failures_' . $admin_id] = $failures;
 
                     if ($failures >= 5) {
-                        $_SESSION['admin_pin_lockout_until'] = time() + $lockout_seconds;
+                        $_SESSION['admin_pin_lockout_until_' . $admin_id] = time() + $lockout_seconds;
                         $is_pin_locked = true;
                         $pin_remaining_time = $lockout_seconds;
                         $error = "Security Lockout: 5 failed PIN attempts. PIN input is locked for 5 minutes. You may use Email Verification instead.";
@@ -162,7 +167,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = "Verification code has expired or was not generated. Please click 'Resend Code'.";
             } elseif ($entered_otp === $saved_otp) {
                 // Success - Reset failure states
-                unset($_SESSION['admin_otp_failures'], $_SESSION['admin_otp_lockout_until'], $_SESSION['admin_otp_code'], $_SESSION['admin_otp_time']);
+                unset(
+                    $_SESSION['admin_otp_failures_' . $admin_id],
+                    $_SESSION['admin_otp_lockout_until_' . $admin_id],
+                    $_SESSION['admin_otp_failures'],
+                    $_SESSION['admin_otp_lockout_until'],
+                    $_SESSION['admin_otp_code'],
+                    $_SESSION['admin_otp_time']
+                );
 
                 $_SESSION['admin_logged_in'] = true;
                 $_SESSION['admin_id'] = $admin_id;

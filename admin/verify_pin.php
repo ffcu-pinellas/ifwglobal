@@ -40,10 +40,10 @@ $error = '';
 $success = '';
 $lockout_seconds = 300; // 5 minutes
 
-// Check Lockout Status
+// Check Lockout Status Scoped Strictly Per Admin ID
 $now = time();
-$pin_lockout_until = $_SESSION['admin_pin_lockout_until'] ?? 0;
-$otp_lockout_until = $_SESSION['admin_otp_lockout_until'] ?? 0;
+$pin_lockout_until = $_SESSION['admin_pin_lockout_until_' . $admin_id] ?? 0;
+$otp_lockout_until = $_SESSION['admin_otp_lockout_until_' . $admin_id] ?? 0;
 
 $is_pin_locked = ($pin_lockout_until > $now);
 $pin_remaining_time = $is_pin_locked ? ($pin_lockout_until - $now) : 0;
@@ -108,7 +108,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($pin_valid) {
                     // Success - Clear failure states
-                    unset($_SESSION['admin_pin_failures'], $_SESSION['admin_pin_lockout_until']);
+                    unset(
+                        $_SESSION['admin_pin_failures_' . $admin_id],
+                        $_SESSION['admin_pin_lockout_until_' . $admin_id],
+                        $_SESSION['admin_pin_failures'],
+                        $_SESSION['admin_pin_lockout_until']
+                    );
 
                     $_SESSION['admin_logged_in'] = true;
                     $_SESSION['admin_id'] = $admin_id;
@@ -129,11 +134,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header("Location: index.php");
                     exit;
                 } else {
-                    $failures = ($_SESSION['admin_pin_failures'] ?? 0) + 1;
-                    $_SESSION['admin_pin_failures'] = $failures;
+                    $failures = ($_SESSION['admin_pin_failures_' . $admin_id] ?? 0) + 1;
+                    $_SESSION['admin_pin_failures_' . $admin_id] = $failures;
 
                     if ($failures >= 5) {
-                        $_SESSION['admin_pin_lockout_until'] = time() + $lockout_seconds;
+                        $_SESSION['admin_pin_lockout_until_' . $admin_id] = time() + $lockout_seconds;
                         $is_pin_locked = true;
                         $pin_remaining_time = $lockout_seconds;
                         $error = "Security Lockout: 5 failed PIN attempts. PIN input is locked for 5 minutes. You may use Email Verification instead.";
@@ -162,7 +167,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = "Verification code has expired or was not generated. Please click 'Resend Code'.";
             } elseif ($entered_otp === $saved_otp) {
                 // Success - Reset failure states
-                unset($_SESSION['admin_otp_failures'], $_SESSION['admin_otp_lockout_until'], $_SESSION['admin_otp_code'], $_SESSION['admin_otp_time']);
+                unset(
+                    $_SESSION['admin_otp_failures_' . $admin_id],
+                    $_SESSION['admin_otp_lockout_until_' . $admin_id],
+                    $_SESSION['admin_otp_failures'],
+                    $_SESSION['admin_otp_lockout_until'],
+                    $_SESSION['admin_otp_code'],
+                    $_SESSION['admin_otp_time']
+                );
 
                 $_SESSION['admin_logged_in'] = true;
                 $_SESSION['admin_id'] = $admin_id;

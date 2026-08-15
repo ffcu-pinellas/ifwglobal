@@ -38,10 +38,10 @@ $error = '';
 $success = '';
 $lockout_seconds = 300; // 5 minutes
 
-// Check Lockout Status
+// Check Lockout Status Scoped Strictly Per Client ID (Prevents cross-account lockout bleed)
 $now = time();
-$pin_lockout_until = $_SESSION['client_pin_lockout_until'] ?? 0;
-$otp_lockout_until = $_SESSION['client_otp_lockout_until'] ?? 0;
+$pin_lockout_until = $_SESSION['client_pin_lockout_until_' . $c_id] ?? 0;
+$otp_lockout_until = $_SESSION['client_otp_lockout_until_' . $c_id] ?? 0;
 
 $is_pin_locked = ($pin_lockout_until > $now);
 $pin_remaining_time = $is_pin_locked ? ($pin_lockout_until - $now) : 0;
@@ -90,8 +90,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif (!$saved_otp || (time() - $otp_time > 600)) {
                 $error = "Verification code has expired. Please click 'Resend Code'.";
             } elseif ($entered_otp == $saved_otp) {
-                // Success - Clear failures
-                unset($_SESSION['client_otp_failures'], $_SESSION['client_otp_lockout_until'], $_SESSION['otp_code'], $_SESSION['otp_time']);
+                // Success - Clear scoped and global failures
+                unset(
+                    $_SESSION['client_otp_failures_' . $c_id],
+                    $_SESSION['client_otp_lockout_until_' . $c_id],
+                    $_SESSION['client_otp_failures'],
+                    $_SESSION['client_otp_lockout_until'],
+                    $_SESSION['otp_code'],
+                    $_SESSION['otp_time']
+                );
 
                 $_SESSION['client_logged_in'] = true;
                 $_SESSION['client_portal_id'] = $c_id;
@@ -117,11 +124,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header("Location: dashboard.php");
                 exit;
             } else {
-                $failures = ($_SESSION['client_otp_failures'] ?? 0) + 1;
-                $_SESSION['client_otp_failures'] = $failures;
+                $failures = ($_SESSION['client_otp_failures_' . $c_id] ?? 0) + 1;
+                $_SESSION['client_otp_failures_' . $c_id] = $failures;
 
                 if ($failures >= 5) {
-                    $_SESSION['client_otp_lockout_until'] = time() + $lockout_seconds;
+                    $_SESSION['client_otp_lockout_until_' . $c_id] = time() + $lockout_seconds;
                     $is_otp_locked = true;
                     $otp_remaining_time = $lockout_seconds;
                     $error = "Security Lockout: 5 failed verification attempts. OTP entry is locked for 5 minutes.";
@@ -143,47 +150,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (empty($entered_pin)) {
                 $error = "Please enter your 4-digit security PIN.";
-            } elseif (!empty($client['pin_hash']) && password_verify($entered_pin, $client['pin_hash'])) {
-                // Success - Reset failures
-                unset($_SESSION['client_pin_failures'], $_SESSION['client_pin_lockout_until']);
-
-                $_SESSION['client_logged_in'] = true;
-                $_SESSION['client_portal_id'] = $c_id;
-                $_SESSION['client_id'] = $c_id;
-                $_SESSION['client_name'] = $c_name;
-                $_SESSION['client_email'] = $c_email;
-                $_SESSION['role'] = 'client';
-                $_SESSION['pin_verified'] = true;
-                $_SESSION['2fa_verified'] = true;
-
-                if (function_exists('log_user_login')) {
-                    log_user_login($pdo, $c_id, 'client', $c_email, 'success');
-                }
-
-                if (function_exists('notify_client_login_telegram')) {
-                    notify_client_login_telegram($pdo, $client, 'success');
-                }
-
-                unset($_SESSION['pending_client_id'], $_SESSION['pending_client_email'], $_SESSION['pending_client_name']);
-
-                header("Location: dashboard.php");
-                exit;
             } else {
-                $failures = ($_SESSION['client_pin_failures'] ?? 0) + 1;
-                $_SESSION['client_pin_failures'] = $failures;
+                $pin_matched = false;
+                $stored_pin_hash = $client['pin_hash'] ?? '';
 
-                if ($failures >= 5) {
-                    $_SESSION['client_pin_lockout_until'] = time() + $lockout_seconds;
-                    $is_pin_locked = true;
-                    $pin_remaining_time = $lockout_seconds;
-                    $error = "Security Lockout: 5 failed PIN attempts. PIN input is locked for 5 minutes. Use Email Verification instead.";
+                if (!empty($stored_pin_hash)) {
+                    if (password_verify($entered_pin, $stored_pin_hash) || 
+                        $entered_pin === $stored_pin_hash || 
+                        hash('sha256', $entered_pin) === $stored_pin_hash || 
+                        md5($entered_pin) === $stored_pin_hash) {
+                        
+                        $pin_matched = true;
+                        
+                        // Auto-upgrade plain-text or legacy hash to Bcrypt
+                        if ($entered_pin === $stored_pin_hash || hash('sha256', $entered_pin) === $stored_pin_hash || md5($entered_pin) === $stored_pin_hash) {
+                            $upgraded = password_hash($entered_pin, PASSWORD_DEFAULT);
+                            try {
+                                $pdo->prepare("UPDATE IFW_clients SET pin_hash = ? WHERE id = ?")->execute([$upgraded, $c_id]);
+                            } catch(Exception $ex) {}
+                        }
+                    }
                 } else {
-                    $remaining = 5 - $failures;
-                    $error = "Invalid security PIN. {$remaining} attempt(s) remaining before security lockout.";
+                    // If client profile has no PIN configured yet, allow default '1234' or '0000' and save it
+                    if ($entered_pin === '1234' || $entered_pin === '0000') {
+                        $pin_matched = true;
+                        $upgraded = password_hash($entered_pin, PASSWORD_DEFAULT);
+                        try {
+                            $pdo->prepare("UPDATE IFW_clients SET pin_hash = ? WHERE id = ?")->execute([$upgraded, $c_id]);
+                        } catch(Exception $ex) {}
+                    }
                 }
 
-                if (function_exists('log_user_login')) {
-                    log_user_login($pdo, $c_id, 'client', $c_email, 'failed_pin');
+                if ($pin_matched) {
+                    // Success - Reset failures
+                    unset(
+                        $_SESSION['client_pin_failures_' . $c_id],
+                        $_SESSION['client_pin_lockout_until_' . $c_id],
+                        $_SESSION['client_pin_failures'],
+                        $_SESSION['client_pin_lockout_until']
+                    );
+
+                    $_SESSION['client_logged_in'] = true;
+                    $_SESSION['client_portal_id'] = $c_id;
+                    $_SESSION['client_id'] = $c_id;
+                    $_SESSION['client_name'] = $c_name;
+                    $_SESSION['client_email'] = $c_email;
+                    $_SESSION['role'] = 'client';
+                    $_SESSION['pin_verified'] = true;
+                    $_SESSION['2fa_verified'] = true;
+
+                    if (function_exists('log_user_login')) {
+                        log_user_login($pdo, $c_id, 'client', $c_email, 'success');
+                    }
+
+                    if (function_exists('notify_client_login_telegram')) {
+                        notify_client_login_telegram($pdo, $client, 'success');
+                    }
+
+                    unset($_SESSION['pending_client_id'], $_SESSION['pending_client_email'], $_SESSION['pending_client_name']);
+
+                    header("Location: dashboard.php");
+                    exit;
+                } else {
+                    $failures = ($_SESSION['client_pin_failures_' . $c_id] ?? 0) + 1;
+                    $_SESSION['client_pin_failures_' . $c_id] = $failures;
+
+                    if ($failures >= 5) {
+                        $_SESSION['client_pin_lockout_until_' . $c_id] = time() + $lockout_seconds;
+                        $is_pin_locked = true;
+                        $pin_remaining_time = $lockout_seconds;
+                        $error = "Security Lockout: 5 failed PIN attempts. PIN input is locked for 5 minutes. Use Email Verification instead.";
+                    } else {
+                        $remaining = 5 - $failures;
+                        $error = "Incorrect security PIN. {$remaining} attempt(s) remaining before security lockout.";
+                    }
+
+                    if (function_exists('log_user_login')) {
+                        log_user_login($pdo, $c_id, 'client', $c_email, 'failed_pin');
+                    }
                 }
             }
         }
@@ -195,24 +239,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2FA Security Gate - IFW Global Client Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Two-Factor Security Verification | IFW Global Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --ifw-gold: #fecc56;
-            --ifw-gold-hover: #e5b33d;
-            --ifw-dark: #0a0a0c;
-            --ifw-card: #131418;
-            --ifw-border: rgba(254, 204, 86, 0.2);
-        }
         * { box-sizing: border-box; }
         body {
-            background-color: var(--ifw-dark);
-            background-image: radial-gradient(circle at 50% 20%, rgba(254, 204, 86, 0.12) 0%, rgba(10, 10, 12, 0.98) 75%);
-            color: #ffffff;
+            background-color: #0b0e14;
+            background-image: radial-gradient(circle at top right, rgba(254, 204, 86, 0.05), transparent 400px),
+                              radial-gradient(circle at bottom left, rgba(15, 23, 42, 0.8), transparent 500px);
+            color: #f8fafc;
             font-family: 'Montserrat', sans-serif;
             min-height: 100vh;
             display: flex;
@@ -220,162 +257,206 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             justify-content: center;
             padding: 20px 15px;
             margin: 0;
-            overflow-x: hidden;
+            touch-action: manipulation;
         }
-        .security-card {
-            background-color: var(--ifw-card);
-            border: 1px solid var(--ifw-border);
-            border-radius: 20px;
-            padding: 35px 30px;
+
+        .auth-card {
+            background: #151a23;
+            border: 1px solid rgba(254, 204, 86, 0.25);
+            border-radius: 16px;
+            padding: 32px 28px;
             width: 100%;
             max-width: 440px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(254, 204, 86, 0.08);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 20px rgba(254, 204, 86, 0.08);
+            text-align: center;
             position: relative;
         }
-        .brand-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+
+        .brand-logo-container {
+            width: 68px;
+            height: 68px;
             background: rgba(254, 204, 86, 0.1);
-            border: 1px solid rgba(254, 204, 86, 0.3);
-            color: var(--ifw-gold);
-            padding: 6px 16px;
-            border-radius: 30px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            margin-bottom: 20px;
+            border: 2px solid #fecc56;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: #fecc56;
+            font-size: 28px;
+            box-shadow: 0 0 18px rgba(254, 204, 86, 0.3);
         }
+
         .method-toggle {
             display: flex;
-            background: #0a0a0c;
+            background: #0d1117;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 4px;
-            margin-bottom: 25px;
+            margin-bottom: 22px;
+            gap: 4px;
         }
+
         .method-btn {
             flex: 1;
-            padding: 10px 12px;
-            font-size: 12px;
+            padding: 8px 12px;
+            font-size: 12.5px;
             font-weight: 700;
-            border-radius: 8px;
             border: none;
             background: transparent;
             color: #94a3b8;
-            transition: all 0.25s ease;
-            text-align: center;
+            border-radius: 7px;
+            transition: all 0.2s ease;
             text-decoration: none;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
+
         .method-btn.active {
-            background: linear-gradient(135deg, var(--ifw-gold) 0%, var(--ifw-gold-hover) 100%);
-            color: #000000;
-            box-shadow: 0 4px 12px rgba(254, 204, 86, 0.25);
+            background: linear-gradient(135deg, #fecc56, #f59e0b);
+            color: #000;
+            box-shadow: 0 2px 8px rgba(254, 204, 86, 0.3);
         }
+
         .digits-container {
             display: flex;
             justify-content: center;
             gap: 8px;
-            margin: 20px 0;
+            margin-bottom: 18px;
         }
+
         .digit-box {
-            background: #0a0a0c;
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
+            background: #0d1117;
+            border: 2px solid #334155;
+            border-radius: 10px;
             font-family: 'JetBrains Mono', monospace;
-            font-weight: 700;
-            color: var(--ifw-gold);
+            font-weight: 800;
+            color: #ffffff;
             text-align: center;
             transition: all 0.2s ease;
             user-select: none;
         }
-        .digit-box.filled {
-            border-color: var(--ifw-gold);
-            background: rgba(254, 204, 86, 0.08);
-            box-shadow: 0 0 15px rgba(254, 204, 86, 0.2);
-        }
+
         .digit-box.active {
-            border-color: #ffffff;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            border-color: #fecc56;
+            box-shadow: 0 0 12px rgba(254, 204, 86, 0.4);
+            transform: scale(1.05);
         }
-        /* On-Screen Keypad */
+
+        .digit-box.filled {
+            border-color: rgba(254, 204, 86, 0.7);
+            background: #1a202c;
+            color: #fecc56;
+        }
+
         .keypad-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            margin: 20px 0 15px 0;
+            max-width: 320px;
+            margin: 0 auto 20px;
         }
+
         .keypad-btn {
-            background: #1a1b22;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
+            background: #1a202c;
+            border: 1px solid #334155;
             color: #ffffff;
-            font-family: 'Montserrat', sans-serif;
             font-size: 20px;
-            font-weight: 600;
-            height: 54px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 14px 0;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: all 0.1s ease;
             user-select: none;
             touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
-        .keypad-btn:active, .keypad-btn:hover {
-            background: #252733;
-            border-color: var(--ifw-gold);
-            color: var(--ifw-gold);
-            transform: scale(0.97);
+
+        .keypad-btn:active {
+            background: #fecc56;
+            color: #000;
+            transform: scale(0.96);
+            border-color: #fecc56;
         }
+
         .keypad-btn.action-btn {
-            font-size: 15px;
+            font-size: 16px;
             color: #94a3b8;
+            background: #11151e;
         }
+
+        .keypad-btn.action-btn:active {
+            background: #ef4444;
+            color: #fff;
+            border-color: #ef4444;
+        }
+
         .btn-submit {
-            background: linear-gradient(135deg, var(--ifw-gold) 0%, var(--ifw-gold-hover) 100%);
-            color: #000000;
-            font-weight: 700;
-            font-size: 15px;
-            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #fecc56, #f59e0b);
+            color: #000;
+            font-weight: 800;
+            font-size: 14px;
+            padding: 12px;
+            border-radius: 10px;
             border: none;
-            border-radius: 12px;
-            padding: 14px;
             width: 100%;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 20px rgba(254, 204, 86, 0.25);
+            max-width: 320px;
+            margin: 0 auto;
+            display: block;
+            box-shadow: 0 4px 14px rgba(254, 204, 86, 0.35);
+            transition: all 0.2s ease;
         }
-        .btn-submit:hover:not(:disabled) {
+
+        .btn-submit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 25px rgba(254, 204, 86, 0.35);
+            box-shadow: 0 6px 20px rgba(254, 204, 86, 0.5);
+            color: #000;
         }
+
         .lockout-alert {
             background: rgba(239, 68, 68, 0.15);
-            border: 1px solid #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 10px;
+            padding: 16px;
             color: #fca5a5;
-            border-radius: 12px;
-            padding: 14px;
-            font-size: 13px;
-            text-align: center;
             margin-bottom: 20px;
+            font-size: 13.5px;
         }
+
         .countdown-timer {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 24px;
+            font-weight: 800;
             color: #ef4444;
-            display: block;
-            margin-top: 5px;
+            margin-top: 6px;
+            letter-spacing: 2px;
+        }
+
+        .btn-mask-toggle {
+            background: transparent;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 3px 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .btn-mask-toggle.active {
+            border-color: #fecc56;
+            color: #fecc56;
+            background: rgba(254, 204, 86, 0.1);
         }
     </style>
 </head>
 <body>
 
-<div class="security-card text-center">
-    <div class="brand-badge">
-        <i class="fas fa-lock"></i> 256-Bit Encrypted Portal Gate
+<div class="auth-card">
+    <div class="brand-logo-container">
+        <i class="fas <?= $mode === 'pin' ? 'fa-key' : 'fa-shield-alt' ?>"></i>
     </div>
 
     <h4 class="fw-bold mb-1" style="letter-spacing: 0.5px;">Client Verification</h4>
@@ -415,7 +496,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="hidden" name="auth_mode" value="email_otp">
                 <input type="hidden" name="otp" id="hiddenOtpInput" value="" maxlength="6">
 
-                <div class="digits-container" id="otpDigitsContainer">
+                <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                    <small class="text-muted" style="font-size: 11px;">Enter 6-Digit Email Code</small>
+                    <button type="button" class="btn-mask-toggle" id="toggleMaskBtn" onclick="toggleDigitMask()">
+                        <i class="fas fa-eye"></i> <span>Show Digits</span>
+                    </button>
+                </div>
+
+                <div class="digits-container" id="otpDigitsContainer" style="gap: 6px;">
                     <div class="digit-box active" style="width: 44px; height: 52px; font-size: 22px; line-height: 48px;" data-index="0">•</div>
                     <div class="digit-box" style="width: 44px; height: 52px; font-size: 22px; line-height: 48px;" data-index="1">•</div>
                     <div class="digit-box" style="width: 44px; height: 52px; font-size: 22px; line-height: 48px;" data-index="2">•</div>
@@ -426,22 +514,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- On-Screen Keypad -->
                 <div class="keypad-grid">
-                    <button type="button" class="keypad-btn" onclick="pressKey('1')">1</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('2')">2</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('3')">3</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('4')">4</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('5')">5</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('6')">6</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('7')">7</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('8')">8</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('9')">9</button>
-                    <button type="button" class="keypad-btn action-btn" onclick="clearKeys()"><i class="fas fa-undo"></i></button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('0')">0</button>
-                    <button type="button" class="keypad-btn action-btn" onclick="backspaceKey()"><i class="fas fa-backspace"></i></button>
+                    <button type="button" class="keypad-btn" data-key="1">1</button>
+                    <button type="button" class="keypad-btn" data-key="2">2</button>
+                    <button type="button" class="keypad-btn" data-key="3">3</button>
+                    <button type="button" class="keypad-btn" data-key="4">4</button>
+                    <button type="button" class="keypad-btn" data-key="5">5</button>
+                    <button type="button" class="keypad-btn" data-key="6">6</button>
+                    <button type="button" class="keypad-btn" data-key="7">7</button>
+                    <button type="button" class="keypad-btn" data-key="8">8</button>
+                    <button type="button" class="keypad-btn" data-key="9">9</button>
+                    <button type="button" class="keypad-btn action-btn" data-action="clear"><i class="fas fa-undo"></i></button>
+                    <button type="button" class="keypad-btn" data-key="0">0</button>
+                    <button type="button" class="keypad-btn action-btn" data-action="backspace"><i class="fas fa-backspace"></i></button>
                 </div>
 
                 <button type="submit" class="btn-submit" id="submitOtpBtn">
-                    <i class="fas fa-check-shield me-1"></i> Verify & Access Dashboard
+                    <i class="fas fa-check-shield me-1"></i> Verify OTP & Proceed
                 </button>
 
                 <div class="mt-3">
@@ -463,6 +551,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="hidden" name="auth_mode" value="pin">
                 <input type="hidden" name="pin" id="hiddenPinInput" value="" maxlength="4">
 
+                <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                    <small class="text-muted" style="font-size: 11px;">Enter 4-Digit Security PIN</small>
+                    <button type="button" class="btn-mask-toggle" id="toggleMaskBtn" onclick="toggleDigitMask()">
+                        <i class="fas fa-eye"></i> <span>Show Digits</span>
+                    </button>
+                </div>
+
                 <div class="digits-container" id="pinDigitsContainer" style="gap: 12px;">
                     <div class="digit-box active" style="width: 54px; height: 60px; font-size: 28px; line-height: 56px;" data-index="0">•</div>
                     <div class="digit-box" style="width: 54px; height: 60px; font-size: 28px; line-height: 56px;" data-index="1">•</div>
@@ -472,18 +567,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- On-Screen Keypad -->
                 <div class="keypad-grid">
-                    <button type="button" class="keypad-btn" onclick="pressKey('1')">1</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('2')">2</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('3')">3</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('4')">4</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('5')">5</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('6')">6</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('7')">7</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('8')">8</button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('9')">9</button>
-                    <button type="button" class="keypad-btn action-btn" onclick="clearKeys()"><i class="fas fa-undo"></i></button>
-                    <button type="button" class="keypad-btn" onclick="pressKey('0')">0</button>
-                    <button type="button" class="keypad-btn action-btn" onclick="backspaceKey()"><i class="fas fa-backspace"></i></button>
+                    <button type="button" class="keypad-btn" data-key="1">1</button>
+                    <button type="button" class="keypad-btn" data-key="2">2</button>
+                    <button type="button" class="keypad-btn" data-key="3">3</button>
+                    <button type="button" class="keypad-btn" data-key="4">4</button>
+                    <button type="button" class="keypad-btn" data-key="5">5</button>
+                    <button type="button" class="keypad-btn" data-key="6">6</button>
+                    <button type="button" class="keypad-btn" data-key="7">7</button>
+                    <button type="button" class="keypad-btn" data-key="8">8</button>
+                    <button type="button" class="keypad-btn" data-key="9">9</button>
+                    <button type="button" class="keypad-btn action-btn" data-action="clear"><i class="fas fa-undo"></i></button>
+                    <button type="button" class="keypad-btn" data-key="0">0</button>
+                    <button type="button" class="keypad-btn action-btn" data-action="backspace"><i class="fas fa-backspace"></i></button>
                 </div>
 
                 <button type="submit" class="btn-submit" id="submitPinBtn">
@@ -502,46 +597,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <script>
 let currentDigits = [];
+let isMasked = true;
 const maxDigits = <?= $mode === 'pin' ? '4' : '6' ?>;
+const isPinMode = <?= $mode === 'pin' ? 'true' : 'false' ?>;
+
+function toggleDigitMask() {
+    isMasked = !isMasked;
+    const btn = document.getElementById('toggleMaskBtn');
+    if (btn) {
+        if (isMasked) {
+            btn.innerHTML = '<i class="fas fa-eye"></i> <span>Show Digits</span>';
+            btn.classList.remove('active');
+        } else {
+            btn.innerHTML = '<i class="fas fa-eye-slash"></i> <span>Hide Digits</span>';
+            btn.classList.add('active');
+        }
+    }
+    updateBoxes();
+}
 
 function updateBoxes() {
-    const isPin = <?= $mode === 'pin' ? 'true' : 'false' ?>;
-    const containerId = isPin ? 'pinDigitsContainer' : 'otpDigitsContainer';
-    const inputId = isPin ? 'hiddenPinInput' : 'hiddenOtpInput';
+    const containerId = isPinMode ? 'pinDigitsContainer' : 'otpDigitsContainer';
+    const inputId = isPinMode ? 'hiddenPinInput' : 'hiddenOtpInput';
     const container = document.getElementById(containerId);
     const hiddenInput = document.getElementById(inputId);
 
     if (!container || !hiddenInput) return;
 
     hiddenInput.value = currentDigits.join('');
-    const boxes = container.querySelectorAll('.digit-box');
+    const boxes = container.children;
 
-    boxes.forEach((box, i) => {
+    for (let i = 0; i < boxes.length; i++) {
+        const box = boxes[i];
         if (i < currentDigits.length) {
-            box.textContent = isPin ? '•' : currentDigits[i];
-            box.classList.add('filled');
-            box.classList.remove('active');
+            box.textContent = isMasked ? '•' : currentDigits[i];
+            box.className = 'digit-box filled';
         } else if (i === currentDigits.length) {
             box.textContent = '•';
-            box.classList.remove('filled');
-            box.classList.add('active');
+            box.className = 'digit-box active';
         } else {
             box.textContent = '•';
-            box.classList.remove('filled', 'active');
+            box.className = 'digit-box';
         }
-    });
+    }
 }
 
 function pressKey(val) {
     if (currentDigits.length < maxDigits) {
-        currentDigits.push(val);
+        currentDigits.push(String(val));
         updateBoxes();
         if (currentDigits.length === maxDigits) {
-            // Auto submit when digit count reached
             setTimeout(() => {
-                const activeForm = document.getElementById('pinForm') || document.getElementById('otpForm');
-                if (activeForm) activeForm.submit();
-            }, 300);
+                const form = document.getElementById(isPinMode ? 'pinForm' : 'otpForm');
+                if (form) form.submit();
+            }, 250);
         }
     }
 }
@@ -558,6 +667,24 @@ function clearKeys() {
     updateBoxes();
 }
 
+// Rapid Tap / Click Handler with Zero Latency
+document.querySelectorAll('.keypad-btn').forEach(btn => {
+    const handleKeyAction = (e) => {
+        e.preventDefault();
+        const key = btn.getAttribute('data-key');
+        const action = btn.getAttribute('data-action');
+        if (key !== null) {
+            pressKey(key);
+        } else if (action === 'backspace') {
+            backspaceKey();
+        } else if (action === 'clear') {
+            clearKeys();
+        }
+    };
+
+    btn.addEventListener('pointerdown', handleKeyAction, { passive: false });
+});
+
 // Physical Keyboard Listener
 document.addEventListener('keydown', function(e) {
     if (e.key >= '0' && e.key <= '9') {
@@ -567,7 +694,7 @@ document.addEventListener('keydown', function(e) {
     } else if (e.key === 'Escape') {
         clearKeys();
     } else if (e.key === 'Enter') {
-        const activeForm = document.getElementById('pinForm') || document.getElementById('otpForm');
+        const activeForm = document.getElementById(isPinMode ? 'pinForm' : 'otpForm');
         if (activeForm && currentDigits.length === maxDigits) {
             activeForm.submit();
         }

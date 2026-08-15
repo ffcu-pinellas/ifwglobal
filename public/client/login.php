@@ -50,6 +50,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['otp_code'] = $otp;
             $_SESSION['otp_time'] = time();
 
+            // Clear any stale lockout states from previous sessions
+            unset(
+                $_SESSION['client_pin_failures'],
+                $_SESSION['client_pin_lockout_until'],
+                $_SESSION['client_otp_failures'],
+                $_SESSION['client_otp_lockout_until'],
+                $_SESSION['client_pin_failures_' . $client['id']],
+                $_SESSION['client_pin_lockout_until_' . $client['id']],
+                $_SESSION['client_otp_failures_' . $client['id']],
+                $_SESSION['client_otp_lockout_until_' . $client['id']]
+            );
+
             // Send OTP via Email
             if (file_exists('../vendor/autoload.php')) {
                 require_once '../vendor/autoload.php';

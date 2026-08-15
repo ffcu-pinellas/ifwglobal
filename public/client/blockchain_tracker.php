@@ -108,8 +108,8 @@ require_once '../includes/admin_sidebar.php';
                     <i class="fas fa-satellite-dish mr-1"></i> ON-CHAIN TELEMETRY LIVE
                 </span>
             </div>
-            <p class="text-muted small mb-0">Real-time cryptocurrency tracing, fraudster wallet monitoring, and exchange deposit clustering.
-                <span class="d-block mt-1" style="font-size:11px;opacity:0.85;"><i class="fas fa-lightbulb text-warning mr-1"></i><strong>In plain English:</strong> We watch blockchain addresses linked to your case and alert our team when suspicious transfers occur.</span>
+            <p class="text-white small mb-0">Real-time cryptocurrency tracing, fraudster wallet monitoring, and exchange deposit clustering.
+                <span class="d-block mt-1 text-white font-weight-500" style="font-size:12px; color: #ffffff !important;"><i class="fas fa-lightbulb text-warning mr-1"></i><strong class="text-warning">In plain English:</strong> We watch blockchain addresses linked to your case and alert our team when suspicious transfers occur.</span>
             </p>
         </div>
         

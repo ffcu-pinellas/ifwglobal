@@ -9,6 +9,12 @@ if (file_exists(__DIR__ . '/mailer.php')) {
  */
 function log_audit_action($pdo, $user_id, $action, $details = '', $user_type = 'client', $ip = null) {
     if (!$pdo) return false;
+    
+    // Suppress logging into client logs if an admin is currently impersonating the account
+    if ($user_type === 'client' && function_exists('is_session_impersonated') && is_session_impersonated()) {
+        return false;
+    }
+    
     if (!$ip) {
         $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
         if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {

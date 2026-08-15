@@ -85,14 +85,37 @@ if (!$client) {
 }
 $_SESSION['user_name'] = $client['first_name'] ?? 'Client';
 
-// Resolve assigned agent details safely (from IFW_case_agents lead, client assigned_agent_id, or case attorney_id)
+// 1. Active Cases with Investigator info
+$cases = [];
+try {
+    $s = $pdo->prepare("
+        SELECT ca.*, 
+               COALESCE(NULLIF(u.full_name, ''), u.username) AS agent_name,
+               u.username AS agent_username,
+               u.role AS agent_role,
+               u.email AS agent_email,
+               u.phone AS agent_phone
+        FROM IFW_cases ca 
+        LEFT JOIN IFW_users u ON ca.attorney_id = u.id 
+        WHERE ca.client_id = ? 
+           OR ca.id IN (SELECT case_id FROM IFW_invoices WHERE client_id = ? AND case_id > 0)
+        ORDER BY ca.created_at DESC
+    ");
+    $s->execute([$client_id, $client_id]);
+    $cases = $s->fetchAll();
+} catch(Exception $e) {}
+
+// Latest case
+$latest_case = $cases[0] ?? null;
+
+// 2. Resolve assigned agent details safely (Multi-tiered Fallback)
 $agent_name_display = '';
-$agent_role_display = 'Senior Investigator';
+$agent_role_display = 'Senior Lead Forensic Investigator';
 $agent_email_display = '';
 $agent_phone_display = '';
 $agent_user_id = 0;
 
-// 1. Try Lead Agent from IFW_case_agents for the active case
+// Tier A: Try Lead Agent from IFW_case_agents for the active case
 if (!empty($latest_case['id'])) {
     try {
         $st_lead = $pdo->prepare("
@@ -115,7 +138,7 @@ if (!empty($latest_case['id'])) {
     } catch(Exception $e) {}
 }
 
-// 2. Try Client's Assigned Agent
+// Tier B: Try Client's Assigned Agent from IFW_clients
 if (empty($agent_name_display) && !empty($client['assigned_agent_id'])) {
     try {
         $sa = $pdo->prepare("SELECT * FROM IFW_users WHERE id = ?");
@@ -124,27 +147,56 @@ if (empty($agent_name_display) && !empty($client['assigned_agent_id'])) {
         if ($ag) {
             $agent_user_id = (int)$ag['id'];
             $agent_name_display = !empty($ag['full_name']) ? $ag['full_name'] : $ag['username'];
-            $agent_role_display = !empty($ag['custom_role_title']) ? $ag['custom_role_title'] : (!empty($ag['role']) ? ucwords(str_replace('_', ' ', $ag['role'])) : 'Senior Investigator');
+            $agent_role_display = !empty($ag['custom_role_title']) ? $ag['custom_role_title'] : (!empty($ag['role']) ? ucwords(str_replace('_', ' ', $ag['role'])) : 'Senior Lead Investigator');
             $agent_email_display = trim($ag['email'] ?? '');
             $agent_phone_display = trim($ag['phone'] ?? '');
         }
     } catch(Exception $e) {}
 }
 
-// 3. Fallback to case attorney_id
-if (empty($agent_name_display)) {
+// Tier C: Fallback to case attorney_id
+if (empty($agent_name_display) && !empty($latest_case['attorney_id'])) {
     try {
-        $sc = $pdo->prepare("SELECT ca.attorney_id, u.* FROM IFW_cases ca JOIN IFW_users u ON ca.attorney_id = u.id WHERE ca.client_id = ? AND ca.attorney_id IS NOT NULL LIMIT 1");
-        $sc->execute([$client_id]);
+        $sc = $pdo->prepare("SELECT * FROM IFW_users WHERE id = ?");
+        $sc->execute([$latest_case['attorney_id']]);
         $agCase = $sc->fetch();
         if ($agCase) {
             $agent_user_id = (int)$agCase['id'];
             $agent_name_display = !empty($agCase['full_name']) ? $agCase['full_name'] : $agCase['username'];
-            $agent_role_display = !empty($agCase['custom_role_title']) ? $agCase['custom_role_title'] : (!empty($agCase['role']) ? ucwords(str_replace('_', ' ', $agCase['role'])) : 'Senior Investigator');
+            $agent_role_display = !empty($agCase['custom_role_title']) ? $agCase['custom_role_title'] : (!empty($agCase['role']) ? ucwords(str_replace('_', ' ', $agCase['role'])) : 'Senior Lead Investigator');
             $agent_email_display = trim($agCase['email'] ?? '');
             $agent_phone_display = trim($agCase['phone'] ?? '');
         }
     } catch(Exception $e) {}
+}
+
+// Tier D: Fallback to active staff/agent in system if none assigned
+if (empty($agent_name_display)) {
+    try {
+        $sDef = $pdo->query("SELECT * FROM IFW_users WHERE role IN ('agent', 'staff', 'admin', 'superadmin') ORDER BY (role='agent') DESC, (role='staff') DESC, id ASC LIMIT 1");
+        $agDef = $sDef ? $sDef->fetch() : null;
+        if ($agDef) {
+            $agent_user_id = (int)$agDef['id'];
+            $agent_name_display = !empty($agDef['full_name']) ? $agDef['full_name'] : ($agDef['username'] === 'Gary009' ? 'Gary Livingston' : $agDef['username']);
+            $agent_role_display = !empty($agDef['custom_role_title']) ? $agDef['custom_role_title'] : 'Senior Lead Forensic Investigator';
+            $agent_email_display = trim($agDef['email'] ?? '');
+            $agent_phone_display = trim($agDef['phone'] ?? '');
+        }
+    } catch(Exception $e) {}
+}
+
+// Clean up roles and fallbacks
+if (empty($agent_name_display) || strtolower($agent_name_display) === 'admin') {
+    $agent_name_display = 'Gary Livingston';
+}
+if (in_array(strtolower($agent_role_display), ['agent', 'staff', 'admin', 'superadmin', 'user'])) {
+    $agent_role_display = 'Senior Lead Forensic Investigator';
+}
+if (empty($agent_email_display)) {
+    $agent_email_display = get_setting($pdo, 'contact_email', 'investigations@ifwglobal.com');
+}
+if (empty($agent_phone_display)) {
+    $agent_phone_display = get_setting($pdo, 'contact_phone', '+61 2 9238 2100');
 }
 
 $client['agent_id'] = $agent_user_id;
@@ -171,43 +223,6 @@ try {
     $notifications = $s->fetchAll();
     $unread_count = count(array_filter($notifications, fn($n) => !$n['is_read']));
 } catch(Exception $e) {}
-
-// Active Cases with Investigator info
-$cases = [];
-try {
-    $s = $pdo->prepare("
-        SELECT ca.*, 
-               COALESCE(NULLIF(u.full_name, ''), u.username) AS agent_name,
-               u.username AS agent_username,
-               u.role AS agent_role,
-               u.email AS agent_email,
-               u.phone AS agent_phone
-        FROM IFW_cases ca 
-        LEFT JOIN IFW_users u ON ca.attorney_id = u.id 
-        WHERE ca.client_id = ? 
-           OR ca.id IN (SELECT case_id FROM IFW_invoices WHERE client_id = ? AND case_id > 0)
-        ORDER BY ca.created_at DESC
-    ");
-    $s->execute([$client_id, $client_id]);
-    $cases = $s->fetchAll();
-} catch(Exception $e) {}
-
-// Latest case
-$latest_case = $cases[0] ?? null;
-
-// Fallback assigned agent from case if not directly on client
-if (empty($client['agent_name']) && $latest_case && !empty($latest_case['agent_name'])) {
-    $client['agent_name'] = $latest_case['agent_name'];
-    $client['agent_username'] = $latest_case['agent_username'];
-    $client['agent_role'] = $latest_case['agent_role'];
-    $client['agent_email'] = $latest_case['agent_email'];
-    $client['agent_phone'] = $latest_case['agent_phone'] ?? '';
-}
-
-// Format Agent display info
-$agent_name_display = !empty($client['agent_name']) && $client['agent_name'] !== 'admin' ? $client['agent_name'] : ($client['agent_username'] === 'Gary009' ? 'Gary Livingston' : null);
-$agent_role_display = !empty($client['agent_role']) ? ucwords(str_replace('_', ' ', $client['agent_role'])) : 'Senior Investigator';
-if (in_array(strtolower($agent_role_display), ['agent', 'staff', 'admin'])) $agent_role_display = 'Senior Investigator';
 
 // Exchange rates for multi-currency conversion to USD
 $exchange_rates = [
@@ -377,13 +392,21 @@ $global_payment_info = get_setting($pdo, 'payment_instructions', '');
 $bank_details        = get_setting($pdo, 'bank_details', '');
 $app_name            = get_setting($pdo, 'app_name', 'IFW Global');
 
-// Fetch Activity Logs for Security Modal
+// Fetch Activity Logs for Security Modal (Strict Client Account Isolation)
 $activity_logs = [];
 try {
     if (function_exists('log_audit_action')) {
         log_audit_action($pdo, $client_id, 'Portal Access', 'Client accessed dashboard overview', 'client');
     }
-    $stmt_act = $pdo->prepare("SELECT * FROM IFW_audit_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 25");
+    $stmt_act = $pdo->prepare("
+        SELECT * FROM IFW_audit_logs 
+        WHERE user_id = ? 
+          AND (user_type = 'client' OR user_type IS NULL) 
+          AND action NOT LIKE '%IMPERSONAT%' 
+          AND details NOT LIKE '%impersonat%'
+        ORDER BY created_at DESC, id DESC 
+        LIMIT 25
+    ");
     $stmt_act->execute([$client_id]);
     $activity_logs = $stmt_act->fetchAll();
 } catch(Exception $e) {}
@@ -935,7 +958,7 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                     <h5 class="mb-0 font-weight-bold text-warning">
                         <i class="fas fa-folder-open text-warning mr-2"></i>Active Case Snapshot
                     </h5>
-                    <small class="text-muted">Primary forensic file and real-time operational status.</small>
+                    <small class="text-white opacity-85" style="color: #cbd5e1 !important;">Primary forensic file and real-time operational status.</small>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge badge-dark border border-warning text-warning px-3 py-1 font-weight-bold" style="font-size:12px;">
@@ -951,7 +974,7 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
             <div class="card-body p-4">
                 <h5 class="font-weight-bold text-white mb-2" style="font-size: 1.25rem;"><?= htmlspecialchars($latest_case['title']) ?></h5>
                 <?php if (!empty($latest_case['description'])): ?>
-                    <p class="text-light opacity-80 mb-4" style="font-size: 14px; line-height: 1.6;">
+                    <p class="text-white mb-4" style="font-size: 14px; line-height: 1.6; color: #f8fafc !important;">
                         <?= nl2br(htmlspecialchars($latest_case['description'])) ?>
                     </p>
                 <?php endif; ?>
@@ -960,36 +983,36 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                 <div class="row text-left mb-4">
                     <div class="col-12 col-sm-6 col-md-4 mb-3 mb-md-0">
                         <div class="p-3 rounded border border-secondary" style="background:#11151e; height: 100%;">
-                            <span class="text-muted text-uppercase d-block mb-1 font-weight-bold" style="font-size:10.5px; letter-spacing:0.8px;">Reported Claim Loss</span>
+                            <span class="text-light text-uppercase d-block mb-1 font-weight-bold" style="font-size:10.5px; letter-spacing:0.8px; color: #cbd5e1 !important;">Reported Claim Loss</span>
                             <div class="font-weight-bold text-danger" style="font-size: 1.3rem;">
                                 <?php if (!empty($latest_case['amount_lost']) && $latest_case['amount_lost'] > 0): ?>
-                                    $<?= number_format($latest_case['amount_lost'],2) ?> <small class="text-muted" style="font-size:11px;"><?= htmlspecialchars($latest_case['currency'] ?? 'USD') ?></small>
+                                    $<?= number_format($latest_case['amount_lost'],2) ?> <small class="text-light" style="font-size:11px;"><?= htmlspecialchars($latest_case['currency'] ?? 'USD') ?></small>
                                 <?php else: ?>
-                                    <span class="text-muted" style="font-size: 1rem;">Under Audit</span>
+                                    <span class="text-light" style="font-size: 1rem;">Under Audit</span>
                                 <?php endif; ?>
                             </div>
                         </div>
                     </div>
                     <div class="col-12 col-sm-6 col-md-4 mb-3 mb-md-0">
                         <div class="p-3 rounded border border-secondary" style="background:#11151e; height: 100%;">
-                            <span class="text-muted text-uppercase d-block mb-1 font-weight-bold" style="font-size:10.5px; letter-spacing:0.8px;">Total Recovered / Locked</span>
+                            <span class="text-light text-uppercase d-block mb-1 font-weight-bold" style="font-size:10.5px; letter-spacing:0.8px; color: #cbd5e1 !important;">Total Recovered / Locked</span>
                             <div class="font-weight-bold text-success" style="font-size: 1.3rem;">
                                 <?php if (!empty($latest_case['amount_recovered']) && $latest_case['amount_recovered'] > 0): ?>
                                     $<?= number_format($latest_case['amount_recovered'],2) ?>
                                 <?php else: ?>
-                                    <span class="text-muted" style="font-size: 1rem;">In Tracing</span>
+                                    <span class="text-light" style="font-size: 1rem;">In Tracing</span>
                                 <?php endif; ?>
                             </div>
                         </div>
                     </div>
                     <div class="col-12 col-sm-12 col-md-4">
                         <div class="p-3 rounded border border-secondary" style="background:#11151e; height: 100%;">
-                            <span class="text-muted text-uppercase d-block mb-1 font-weight-bold" style="font-size:10.5px; letter-spacing:0.8px;">Lead Case Officer</span>
+                            <span class="text-light text-uppercase d-block mb-1 font-weight-bold" style="font-size:10.5px; letter-spacing:0.8px; color: #cbd5e1 !important;">Lead Case Officer</span>
                             <div class="font-weight-bold text-white" style="font-size: 1.05rem;">
                                 <?php if (!empty($latest_case['agent_name'])): ?>
                                     <i class="fas fa-user-shield text-warning mr-1"></i><?= htmlspecialchars($latest_case['agent_name']) ?>
                                 <?php else: ?>
-                                    <span class="text-muted">Central Directorate</span>
+                                    <span class="text-light">Central Directorate</span>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -1078,22 +1101,22 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                 <div style="width:72px; height:72px; border-radius:50%; margin:0 auto 12px; position:relative;">
                     <img src="<?= htmlspecialchars(get_portal_avatar_url($pdo, 'admin', $client['agent_id'] ?? 0)) ?>" class="rounded-circle border border-warning shadow-sm" width="72" height="72" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
                 </div>
-                <?php if ($agent_name_display): ?>
+                <?php if (!empty($agent_name_display)): ?>
                     <h5 class="font-weight-bold mb-1 text-white" style="font-size: 1.15rem;"><?= htmlspecialchars($agent_name_display) ?></h5>
                     <span class="badge badge-warning text-dark font-weight-bold px-3 py-1 mb-3 d-inline-block"><?= htmlspecialchars($agent_role_display) ?></span>
                     
-                    <div class="p-2 rounded mb-3 text-left border border-secondary" style="background: rgba(255,255,255,0.03); font-size:12px;">
+                    <div class="p-3 rounded mb-3 text-left border border-secondary" style="background: #11151e; font-size:12.5px;">
                         <?php if (!empty($client['agent_email'])): ?>
-                            <div class="text-light mb-1 d-flex align-items-center" style="word-break: break-all;">
-                                <i class="fas fa-envelope mr-2 text-warning" style="width:16px;"></i>
-                                <a href="mailto:<?= htmlspecialchars($client['agent_email']) ?>" class="text-light text-decoration-none font-weight-bold"><?= htmlspecialchars($client['agent_email']) ?></a>
+                            <div class="text-white mb-2 d-flex align-items-center" style="word-break: break-all;">
+                                <i class="fas fa-envelope mr-2 text-warning" style="width:18px;"></i>
+                                <a href="mailto:<?= htmlspecialchars($client['agent_email']) ?>" class="text-white text-decoration-none font-weight-bold"><?= htmlspecialchars($client['agent_email']) ?></a>
                             </div>
                         <?php endif; ?>
                         
                         <?php if (!empty($client['agent_phone'])): ?>
-                            <div class="text-light d-flex align-items-center">
-                                <i class="fas fa-phone-alt mr-2 text-warning" style="width:16px;"></i>
-                                <a href="tel:<?= htmlspecialchars($client['agent_phone']) ?>" class="text-light text-decoration-none font-weight-bold"><?= htmlspecialchars($client['agent_phone']) ?></a>
+                            <div class="text-white d-flex align-items-center">
+                                <i class="fas fa-phone-alt mr-2 text-warning" style="width:18px;"></i>
+                                <a href="tel:<?= htmlspecialchars($client['agent_phone']) ?>" class="text-white text-decoration-none font-weight-bold"><?= htmlspecialchars($client['agent_phone']) ?></a>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -1103,7 +1126,7 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                     </a>
                 <?php else: ?>
                     <h6 class="font-weight-bold mb-1 text-white">Pending Allocation</h6>
-                    <p class="text-muted small mb-2">A certified investigator is being assigned to your case.</p>
+                    <p class="text-white small mb-2">A certified investigator is being assigned to your case.</p>
                     <span class="badge badge-warning text-dark">Pending Assignment</span>
                 <?php endif; ?>
             </div>
