@@ -6,7 +6,9 @@ require_admin_login();
 
 $chat_provider = get_setting($pdo, 'chat_provider', 'internal');
 $tawk_property = get_setting($pdo, 'tawkto_property_id', '');
-$manychat_code = get_setting($pdo, 'manychat_script_code', '');
+$chatwoot_token = get_setting($pdo, 'chatwoot_website_token', '');
+$chatwoot_base_url = get_setting($pdo, 'chatwoot_base_url', 'https://app.chatwoot.com');
+$chatwoot_account_id = get_setting($pdo, 'chatwoot_account_id', '180927');
 $custom_code   = get_setting($pdo, 'custom_chat_code', '');
 
 // If NOT internal, show a provider page instead of the internal chat
@@ -24,17 +26,36 @@ if ($chat_provider !== 'internal') {
     <div class="card shadow-lg bg-dark border-secondary mb-4">
         <div class="card-header bg-dark text-warning border-secondary font-weight-bold">
             <i class="fas fa-comments mr-2"></i>
-            <?php if ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
+            <?php if ($chat_provider === 'chatwoot'): ?>
+                Chatwoot Multi-Agent Console
+            <?php elseif ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
                 Tawk.to Live Support Console
-            <?php elseif ($chat_provider === 'manychat'): ?>
-                ManyChat Messenger Console
             <?php else: ?>
                 Custom Chat Provider
             <?php endif; ?>
             <span class="badge badge-warning text-dark ml-2"><?= ucfirst($chat_provider) ?> (Active)</span>
         </div>
         <div class="card-body bg-dark p-3">
-            <?php if ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
+            <?php if ($chat_provider === 'chatwoot'): ?>
+                <div class="text-center py-5 text-muted bg-black rounded border border-secondary p-4">
+                    <div style="width:72px;height:72px;border-radius:50%;background:rgba(254, 204, 86, 0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                        <i class="fas fa-comments fa-3x text-warning"></i>
+                    </div>
+                    <h4 class="text-white font-weight-bold mb-3">Chatwoot Multi-Agent CRM Active</h4>
+                    <p class="px-md-5 mb-4 text-light" style="max-width: 600px; margin: 0 auto; line-height: 1.6;">
+                        Your client communications and case enquiries are connected to Chatwoot with permanent user identity and chat history.
+                        To assign cases, view client conversations, and respond as agents/staff, access your Chatwoot Agent Console.
+                    </p>
+                    <a href="https://app.chatwoot.com/app/accounts/<?= htmlspecialchars($chatwoot_account_id ?: '180927') ?>/conversations" target="_blank" class="btn btn-warning text-dark font-weight-bold px-4 py-2 shadow-lg mb-3">
+                        <i class="fas fa-external-link-alt mr-2"></i> Open Chatwoot Agent Console
+                    </a>
+                    <div class="small text-muted mt-2">
+                        Account ID: <code class="text-warning"><?= htmlspecialchars($chatwoot_account_id ?: '180927') ?></code> &bull; 
+                        Website Token: <code class="text-warning"><?= htmlspecialchars($chatwoot_token ? substr($chatwoot_token, 0, 8) . '...' : 'Not Set') ?></code>
+                    </div>
+                </div>
+
+            <?php elseif ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
                 <?php if (!empty($tawk_property)): ?>
                     <?php
                     $clean_tawk = $tawk_property;
@@ -76,19 +97,6 @@ if ($chat_provider !== 'internal') {
                         <i class="fas fa-exclamation-triangle mr-2"></i>
                         Tawk.to is selected but no Property ID is configured. 
                         <a href="settings.php" class="btn btn-sm btn-warning text-dark ml-2">Configure in Settings</a>
-                    </div>
-                <?php endif; ?>
-
-            <?php elseif ($chat_provider === 'manychat'): ?>
-                <div class="alert alert-info border-0 mb-3 bg-dark" style="border-left: 4px solid #fecc56 !important;">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    ManyChat is configured as your chat provider. Manage conversations from your ManyChat dashboard.
-                    <a href="https://manychat.com" target="_blank" class="btn btn-sm btn-warning text-dark font-weight-bold ml-2">Open ManyChat Dashboard <i class="fas fa-external-link-alt ml-1"></i></a>
-                </div>
-                <?php if (!empty($manychat_code)): ?>
-                    <div class="text-muted small text-center py-5">
-                        <i class="fas fa-check-circle text-success fa-3x mb-3 d-block"></i>
-                        ManyChat widget is active on the client-facing pages. Your clients can reach you there.
                     </div>
                 <?php endif; ?>
 

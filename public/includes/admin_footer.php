@@ -133,10 +133,56 @@ s0.parentNode.insertBefore(s1,s0);
             endif;
         endif;
 
-    elseif ($_footer_chat_provider === 'manychat'):
-        $manychat_code = isset($pdo) ? get_setting($pdo, 'manychat_script_code', '') : '';
-        if ($manychat_code):
-            echo $manychat_code;
+    elseif ($_footer_chat_provider === 'chatwoot'):
+        $cw_token = isset($pdo) ? get_setting($pdo, 'chatwoot_website_token', '') : '';
+        $cw_base_url = isset($pdo) ? get_setting($pdo, 'chatwoot_base_url', 'https://app.chatwoot.com') : 'https://app.chatwoot.com';
+        $cw_hmac_key = isset($pdo) ? get_setting($pdo, 'chatwoot_hmac_key', '') : '';
+        
+        $is_client_logged = !empty($_SESSION['client_logged_in']) && !empty($_SESSION['client_portal_id']);
+        $cw_client_id = $is_client_logged ? (int)$_SESSION['client_portal_id'] : 0;
+        
+        if ($cw_token):
+?>
+<!-- Chatwoot SDK Global Bubble -->
+<script>
+  window.chatwootSettings = {
+    hideMessageBubble: false,
+    position: 'right',
+    locale: 'en',
+    type: 'expanded_bubble',
+    darkMode: 'dark'
+  };
+  (function(d,t) {
+    var BASE_URL = "<?= htmlspecialchars($cw_base_url ?: 'https://app.chatwoot.com') ?>";
+    var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+    g.src=BASE_URL+"/packs/js/sdk.js";
+    g.async = true;
+    g.defer = true;
+    s.parentNode.insertBefore(g,s);
+    g.onload=function(){
+      window.chatwootSDK.run({
+        websiteToken: '<?= htmlspecialchars($cw_token) ?>',
+        baseUrl: BASE_URL
+      });
+    }
+  })(document,"script");
+
+  <?php if ($is_client_logged && $cw_client_id > 0): 
+    $cw_user_id = 'client_' . $cw_client_id;
+    $cw_hash = !empty($cw_hmac_key) ? hash_hmac('sha256', $cw_user_id, $cw_hmac_key) : '';
+  ?>
+  window.addEventListener("chatwoot:ready", function () {
+    if (window.$chatwoot) {
+      window.$chatwoot.setUser('<?= $cw_user_id ?>', {
+        <?php if (!empty($cw_hash)): ?>
+        identifier_hash: '<?= $cw_hash ?>',
+        <?php endif; ?>
+      });
+    }
+  });
+  <?php endif; ?>
+</script>
+<?php
         endif;
 
     elseif ($_footer_chat_provider === 'custom'):

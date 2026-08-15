@@ -6,7 +6,9 @@ require_admin_login();
 
 $chat_provider = get_setting($pdo, 'chat_provider', 'internal');
 $tawk_property = get_setting($pdo, 'tawkto_property_id', '');
-$manychat_code = get_setting($pdo, 'manychat_script_code', '');
+$chatwoot_token = get_setting($pdo, 'chatwoot_website_token', '');
+$chatwoot_base_url = get_setting($pdo, 'chatwoot_base_url', 'https://app.chatwoot.com');
+$chatwoot_account_id = get_setting($pdo, 'chatwoot_account_id', '180927');
 $custom_code   = get_setting($pdo, 'custom_chat_code', '');
 
 // If NOT internal, show a provider page instead of the internal chat
@@ -24,17 +26,36 @@ if ($chat_provider !== 'internal') {
     <div class="card shadow-lg bg-dark border-secondary mb-4">
         <div class="card-header bg-dark text-warning border-secondary font-weight-bold">
             <i class="fas fa-comments mr-2"></i>
-            <?php if ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
+            <?php if ($chat_provider === 'chatwoot'): ?>
+                Chatwoot Multi-Agent Console
+            <?php elseif ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
                 Tawk.to Live Support Console
-            <?php elseif ($chat_provider === 'manychat'): ?>
-                ManyChat Messenger Console
             <?php else: ?>
                 Custom Chat Provider
             <?php endif; ?>
             <span class="badge badge-warning text-dark ml-2"><?= ucfirst($chat_provider) ?> (Active)</span>
         </div>
         <div class="card-body bg-dark p-3">
-            <?php if ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
+            <?php if ($chat_provider === 'chatwoot'): ?>
+                <div class="text-center py-5 text-muted bg-black rounded border border-secondary p-4">
+                    <div style="width:72px;height:72px;border-radius:50%;background:rgba(254, 204, 86, 0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                        <i class="fas fa-comments fa-3x text-warning"></i>
+                    </div>
+                    <h4 class="text-white font-weight-bold mb-3">Chatwoot Multi-Agent CRM Active</h4>
+                    <p class="px-md-5 mb-4 text-light" style="max-width: 600px; margin: 0 auto; line-height: 1.6;">
+                        Your client communications and case enquiries are connected to Chatwoot with permanent user identity and chat history.
+                        To assign cases, view client conversations, and respond as agents/staff, access your Chatwoot Agent Console.
+                    </p>
+                    <a href="https://app.chatwoot.com/app/accounts/<?= htmlspecialchars($chatwoot_account_id ?: '180927') ?>/conversations" target="_blank" class="btn btn-warning text-dark font-weight-bold px-4 py-2 shadow-lg mb-3">
+                        <i class="fas fa-external-link-alt mr-2"></i> Open Chatwoot Agent Console
+                    </a>
+                    <div class="small text-muted mt-2">
+                        Account ID: <code class="text-warning"><?= htmlspecialchars($chatwoot_account_id ?: '180927') ?></code> &bull; 
+                        Website Token: <code class="text-warning"><?= htmlspecialchars($chatwoot_token ? substr($chatwoot_token, 0, 8) . '...' : 'Not Set') ?></code>
+                    </div>
+                </div>
+
+            <?php elseif ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
                 <?php if (!empty($tawk_property)): ?>
                     <?php
                     $clean_tawk = $tawk_property;
@@ -76,19 +97,6 @@ if ($chat_provider !== 'internal') {
                         <i class="fas fa-exclamation-triangle mr-2"></i>
                         Tawk.to is selected but no Property ID is configured. 
                         <a href="settings.php" class="btn btn-sm btn-warning text-dark ml-2">Configure in Settings</a>
-                    </div>
-                <?php endif; ?>
-
-            <?php elseif ($chat_provider === 'manychat'): ?>
-                <div class="alert alert-info border-0 mb-3 bg-dark" style="border-left: 4px solid #fecc56 !important;">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    ManyChat is configured as your chat provider. Manage conversations from your ManyChat dashboard.
-                    <a href="https://manychat.com" target="_blank" class="btn btn-sm btn-warning text-dark font-weight-bold ml-2">Open ManyChat Dashboard <i class="fas fa-external-link-alt ml-1"></i></a>
-                </div>
-                <?php if (!empty($manychat_code)): ?>
-                    <div class="text-muted small text-center py-5">
-                        <i class="fas fa-check-circle text-success fa-3x mb-3 d-block"></i>
-                        ManyChat widget is active on the client-facing pages. Your clients can reach you there.
                     </div>
                 <?php endif; ?>
 
@@ -139,12 +147,12 @@ require_once '../includes/admin_header.php';
                     <i class="fas fa-paperclip mr-1"></i> <span class="file-name"></span> 
                     <a href="#" class="text-danger ml-2" onclick="clearSelectedFile(event)">&times; Remove Attachment</a>
                 </div>
-                <form id="chat-form" class="d-flex w-100" style="gap: 10px;" enctype="multipart/form-data">
+                <form id="chat-form" class="d-flex w-100 flex-wrap mt-2" style="gap: 10px;" enctype="multipart/form-data">
                     <input type="hidden" id="active-client-id" value="">
                     <input type="file" id="chat-file-input" name="chat_file" style="display:none;" onchange="handleChatFileSelect(this)">
-                    <button type="button" class="btn btn-outline-warning text-warning px-3" onclick="document.getElementById('chat-file-input').click()" title="Share File/Document"><i class="fas fa-paperclip"></i></button>
-                    <input type="text" id="chat-input" class="form-control bg-dark text-light border-secondary" placeholder="Type a secure message..." autocomplete="off" required>
-                    <button type="submit" class="btn btn-warning px-4 font-weight-bold"><i class="fas fa-paper-plane"></i></button>
+                    <button type="button" class="btn btn-outline-warning text-warning px-3 flex-shrink-0" onclick="document.getElementById('chat-file-input').click()" title="Share File/Document"><i class="fas fa-paperclip"></i></button>
+                    <input type="text" id="chat-input" class="form-control bg-dark text-light border-secondary flex-grow-1" placeholder="Type a secure message..." autocomplete="off" required style="min-width: 150px;">
+                    <button type="submit" class="btn btn-warning px-4 font-weight-bold flex-shrink-0"><i class="fas fa-paper-plane"></i></button>
                 </form>
             </div>
         </div>
@@ -168,16 +176,20 @@ require_once '../includes/admin_header.php';
 .unread-badge { background: #fecc56; color: #000; font-weight: bold; border-radius: 12px; padding: 2px 8px; font-size: 0.8rem; }
 
 .msg-bubble {
-    max-width: 70%; padding: 12px 18px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; position: relative;
+    max-width: 75%; padding: 12px 18px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; position: relative; word-wrap: break-word;
 }
 .msg-client {
-    background: #222; color: #eee; align-self: flex-start; border-bottom-left-radius: 4px;
+    background: #2a2a2a; color: #f8f9fa; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #444;
 }
 .msg-admin {
     background: #fecc56; color: #000; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 500;
 }
-.msg-time { font-size: 0.7rem; margin-top: 5px; opacity: 0.7; text-align: right; }
+.msg-time { font-size: 0.7rem; margin-top: 5px; opacity: 0.7; }
 .msg-client .msg-time { text-align: left; }
+.msg-admin .msg-time { text-align: right; }
+.msg-sender-name { font-size: 0.75rem; font-weight: bold; margin-bottom: 4px; }
+.msg-client .msg-sender-name { color: #17a2b8; text-align: left; }
+.msg-admin .msg-sender-name { color: #856404; text-align: right; }
 </style>
 
 <script>
@@ -185,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let activeClientId = null;
     let lastMsgId = 0;
     let pollingInterval = null;
+    let isWindowFocused = true;
 
     // Elements
     const elClientList = document.getElementById('client-list');
@@ -196,6 +209,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const elChatInput = document.getElementById('chat-input');
     const elActiveClientId = document.getElementById('active-client-id');
     const elViewClientBtn = document.getElementById('view-client-btn');
+
+    // Request Notification Permission
+    if ("Notification" in window) {
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+    }
+    
+    window.addEventListener('focus', () => isWindowFocused = true);
+    window.addEventListener('blur', () => isWindowFocused = false);
+
+    function showNotification(title, body) {
+        if ("Notification" in window && Notification.permission === "granted" && !isWindowFocused) {
+            new Notification(title, { body: body, icon: '../admin_assets/img/logo/logo.svg' });
+        }
+    }
 
     // Fetch Clients List
     function fetchClients() {
@@ -217,6 +246,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     `;
                     div.addEventListener('click', () => selectClient(c.id, c.first_name + ' ' + c.last_name));
                     elClientList.appendChild(div);
+                    
+                    if (c.unread > 0 && c.id == activeClientId) {
+                        fetchMessages(true);
+                    } else if (c.unread > 0 && !activeClientId) {
+                        showNotification("New message from " + c.first_name, "You have an unread message.");
+                    }
                 });
             }
         });
@@ -241,7 +276,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetchMessages(true);
         
         if (pollingInterval) clearInterval(pollingInterval);
-        pollingInterval = setInterval(() => fetchMessages(false), 3000);
+        pollingInterval = setInterval(() => { fetchMessages(false); fetchClients(); }, 1000);
     }
 
     function fetchMessages(scrollDown = false) {
@@ -261,9 +296,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     let senderLabel = "";
                     if (m.sender_type === 'admin') {
-                        senderLabel = `<div class="msg-sender-name text-muted small mb-1" style="font-size: 10px; font-weight: bold; color: #fecc56 !important;"><i class="fas fa-user-shield mr-1"></i>${m.sender_name || 'Staff Member'} (${m.sender_role || 'Agent'})</div>`;
+                        senderLabel = `<div class="msg-sender-name"><i class="fas fa-user-shield mr-1"></i>You</div>`;
                     } else {
-                        senderLabel = `<div class="msg-sender-name text-muted small mb-1" style="font-size: 10px; font-weight: bold; color: #17a2b8 !important;"><i class="fas fa-user-circle mr-1"></i>Client</div>`;
+                        senderLabel = `<div class="msg-sender-name"><i class="fas fa-user-circle mr-1"></i>${m.sender_name || 'Client'}</div>`;
+                        if (m.id > lastMsgId && lastMsgId > 0) {
+                            if (typeof playNotificationChime === 'function') {
+                                playNotificationChime();
+                            }
+                            if (typeof toastr !== 'undefined') {
+                                toastr.info(m.message, '💬 ' + (m.sender_name || 'Client'));
+                            }
+                        }
                     }
 
                     let attachmentMarkup = "";
@@ -277,11 +320,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         else if (ext === 'zip') fileicon = "fa-file-archive text-warning";
                         
                         attachmentMarkup = `
-                            <div class="chat-attachment border border-secondary rounded p-2 bg-dark mt-2 d-flex align-items-center justify-content-between" style="min-width: 200px;">
-                                <div class="d-flex align-items-center">
+                            <div class="chat-attachment border border-secondary rounded p-2 bg-dark mt-2 d-flex align-items-center justify-content-between flex-wrap" style="width: 100%;">
+                                <div class="d-flex align-items-center flex-grow-1" style="min-width: 150px;">
                                     <i class="fas ${fileicon} fa-2x mr-2"></i>
-                                    <div class="text-left">
-                                        <span class="small font-weight-bold d-block text-white" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${filename}</span>
+                                    <div class="text-left" style="overflow: hidden;">
+                                        <span class="small font-weight-bold d-block text-white text-truncate">${filename}</span>
                                         <span class="text-muted" style="font-size:9px;">${(m.attachment_size / 1024).toFixed(1)} KB</span>
                                     </div>
                                 </div>
@@ -292,12 +335,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     div.innerHTML = `
                         ${senderLabel}
-                        <div>${m.message.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>
+                        <div style="word-break: break-word;">${m.message.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>
                         ${attachmentMarkup}
                         <div class="msg-time">${time}</div>
                     `;
                     elChatMessages.appendChild(div);
-                    lastMsgId = m.id;
+                    lastMsgId = Math.max(lastMsgId, m.id);
                 });
                 
                 if (scrollDown || isScrolledToBottom) {

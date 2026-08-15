@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'hero_headline', 'hero_subheadline', 'hero_cta', 
         'announcement_bar_text', 'announcement_bar_active',
         'meta_title', 'meta_description', 'meta_keywords', 'maintenance_mode',
-        'chat_provider', 'manychat_script_code', 'tawkto_property_id', 'custom_chat_code', 'logo_url',
+        'chat_provider', 'chatwoot_website_token', 'chatwoot_base_url', 'chatwoot_account_id', 'chatwoot_hmac_key', 'tawkto_property_id', 'custom_chat_code', 'logo_url',
         'show_lifecycle_tracker', 'show_fund_flow_visualizer',
         'telegram_bot_token', 'telegram_chat_id'
     ];
@@ -44,23 +44,26 @@ $s = [];
 while ($row = $stmt->fetch()) {
     $s[$row['setting_key']] = $row['setting_value'];
 }
+
+$page_title = "System & Security Settings";
+require_once '../includes/admin_header.php';
+require_once '../includes/admin_sidebar.php';
 ?>
 
-<?php require_once '../includes/admin_header.php'; ?>
-<?php require_once '../includes/admin_sidebar.php'; ?>
-
-<div class="row">
-    <div class="col-12 mb-4 d-flex align-items-center justify-content-between">
-        <div>
-            <h3 class="text-warning font-weight-bold mb-1"><i class="fas fa-cogs mr-2"></i>Global Site & Integration Settings</h3>
-            <p class="text-muted mb-0">Manage phone numbers, banking details, ManyChat/Tawk.to live chat, announcement banner, and SEO metadata.</p>
-        </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="text-warning font-weight-bold mb-1"><i class="fas fa-sliders-h mr-2"></i>Global Portal Settings</h3>
+        <p class="text-muted mb-0">Manage communication lines, wire coordinates, blockchain settlement addresses, and chat systems.</p>
     </div>
+    <a href="index.php" class="btn btn-outline-warning btn-sm font-weight-bold"><i class="fas fa-arrow-left mr-1"></i> Dashboard</a>
 </div>
 
 <?php if (isset($_GET['success'])): ?>
-    <div class="alert alert-success bg-success text-white border-0 shadow-sm mb-4">
-        <i class="fas fa-check-circle mr-2"></i>Global settings updated successfully!
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert">
+        <i class="fas fa-check-circle mr-2"></i> System configurations and communication coordinates successfully updated.
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
     </div>
 <?php endif; ?>
 
@@ -70,37 +73,64 @@ while ($row = $stmt->fetch()) {
         <div class="col-lg-12 mb-4">
             <div class="card shadow-sm border-warning">
                 <div class="card-header bg-dark text-warning border-warning d-flex align-items-center justify-content-between">
-                    <span><i class="fas fa-comments mr-2"></i>Live Chat System & 3rd-Party Integration (ManyChat / Tawk.to)</span>
+                    <span><i class="fas fa-comments mr-2"></i>Live Chat System &amp; CRM Integration (Chatwoot / Internal / Tawk.to)</span>
                     <span class="badge badge-warning text-dark font-weight-bold">Live System Switcher</span>
                 </div>
                 <div class="card-body bg-dark text-white">
                     <div class="form-group mb-4">
                         <label class="font-weight-bold text-warning fs-5">Active Chat Provider</label>
                         <select name="chat_provider" class="form-control bg-secondary text-white border-0 form-control-lg font-weight-bold">
-                            <option value="manychat" <?php echo ($s['chat_provider'] ?? 'manychat') === 'manychat' ? 'selected' : ''; ?>>ManyChat (Recommended - Auto Messenger / AI Agent)</option>
+                            <option value="chatwoot" <?php echo ($s['chat_provider'] ?? '') === 'chatwoot' ? 'selected' : ''; ?>>Chatwoot (Recommended - Multi-Agent Case Routing &amp; Permanent History)</option>
+                            <option value="internal" <?php echo ($s['chat_provider'] ?? 'internal') === 'internal' ? 'selected' : ''; ?>>Internal Secure Database Chat (Client / Agent / Investigator)</option>
                             <option value="tawkto" <?php echo ($s['chat_provider'] ?? '') === 'tawkto' ? 'selected' : ''; ?>>Tawk.to Live Chat Widget</option>
-                            <option value="internal" <?php echo ($s['chat_provider'] ?? '') === 'internal' ? 'selected' : ''; ?>>Internal Secure Database Chat (Client / Agent / Investigator)</option>
                             <option value="custom" <?php echo ($s['chat_provider'] ?? '') === 'custom' ? 'selected' : ''; ?>>Custom Third-Party Embed Snippet</option>
                         </select>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6 form-group mb-3">
-                            <label class="font-weight-bold text-light">ManyChat Embed Code / Page ID</label>
-                            <textarea name="manychat_script_code" class="form-control bg-secondary text-white border-0" rows="4" placeholder="Paste your ManyChat Javascript Snippet or Page Embed Code here..."><?php echo htmlspecialchars($s['manychat_script_code'] ?? ''); ?></textarea>
-                            <small class="text-muted">Paste your ManyChat embed snippet or widget code to activate ManyChat across all client & admin chat interfaces.</small>
-                        </div>
-
-                        <div class="col-md-6 form-group mb-3">
-                            <label class="font-weight-bold text-light">Tawk.to Direct Chat URL or Property ID</label>
-                            <textarea name="tawkto_property_id" class="form-control bg-secondary text-white border-0" rows="4" placeholder="e.g. https://tawk.to/chat/YOUR_PROPERTY_ID/default or Tawk.to Script Snippet"><?php echo htmlspecialchars($s['tawkto_property_id'] ?? ''); ?></textarea>
-                            <small class="text-muted">Paste your Tawk.to Direct Chat Link or Javascript embed snippet.</small>
+                    <!-- CHATWOOT CONFIGURATION -->
+                    <div class="p-3 mb-4 rounded border border-warning" style="background: rgba(254, 204, 86, 0.05);">
+                        <h6 class="text-warning font-weight-bold mb-2">
+                            <i class="fas fa-shield-alt mr-2"></i>Chatwoot Configuration (Persistent User Identity &amp; Multi-Agent Routing)
+                        </h6>
+                        <p class="text-light small mb-3">
+                            Chatwoot automatically identifies logged-in clients via their User ID &amp; Email, restoring their entire past chat history across all reloads, logouts, and devices.
+                        </p>
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-light">Chatwoot Website Token <span class="text-danger">*</span></label>
+                                <input type="text" name="chatwoot_website_token" class="form-control bg-secondary text-white border-0" placeholder="e.g. p8uX5Vn8qjJ9..." value="<?php echo htmlspecialchars($s['chatwoot_website_token'] ?? ''); ?>">
+                                <small class="text-muted">Obtained from Chatwoot: <strong>Settings &rarr; Inboxes &rarr; Add Inbox &rarr; Website</strong>.</small>
+                            </div>
+                            <div class="col-md-3 form-group mb-3">
+                                <label class="font-weight-bold text-light">Chatwoot Account ID</label>
+                                <input type="text" name="chatwoot_account_id" class="form-control bg-secondary text-white border-0" placeholder="e.g. 180927" value="<?php echo htmlspecialchars($s['chatwoot_account_id'] ?? '180927'); ?>">
+                                <small class="text-muted">Your numerical Chatwoot account ID.</small>
+                            </div>
+                            <div class="col-md-3 form-group mb-3">
+                                <label class="font-weight-bold text-light">Chatwoot Base URL</label>
+                                <input type="text" name="chatwoot_base_url" class="form-control bg-secondary text-white border-0" placeholder="https://app.chatwoot.com" value="<?php echo htmlspecialchars($s['chatwoot_base_url'] ?? 'https://app.chatwoot.com'); ?>">
+                                <small class="text-muted">Default: <code>https://app.chatwoot.com</code></small>
+                            </div>
+                            <div class="col-md-12 form-group mb-0">
+                                <label class="font-weight-bold text-light">Chatwoot HMAC Secret Key <span class="text-muted small font-weight-normal">(Optional — For Enforced Identity Validation)</span></label>
+                                <input type="text" name="chatwoot_hmac_key" class="form-control bg-secondary text-white border-0" placeholder="Paste your HMAC Secret Key if identity validation is enforced..." value="<?php echo htmlspecialchars($s['chatwoot_hmac_key'] ?? ''); ?>">
+                                <small class="text-muted">Found in Inbox Settings &rarr; Configuration &rarr; Enforce User Identity Validation.</small>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-group mb-0">
-                        <label class="font-weight-bold text-light">Custom Chat Snippet Code (Fallback)</label>
-                        <textarea name="custom_chat_code" class="form-control bg-secondary text-white border-0" rows="3" placeholder="Paste custom chat widget script tag here..."><?php echo htmlspecialchars($s['custom_chat_code'] ?? ''); ?></textarea>
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light">Tawk.to Direct Chat URL or Property ID</label>
+                            <textarea name="tawkto_property_id" class="form-control bg-secondary text-white border-0" rows="3" placeholder="e.g. https://tawk.to/chat/YOUR_PROPERTY_ID/default or Tawk.to Script Snippet"><?php echo htmlspecialchars($s['tawkto_property_id'] ?? ''); ?></textarea>
+                            <small class="text-muted">Paste your Tawk.to Direct Chat Link or Javascript embed snippet.</small>
+                        </div>
+
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light">Custom Chat Snippet Code (Fallback)</label>
+                            <textarea name="custom_chat_code" class="form-control bg-secondary text-white border-0" rows="3" placeholder="Paste custom chat widget script tag here..."><?php echo htmlspecialchars($s['custom_chat_code'] ?? ''); ?></textarea>
+                            <small class="text-muted">Paste custom chat widget script tag here if using another custom provider.</small>
+                        </div>
                     </div>
                 </div>
             </div>

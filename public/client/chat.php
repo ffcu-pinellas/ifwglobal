@@ -17,12 +17,37 @@ if (!isset($_SESSION['client_logged_in']) || $_SESSION['client_logged_in'] !== t
     exit;
 }
 
-$client_id = $_SESSION['client_portal_id'];
+$client_id = (int)$_SESSION['client_portal_id'];
 $_SESSION['frontend_client_id'] = $client_id;
 $_SESSION['role'] = 'client';
 
 $chat_provider = isset($pdo) ? get_setting($pdo, 'chat_provider', 'internal') : 'internal';
 $tawk_property = isset($pdo) ? get_setting($pdo, 'tawkto_property_id', '') : '';
+$chatwoot_token = isset($pdo) ? get_setting($pdo, 'chatwoot_website_token', '') : '';
+$chatwoot_base_url = isset($pdo) ? get_setting($pdo, 'chatwoot_base_url', 'https://app.chatwoot.com') : 'https://app.chatwoot.com';
+$chatwoot_hmac_key = isset($pdo) ? get_setting($pdo, 'chatwoot_hmac_key', '') : '';
+$chatwoot_account_id = isset($pdo) ? get_setting($pdo, 'chatwoot_account_id', '180927') : '180927';
+
+// Load client profile for identity synchronization
+$client_data = null;
+try {
+    $st_cl = $pdo->prepare("SELECT * FROM IFW_clients WHERE id = ?");
+    $st_cl->execute([$client_id]);
+    $client_data = $st_cl->fetch() ?: [];
+} catch (Exception $e) {}
+
+$client_name = trim(($client_data['first_name'] ?? '') . ' ' . ($client_data['last_name'] ?? '')) ?: 'Client #' . $client_id;
+$client_email = $client_data['email'] ?? '';
+$client_phone = $client_data['phone'] ?? '';
+$client_avatar = get_portal_avatar_url($pdo, 'client', $client_id);
+if (!empty($client_avatar) && strpos($client_avatar, 'http') !== 0) {
+    $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'ifwglobalrecovery.site';
+    $client_avatar = $scheme . '://' . $host . $client_avatar;
+}
+
+$chatwoot_user_identifier = 'client_' . $client_id;
+$chatwoot_hmac_hash = !empty($chatwoot_hmac_key) ? hash_hmac('sha256', $chatwoot_user_identifier, $chatwoot_hmac_key) : '';
 
 require_once $dir . '/includes/admin_header.php';
 require_once $dir . '/includes/admin_sidebar.php';
@@ -407,20 +432,94 @@ require_once $dir . '/includes/admin_sidebar.php';
             </div>
         </div>
 
-    <?php elseif ($chat_provider === 'manychat'): ?>
-        <!-- MANYCHAT CONSOLE -->
-        <div class="col-12 mb-4">
-            <div class="card shadow-lg bg-dark border-secondary">
-                <div class="card-header bg-dark border-secondary text-warning font-weight-bold">
-                    <i class="fas fa-headset mr-2"></i>ManyChat Virtual Assistant
+    <?php elseif ($chat_provider === 'chatwoot'): ?>
+        <!-- CHATWOOT LIVE SUPPORT (MULTI-AGENT CRM & PERSISTENT USER IDENTITY) -->
+        <div class="col-12 p-0 mb-0 client-chat-col">
+            <div class="card shadow-lg bg-dark border-secondary client-chat-card">
+                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-2 px-3 px-md-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-comments fa-lg mr-2 mr-md-3 text-warning"></i>
+                        <div>
+                            <span class="d-block text-white font-weight-bold" style="font-size: 14px;">Live Multi-Agent Case Communications</span>
+                            <small class="text-white small" style="font-size: 11px; opacity: 0.85;">Connected to IFW Forensic & Legal Team &bull; Persistent History</small>
+                        </div>
+                    </div>
+                    <span class="badge badge-success px-3 py-2 d-none d-sm-inline-block" style="font-size: 12px;"><i class="fas fa-shield-alt mr-1"></i> Identity Verified</span>
                 </div>
-                <div class="card-body bg-dark text-white p-5 text-center">
-                    <i class="fab fa-facebook-messenger text-warning fa-4x mb-4"></i>
-                    <h4 class="font-weight-bold">ManyChat Support Enabled</h4>
-                    <p class="text-muted max-width-500 mx-auto">
-                        We have integrated ManyChat AI automation to resolve your queries instantly. 
-                        Please locate the Chat widget in the bottom right corner of your screen to start a conversation with our automated assistant or a live agent.
-                    </p>
+
+                <div class="card-body bg-dark text-white p-4 p-md-5 text-center" style="min-height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <?php if (!empty($chatwoot_token)): ?>
+                        <div style="width:84px; height:84px; border-radius:50%; background:rgba(254, 204, 86, 0.12); border: 2px solid #fecc56; display:flex; align-items:center; justify-content:center; margin:0 auto 20px;">
+                            <i class="fas fa-headset fa-3x text-warning"></i>
+                        </div>
+                        <h4 class="font-weight-bold text-white mb-2">Live Support Line Active</h4>
+                        <p class="text-light small max-width-600 mb-4" style="line-height: 1.6; max-width: 540px;">
+                            You are connected to our multi-agent support network as <strong class="text-warning"><?= htmlspecialchars($client_name) ?></strong> (<code><?= htmlspecialchars($client_email) ?></code>). 
+                            Your entire conversation history and case files are preserved automatically.
+                        </p>
+                        <button type="button" class="btn btn-warning font-weight-bold text-dark px-4 py-2 shadow-lg mb-3" onclick="if(window.$chatwoot){ window.$chatwoot.toggle('open'); } else { alert('Chat widget initializing, please wait a moment...'); }">
+                            <i class="fas fa-comment-dots mr-2"></i> Open Live Chat Window
+                        </button>
+                        <div class="small text-muted mt-2">
+                            <i class="fas fa-lock text-warning mr-1"></i> 256-Bit Encrypted Multi-Agent Channel
+                        </div>
+
+                        <!-- Chatwoot SDK Integration with User Identity Validation -->
+                        <script>
+                        window.chatwootSettings = {
+                            hideMessageBubble: false,
+                            position: 'right',
+                            locale: 'en',
+                            type: 'expanded_bubble',
+                            darkMode: 'dark'
+                        };
+                        (function(d,t) {
+                            var BASE_URL = "<?= htmlspecialchars($chatwoot_base_url ?: 'https://app.chatwoot.com') ?>";
+                            var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+                            g.src=BASE_URL+"/packs/js/sdk.js";
+                            g.async = true;
+                            g.defer = true;
+                            s.parentNode.insertBefore(g,s);
+                            g.onload=function(){
+                                window.chatwootSDK.run({
+                                    websiteToken: '<?= htmlspecialchars($chatwoot_token) ?>',
+                                    baseUrl: BASE_URL
+                                });
+                            }
+                        })(document,"script");
+
+                        window.addEventListener("chatwoot:ready", function () {
+                            if (window.$chatwoot) {
+                                window.$chatwoot.setUser('<?= $chatwoot_user_identifier ?>', {
+                                    name: '<?= addslashes($client_name) ?>',
+                                    email: '<?= addslashes($client_email) ?>',
+                                    avatar_url: '<?= addslashes($client_avatar) ?>',
+                                    phone_number: '<?= addslashes($client_phone) ?>',
+                                    <?php if (!empty($chatwoot_hmac_hash)): ?>
+                                    identifier_hash: '<?= $chatwoot_hmac_hash ?>',
+                                    <?php endif; ?>
+                                });
+
+                                window.$chatwoot.setCustomAttributes({
+                                    client_id: '<?= (int)$client_id ?>',
+                                    portal: 'IFW Client Portal'
+                                });
+
+                                // Auto open on direct chat page
+                                setTimeout(function() {
+                                    window.$chatwoot.toggle("open");
+                                }, 500);
+                            }
+                        });
+                        </script>
+                    <?php else: ?>
+                        <div class="p-5 text-center text-white">
+                            <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
+                            <h5 class="text-warning">Chatwoot Configuration Pending</h5>
+                            <p class="text-white">Chatwoot Website Token is not configured in Admin Settings.</p>
+                            <p class="text-muted small">Please go to <strong>Admin Settings &rarr; Live Chat</strong> and enter your Chatwoot Website Token.</p>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
