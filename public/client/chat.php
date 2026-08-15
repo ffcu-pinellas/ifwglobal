@@ -439,7 +439,46 @@ require_once $dir . '/includes/admin_sidebar.php';
         </div>
 
     <?php elseif ($chat_provider === 'chatwoot'): ?>
-        <!-- CHATWOOT LIVE SUPPORT (FULL-HEIGHT PROFESSIONAL IN-PAGE IFRAME & USER IDENTITY) -->
+        <!-- CHATWOOT LIVE SUPPORT (DOCKED FULL-HEIGHT CRM WITH PERSISTENT CLIENT IDENTITY) -->
+        <style>
+        /* Dock Chatwoot into the card seamlessly */
+        .chatwoot-docked-container {
+            position: relative;
+            width: 100%;
+            height: calc(100dvh - 120px);
+            min-height: 580px;
+            background: #000000;
+            overflow: hidden;
+        }
+        .woot-widget-holder {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-height: 100% !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            z-index: 10 !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        .woot-widget-holder iframe {
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 100% !important;
+            border: none !important;
+            border-radius: 0 !important;
+        }
+        .woot--bubble-holder {
+            display: none !important; /* Hide floating bubble on this dedicated full page */
+        }
+        </style>
+
         <div class="col-12 p-0 mb-0 client-chat-col">
             <div class="card shadow-lg bg-dark border-secondary client-chat-card">
                 <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-2 px-3 px-md-4">
@@ -453,20 +492,19 @@ require_once $dir . '/includes/admin_sidebar.php';
                     <span class="badge badge-success px-3 py-2 d-none d-sm-inline-block" style="font-size: 12px;"><i class="fas fa-shield-alt mr-1"></i> Identity Verified</span>
                 </div>
 
-                <div class="card-body bg-black p-0 client-chat-iframe-body" style="height: calc(100dvh - 120px); min-height: 560px; position: relative;">
+                <div class="card-body bg-black p-0 client-chat-iframe-body chatwoot-docked-container" id="chatwoot-mount-frame">
                     <?php if (!empty($chatwoot_token)): ?>
-                        <iframe 
-                            src="<?= htmlspecialchars($chatwoot_base_url) ?>/widget?website_token=<?= htmlspecialchars($chatwoot_token) ?>&locale=en" 
-                            class="client-chat-iframe"
-                            style="width: 100%; height: 100%; min-height: 100%; border: none; display: block; background: #000;" 
-                            allow="camera; microphone; autoplay; encrypted-media;"
-                            title="IFW Live Support">
-                        </iframe>
+                        <!-- Loading placeholder until Chatwoot SDK mounts -->
+                        <div id="chatwoot-loading-ph" class="p-5 text-center text-white my-auto d-flex flex-column align-items-center justify-content-center h-100">
+                            <i class="fas fa-spinner fa-spin text-warning fa-3x mb-3"></i>
+                            <h5 class="text-warning">Connecting to Secure Case Line...</h5>
+                            <p class="text-white small mb-0">Synchronizing client credentials &amp; loading conversation history.</p>
+                        </div>
 
-                        <!-- Chatwoot Background Identity Synchronizer -->
+                        <!-- Chatwoot Native SDK Integration with User Identity Validation -->
                         <script>
                         window.chatwootSettings = {
-                            hideMessageBubble: true, // Hide extra floating bubble on this dedicated iframe page
+                            hideMessageBubble: false,
                             position: 'right',
                             locale: 'en',
                             type: 'expanded_bubble',
@@ -489,6 +527,7 @@ require_once $dir . '/includes/admin_sidebar.php';
 
                         window.addEventListener("chatwoot:ready", function () {
                             if (window.$chatwoot) {
+                                // Authenticate client with Chatwoot
                                 window.$chatwoot.setUser('<?= $chatwoot_user_identifier ?>', {
                                     name: '<?= addslashes($client_name) ?>',
                                     email: '<?= addslashes($client_email) ?>',
@@ -503,6 +542,14 @@ require_once $dir . '/includes/admin_sidebar.php';
                                     client_id: '<?= (int)$client_id ?>',
                                     portal: 'IFW Client Portal'
                                 });
+
+                                // Open Chatwoot in the docked card
+                                window.$chatwoot.toggle("open");
+                                
+                                var ph = document.getElementById('chatwoot-loading-ph');
+                                if (ph) {
+                                    setTimeout(function() { ph.style.display = 'none'; }, 600);
+                                }
                             }
                         });
                         </script>
