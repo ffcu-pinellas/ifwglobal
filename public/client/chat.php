@@ -21,7 +21,7 @@ $client_id = (int)$_SESSION['client_portal_id'];
 $_SESSION['frontend_client_id'] = $client_id;
 $_SESSION['role'] = 'client';
 
-$chat_provider = isset($pdo) ? get_setting($pdo, 'chat_provider', 'internal') : 'internal';
+$chat_provider = isset($pdo) ? get_setting($pdo, 'chat_provider', 'chatwoot') : 'chatwoot';
 $tawk_property = isset($pdo) ? get_setting($pdo, 'tawkto_property_id', '') : '';
 $chatwoot_token = isset($pdo) ? get_setting($pdo, 'chatwoot_website_token', 'uHR3DJPM8AZ2Lpo8tDdJ5tei') : 'uHR3DJPM8AZ2Lpo8tDdJ5tei';
 if (empty($chatwoot_token)) $chatwoot_token = 'uHR3DJPM8AZ2Lpo8tDdJ5tei';
@@ -46,30 +46,10 @@ $client_name = trim(($client_data['first_name'] ?? '') . ' ' . ($client_data['la
 $client_email = $client_data['email'] ?? '';
 $client_phone = $client_data['phone'] ?? '';
 $client_avatar = get_portal_avatar_url($pdo, 'client', $client_id);
-$portal_avatar_url = $client_avatar;
 if (!empty($client_avatar) && strpos($client_avatar, 'http') !== 0) {
     $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'ifwglobalrecovery.site';
     $client_avatar = $scheme . '://' . $host . $client_avatar;
-}
-
-// Resolve Assigned Investigator / Agent info
-$assigned_agent_id = (int)($client_data['assigned_agent_id'] ?? 0);
-$agent_name_display = 'IFW Forensic & Legal Team';
-$agent_role_display = 'Senior Forensic Director';
-$agent_avatar_display = '/media/logos/shield-gold.svg';
-
-if ($assigned_agent_id > 0) {
-    try {
-        $st_ag = $pdo->prepare("SELECT full_name, username, role, email, phone FROM IFW_users WHERE id = ?");
-        $st_ag->execute([$assigned_agent_id]);
-        $ag_row = $st_ag->fetch();
-        if ($ag_row) {
-            $agent_name_display = !empty($ag_row['full_name']) ? $ag_row['full_name'] : $ag_row['username'];
-            $agent_role_display = !empty($ag_row['role']) ? ucwords(str_replace('_', ' ', $ag_row['role'])) : 'Senior Investigator';
-            $agent_avatar_display = get_portal_avatar_url($pdo, 'admin', $assigned_agent_id);
-        }
-    } catch (Exception $e) {}
 }
 
 $chatwoot_user_identifier = 'client_' . $client_id;
@@ -208,10 +188,10 @@ require_once $dir . '/includes/admin_sidebar.php';
             <div class="card shadow-lg bg-dark border-secondary client-chat-card">
                 <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-2 px-3">
                     <div class="d-flex align-items-center">
-                        <img src="<?= htmlspecialchars($agent_avatar_display) ?>" class="rounded-circle border border-warning mr-2 chat-avatar-me" width="38" height="38" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
+                        <img src="<?= htmlspecialchars($portal_avatar_url ?? '/admin_assets/img/profile/blank.png') ?>" class="rounded-circle border border-warning mr-2 chat-avatar-me" width="34" height="34" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
                         <div>
-                            <span class="text-warning font-weight-bold" style="font-size: 0.95rem;"><?= htmlspecialchars($agent_name_display) ?></span>
-                            <div class="text-white small" style="font-size: 11px; opacity: 0.9;"><span class="text-success mr-1">●</span> <?= htmlspecialchars($agent_role_display) ?> &bull; Direct Case Line</div>
+                            <span class="text-warning font-weight-bold" style="font-size: 0.95rem;">Case Investigation &amp; Legal Support</span>
+                            <div class="text-white small" style="font-size: 10.5px; opacity: 0.9;"><span class="text-success mr-1">●</span> Active Live Channel &bull; Direct Case Line</div>
                         </div>
                     </div>
                     <span class="badge badge-success px-2 py-1 d-none d-sm-inline-block" style="font-size: 11px;"><i class="fas fa-lock mr-1"></i>256-Bit Encrypted</span>
@@ -459,43 +439,73 @@ require_once $dir . '/includes/admin_sidebar.php';
         </div>
 
     <?php elseif ($chat_provider === 'chatwoot'): ?>
-        <!-- CHATWOOT LIVE SUPPORT (DOCKED FULL-HEIGHT CRM WITH PERSISTENT CLIENT IDENTITY) -->
+        <!-- CHATWOOT LIVE SUPPORT (FULL-PAGE IN-CONTAINER CONSOLE & PERSISTENT HISTORY) -->
         <style>
-        /* Dock Chatwoot into the card seamlessly */
+        /* Full Frame In-Page Chat Layout */
         .chatwoot-docked-container {
-            position: relative;
-            width: 100%;
-            height: calc(100dvh - 120px);
-            min-height: 580px;
-            background: #000000;
-            overflow: hidden;
+            position: relative !important;
+            width: 100% !important;
+            height: calc(100dvh - 125px) !important;
+            min-height: 600px !important;
+            background: #000000 !important;
+            overflow: hidden !important;
         }
-        .woot-widget-holder {
+
+        /* Force Chatwoot Holder into 100% Full-Width / Full-Height Card Area */
+        body .woot-widget-holder,
+        .woot-widget-holder,
+        .woot-widget-holder.has-unread-view,
+        .woot-widget-holder.woot-widget-holder--expanded {
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
             right: 0 !important;
             bottom: 0 !important;
             width: 100% !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
             height: 100% !important;
+            min-height: 100% !important;
             max-height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
             border-radius: 0 !important;
             box-shadow: none !important;
             border: none !important;
-            z-index: 10 !important;
+            transform: none !important;
+            z-index: 5 !important;
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
         }
-        .woot-widget-holder iframe {
+
+        body .woot-widget-holder iframe,
+        .woot-widget-holder iframe,
+        #chatwoot_live_chat_widget {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
             width: 100% !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
             height: 100% !important;
             min-height: 100% !important;
+            max-height: 100% !important;
             border: none !important;
             border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+            background: #000000 !important;
         }
-        .woot--bubble-holder {
-            display: none !important; /* Hide floating bubble on this dedicated full page */
+
+        .woot--bubble-holder,
+        .woot-widget-bubble {
+            display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
         </style>
 
@@ -514,22 +524,78 @@ require_once $dir . '/includes/admin_sidebar.php';
 
                 <div class="card-body bg-black p-0 client-chat-iframe-body chatwoot-docked-container" id="chatwoot-mount-frame">
                     <?php if (!empty($chatwoot_token)): ?>
-                        <!-- Loading placeholder until Chatwoot SDK mounts -->
+                        <!-- Loading Placeholder -->
                         <div id="chatwoot-loading-ph" class="p-5 text-center text-white my-auto d-flex flex-column align-items-center justify-content-center h-100">
                             <i class="fas fa-spinner fa-spin text-warning fa-3x mb-3"></i>
                             <h5 class="text-warning">Connecting to Secure Case Line...</h5>
                             <p class="text-white small mb-0">Synchronizing client credentials &amp; loading conversation history.</p>
                         </div>
 
-                        <!-- Chatwoot Native SDK Integration with User Identity Validation -->
+                        <!-- Chatwoot In-Page Full Console Loader -->
                         <script>
                         window.chatwootSettings = {
-                            hideMessageBubble: false,
+                            hideMessageBubble: true,
                             position: 'right',
                             locale: 'en',
                             type: 'expanded_bubble',
                             darkMode: 'dark'
                         };
+
+                        function enforceChatwootDocked() {
+                            var mount = document.getElementById('chatwoot-mount-frame');
+                            var holder = document.querySelector('.woot-widget-holder');
+                            var bubble = document.querySelector('.woot--bubble-holder');
+                            
+                            if (bubble) {
+                                bubble.style.setProperty('display', 'none', 'important');
+                            }
+                            
+                            if (mount && holder) {
+                                if (holder.parentElement !== mount) {
+                                    mount.appendChild(holder);
+                                }
+                                holder.style.setProperty('position', 'absolute', 'important');
+                                holder.style.setProperty('top', '0', 'important');
+                                holder.style.setProperty('left', '0', 'important');
+                                holder.style.setProperty('right', '0', 'important');
+                                holder.style.setProperty('bottom', '0', 'important');
+                                holder.style.setProperty('width', '100%', 'important');
+                                holder.style.setProperty('max-width', '100%', 'important');
+                                holder.style.setProperty('min-width', '100%', 'important');
+                                holder.style.setProperty('height', '100%', 'important');
+                                holder.style.setProperty('max-height', '100%', 'important');
+                                holder.style.setProperty('min-height', '100%', 'important');
+                                holder.style.setProperty('margin', '0', 'important');
+                                holder.style.setProperty('border-radius', '0', 'important');
+                                holder.style.setProperty('box-shadow', 'none', 'important');
+                                holder.style.setProperty('transform', 'none', 'important');
+                                holder.style.setProperty('display', 'block', 'important');
+                                holder.style.setProperty('visibility', 'visible', 'important');
+                                holder.style.setProperty('opacity', '1', 'important');
+                                holder.style.setProperty('z-index', '5', 'important');
+                                
+                                var iframe = holder.querySelector('iframe');
+                                if (iframe) {
+                                    iframe.style.setProperty('position', 'absolute', 'important');
+                                    iframe.style.setProperty('top', '0', 'important');
+                                    iframe.style.setProperty('left', '0', 'important');
+                                    iframe.style.setProperty('width', '100%', 'important');
+                                    iframe.style.setProperty('max-width', '100%', 'important');
+                                    iframe.style.setProperty('min-width', '100%', 'important');
+                                    iframe.style.setProperty('height', '100%', 'important');
+                                    iframe.style.setProperty('min-height', '100%', 'important');
+                                    iframe.style.setProperty('max-height', '100%', 'important');
+                                    iframe.style.setProperty('border', 'none', 'important');
+                                    iframe.style.setProperty('border-radius', '0', 'important');
+                                }
+                                
+                                var ph = document.getElementById('chatwoot-loading-ph');
+                                if (ph) {
+                                    ph.style.display = 'none';
+                                }
+                            }
+                        }
+
                         (function(d,t) {
                             var BASE_URL = "<?= htmlspecialchars($chatwoot_base_url ?: 'https://app.chatwoot.com') ?>";
                             var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
@@ -545,9 +611,12 @@ require_once $dir . '/includes/admin_sidebar.php';
                             }
                         })(document,"script");
 
+                        // Monitor and dock continuously
+                        var dockInterval = setInterval(enforceChatwootDocked, 150);
+                        setTimeout(function() { clearInterval(dockInterval); setInterval(enforceChatwootDocked, 1000); }, 8000);
+
                         window.addEventListener("chatwoot:ready", function () {
                             if (window.$chatwoot) {
-                                // Authenticate client with Chatwoot
                                 window.$chatwoot.setUser('<?= $chatwoot_user_identifier ?>', {
                                     name: '<?= addslashes($client_name) ?>',
                                     email: '<?= addslashes($client_email) ?>',
@@ -563,13 +632,8 @@ require_once $dir . '/includes/admin_sidebar.php';
                                     portal: 'IFW Client Portal'
                                 });
 
-                                // Open Chatwoot in the docked card
                                 window.$chatwoot.toggle("open");
-                                
-                                var ph = document.getElementById('chatwoot-loading-ph');
-                                if (ph) {
-                                    setTimeout(function() { ph.style.display = 'none'; }, 600);
-                                }
+                                enforceChatwootDocked();
                             }
                         });
                         </script>
