@@ -219,6 +219,24 @@ try {
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_recovery_map TINYINT(1) DEFAULT 0");
 } catch (Exception $ex) {}
 
+// Self-healing: Default Chatwoot Settings Auto-Seeder
+try {
+    $cw_check = $pdo->query("SELECT setting_value FROM IFW_site_settings WHERE setting_key = 'chatwoot_website_token' LIMIT 1");
+    $cw_val = $cw_check ? $cw_check->fetchColumn() : null;
+    if (empty($cw_val)) {
+        $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")
+            ->execute(['chatwoot_website_token', 'uHR3DJPM8AZ2Lpo8tDdJ5tei', 'uHR3DJPM8AZ2Lpo8tDdJ5tei']);
+        $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")
+            ->execute(['chatwoot_account_id', '180927', '180927']);
+        $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")
+            ->execute(['chatwoot_base_url', 'https://app.chatwoot.com', 'https://app.chatwoot.com']);
+        $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")
+            ->execute(['chatwoot_hmac_key', '6q99KLZgjCtHCd1fvQpQTp2F', '6q99KLZgjCtHCd1fvQpQTp2F']);
+        $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")
+            ->execute(['chat_provider', 'chatwoot', 'chatwoot']);
+    }
+} catch (Exception $ex) {}
+
 // Base URL configuration (dynamic for Hostinger and localhost subdirectories)
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
 $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';

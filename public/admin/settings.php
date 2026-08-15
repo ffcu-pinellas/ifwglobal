@@ -80,8 +80,8 @@ require_once '../includes/admin_sidebar.php';
                     <div class="form-group mb-4">
                         <label class="font-weight-bold text-warning fs-5">Active Chat Provider</label>
                         <select name="chat_provider" class="form-control bg-secondary text-white border-0 form-control-lg font-weight-bold">
-                            <option value="chatwoot" <?php echo ($s['chat_provider'] ?? '') === 'chatwoot' ? 'selected' : ''; ?>>Chatwoot (Recommended - Multi-Agent Case Routing &amp; Permanent History)</option>
-                            <option value="internal" <?php echo ($s['chat_provider'] ?? 'internal') === 'internal' ? 'selected' : ''; ?>>Internal Secure Database Chat (Client / Agent / Investigator)</option>
+                            <option value="chatwoot" <?php echo ($s['chat_provider'] ?? 'chatwoot') === 'chatwoot' ? 'selected' : ''; ?>>Chatwoot (Recommended - Multi-Agent Case Routing &amp; Permanent History)</option>
+                            <option value="internal" <?php echo ($s['chat_provider'] ?? '') === 'internal' ? 'selected' : ''; ?>>Internal Secure Database Chat (Client / Agent / Investigator)</option>
                             <option value="tawkto" <?php echo ($s['chat_provider'] ?? '') === 'tawkto' ? 'selected' : ''; ?>>Tawk.to Live Chat Widget</option>
                             <option value="custom" <?php echo ($s['chat_provider'] ?? '') === 'custom' ? 'selected' : ''; ?>>Custom Third-Party Embed Snippet</option>
                         </select>
@@ -98,22 +98,22 @@ require_once '../includes/admin_sidebar.php';
                         <div class="row">
                             <div class="col-md-6 form-group mb-3">
                                 <label class="font-weight-bold text-light">Chatwoot Website Token <span class="text-danger">*</span></label>
-                                <input type="text" name="chatwoot_website_token" class="form-control bg-secondary text-white border-0" placeholder="e.g. p8uX5Vn8qjJ9..." value="<?php echo htmlspecialchars($s['chatwoot_website_token'] ?? ''); ?>">
+                                <input type="text" name="chatwoot_website_token" class="form-control bg-secondary text-white border-0" placeholder="e.g. uHR3DJPM8AZ2Lpo8tDdJ5tei" value="<?php echo htmlspecialchars(!empty($s['chatwoot_website_token']) ? $s['chatwoot_website_token'] : 'uHR3DJPM8AZ2Lpo8tDdJ5tei'); ?>">
                                 <small class="text-muted">Obtained from Chatwoot: <strong>Settings &rarr; Inboxes &rarr; Add Inbox &rarr; Website</strong>.</small>
                             </div>
                             <div class="col-md-3 form-group mb-3">
                                 <label class="font-weight-bold text-light">Chatwoot Account ID</label>
-                                <input type="text" name="chatwoot_account_id" class="form-control bg-secondary text-white border-0" placeholder="e.g. 180927" value="<?php echo htmlspecialchars($s['chatwoot_account_id'] ?? '180927'); ?>">
+                                <input type="text" name="chatwoot_account_id" class="form-control bg-secondary text-white border-0" placeholder="e.g. 180927" value="<?php echo htmlspecialchars(!empty($s['chatwoot_account_id']) ? $s['chatwoot_account_id'] : '180927'); ?>">
                                 <small class="text-muted">Your numerical Chatwoot account ID.</small>
                             </div>
                             <div class="col-md-3 form-group mb-3">
                                 <label class="font-weight-bold text-light">Chatwoot Base URL</label>
-                                <input type="text" name="chatwoot_base_url" class="form-control bg-secondary text-white border-0" placeholder="https://app.chatwoot.com" value="<?php echo htmlspecialchars($s['chatwoot_base_url'] ?? 'https://app.chatwoot.com'); ?>">
+                                <input type="text" name="chatwoot_base_url" class="form-control bg-secondary text-white border-0" placeholder="https://app.chatwoot.com" value="<?php echo htmlspecialchars(!empty($s['chatwoot_base_url']) ? $s['chatwoot_base_url'] : 'https://app.chatwoot.com'); ?>">
                                 <small class="text-muted">Default: <code>https://app.chatwoot.com</code></small>
                             </div>
                             <div class="col-md-12 form-group mb-0">
                                 <label class="font-weight-bold text-light">Chatwoot HMAC Secret Key <span class="text-muted small font-weight-normal">(Optional — For Enforced Identity Validation)</span></label>
-                                <input type="text" name="chatwoot_hmac_key" class="form-control bg-secondary text-white border-0" placeholder="Paste your HMAC Secret Key if identity validation is enforced..." value="<?php echo htmlspecialchars($s['chatwoot_hmac_key'] ?? ''); ?>">
+                                <input type="text" name="chatwoot_hmac_key" class="form-control bg-secondary text-white border-0" placeholder="Paste your HMAC Secret Key if identity validation is enforced..." value="<?php echo htmlspecialchars(!empty($s['chatwoot_hmac_key']) ? $s['chatwoot_hmac_key'] : '6q99KLZgjCtHCd1fvQpQTp2F'); ?>">
                                 <small class="text-muted">Found in Inbox Settings &rarr; Configuration &rarr; Enforce User Identity Validation.</small>
                             </div>
                         </div>

@@ -92,6 +92,151 @@ try {
     } catch (Exception $ex) {}
 }
 
+// Self-healing: Blockchain Watcher Wallets
+try {
+    $pdo->query("SELECT id FROM IFW_blockchain_wallets LIMIT 1");
+} catch (PDOException $e) {
+    try {
+        $pdo->exec("CREATE TABLE IFW_blockchain_wallets (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            case_id INT NOT NULL,
+            crypto_type VARCHAR(50) NOT NULL DEFAULT 'USDT (TRC-20)',
+            wallet_address VARCHAR(255) NOT NULL,
+            wallet_label VARCHAR(255) NULL,
+            balance DECIMAL(24,8) DEFAULT 0.00000000,
+            usd_value DECIMAL(15,2) DEFAULT 0.00,
+            risk_score INT DEFAULT 92,
+            threat_level VARCHAR(50) DEFAULT 'CRITICAL',
+            exchange_tags VARCHAR(500) NULL,
+            status VARCHAR(100) DEFAULT 'Active Monitoring',
+            is_live_api TINYINT(1) DEFAULT 0,
+            notes TEXT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+    } catch (Exception $ex) {}
+}
+
+// Self-healing: Blockchain Watcher Transactions / Hops
+try {
+    $pdo->query("SELECT id FROM IFW_blockchain_txs LIMIT 1");
+} catch (PDOException $e) {
+    try {
+        $pdo->exec("CREATE TABLE IFW_blockchain_txs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            wallet_id INT NULL,
+            case_id INT NOT NULL,
+            tx_hash VARCHAR(255) NOT NULL,
+            from_address VARCHAR(255) NULL,
+            to_address VARCHAR(255) NULL,
+            amount DECIMAL(24,8) NOT NULL DEFAULT 0.00000000,
+            crypto_type VARCHAR(50) DEFAULT 'USDT',
+            direction ENUM('IN', 'OUT') DEFAULT 'OUT',
+            flag_tag VARCHAR(255) NULL,
+            tx_time DATETIME NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+    } catch (Exception $ex) {}
+}
+
+// Self-healing: Case Settlements & Escrow Hub
+try {
+    $pdo->query("SELECT id FROM IFW_case_settlements LIMIT 1");
+} catch (PDOException $e) {
+    try {
+        $pdo->exec("CREATE TABLE IFW_case_settlements (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            case_id INT NOT NULL,
+            client_id INT NOT NULL,
+            gross_recovered DECIMAL(15,2) DEFAULT 0.00,
+            fee_percent DECIMAL(5,2) DEFAULT 10.00,
+            fee_amount DECIMAL(15,2) DEFAULT 0.00,
+            net_payout DECIMAL(15,2) DEFAULT 0.00,
+            escrow_ref VARCHAR(100) NULL,
+            custody_entity VARCHAR(255) DEFAULT 'Swiss Multi-Sig Escrow Vault (FINMA Compliant)',
+            clearance_stage INT DEFAULT 1,
+            status VARCHAR(100) DEFAULT 'Secured in Escrow',
+            payout_method VARCHAR(100) NULL,
+            payout_destination_details TEXT NULL,
+            client_confirmed_at DATETIME NULL,
+            client_signature_hash VARCHAR(255) NULL,
+            is_enabled TINYINT(1) DEFAULT 1,
+            notes TEXT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )");
+    } catch (Exception $ex) {}
+}
+
+// Self-healing: Jurisdictional Freeze Radar Pins
+try {
+    $pdo->query("SELECT id FROM IFW_case_jurisdictions LIMIT 1");
+} catch (PDOException $e) {
+    try {
+        $pdo->exec("CREATE TABLE IFW_case_jurisdictions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            case_id INT NOT NULL,
+            country_code VARCHAR(10) NOT NULL,
+            country_name VARCHAR(100) NOT NULL,
+            city_court VARCHAR(255) NULL,
+            action_type VARCHAR(255) NOT NULL,
+            case_ref VARCHAR(100) NULL,
+            status VARCHAR(100) DEFAULT 'Active Freeze Order',
+            date_filed DATE NULL,
+            notes TEXT NULL,
+            is_enabled TINYINT(1) DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+    } catch (Exception $ex) {}
+}
+
+// Self-healing: Login History & Device Security Audit
+try {
+    $pdo->query("SELECT id FROM IFW_login_history LIMIT 1");
+} catch (PDOException $e) {
+    try {
+        $pdo->exec("CREATE TABLE IFW_login_history (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            role ENUM('client', 'admin', 'staff') NOT NULL DEFAULT 'client',
+            email VARCHAR(255) NOT NULL,
+            ip_address VARCHAR(100) NOT NULL,
+            user_agent VARCHAR(500) NULL,
+            device_type VARCHAR(50) DEFAULT 'Desktop',
+            browser VARCHAR(100) NULL,
+            os VARCHAR(100) NULL,
+            city_country VARCHAR(255) NULL,
+            is_new_device TINYINT(1) DEFAULT 0,
+            login_status ENUM('success', 'failed_credentials', 'failed_otp') DEFAULT 'success',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+    } catch (Exception $ex) {}
+}
+
+// Self-healing: Feature Flags on IFW_cases (Disabled by default: 0)
+try {
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_blockchain_watcher TINYINT(1) DEFAULT 0");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_settlement_escrow TINYINT(1) DEFAULT 0");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_recovery_map TINYINT(1) DEFAULT 0");
+} catch (Exception $ex) {}
+
+// Self-healing: Default Chatwoot Settings Auto-Seeder
+try {
+    $cw_check = $pdo->query("SELECT setting_value FROM IFW_site_settings WHERE setting_key = 'chatwoot_website_token' LIMIT 1");
+    $cw_val = $cw_check ? $cw_check->fetchColumn() : null;
+    if (empty($cw_val)) {
+        $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")
+            ->execute(['chatwoot_website_token', 'uHR3DJPM8AZ2Lpo8tDdJ5tei', 'uHR3DJPM8AZ2Lpo8tDdJ5tei']);
+        $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")
+            ->execute(['chatwoot_account_id', '180927', '180927']);
+        $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")
+            ->execute(['chatwoot_base_url', 'https://app.chatwoot.com', 'https://app.chatwoot.com']);
+        $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")
+            ->execute(['chatwoot_hmac_key', '6q99KLZgjCtHCd1fvQpQTp2F', '6q99KLZgjCtHCd1fvQpQTp2F']);
+        $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")
+            ->execute(['chat_provider', 'chatwoot', 'chatwoot']);
+    }
+} catch (Exception $ex) {}
+
 // Base URL configuration (dynamic for Hostinger and localhost subdirectories)
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
 $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';

@@ -21,11 +21,17 @@ $client_id = (int)$_SESSION['client_portal_id'];
 $_SESSION['frontend_client_id'] = $client_id;
 $_SESSION['role'] = 'client';
 
-$chat_provider = isset($pdo) ? get_setting($pdo, 'chat_provider', 'internal') : 'internal';
+$chat_provider = isset($pdo) ? get_setting($pdo, 'chat_provider', 'chatwoot') : 'chatwoot';
 $tawk_property = isset($pdo) ? get_setting($pdo, 'tawkto_property_id', '') : '';
-$chatwoot_token = isset($pdo) ? get_setting($pdo, 'chatwoot_website_token', '') : '';
+$chatwoot_token = isset($pdo) ? get_setting($pdo, 'chatwoot_website_token', 'uHR3DJPM8AZ2Lpo8tDdJ5tei') : 'uHR3DJPM8AZ2Lpo8tDdJ5tei';
+if (empty($chatwoot_token)) $chatwoot_token = 'uHR3DJPM8AZ2Lpo8tDdJ5tei';
+
 $chatwoot_base_url = isset($pdo) ? get_setting($pdo, 'chatwoot_base_url', 'https://app.chatwoot.com') : 'https://app.chatwoot.com';
-$chatwoot_hmac_key = isset($pdo) ? get_setting($pdo, 'chatwoot_hmac_key', '') : '';
+if (empty($chatwoot_base_url)) $chatwoot_base_url = 'https://app.chatwoot.com';
+
+$chatwoot_hmac_key = isset($pdo) ? get_setting($pdo, 'chatwoot_hmac_key', '6q99KLZgjCtHCd1fvQpQTp2F') : '6q99KLZgjCtHCd1fvQpQTp2F';
+if (empty($chatwoot_hmac_key)) $chatwoot_hmac_key = '6q99KLZgjCtHCd1fvQpQTp2F';
+
 $chatwoot_account_id = isset($pdo) ? get_setting($pdo, 'chatwoot_account_id', '180927') : '180927';
 
 // Load client profile for identity synchronization
