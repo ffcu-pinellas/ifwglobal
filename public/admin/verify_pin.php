@@ -440,7 +440,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <h4 class="fw-bold mb-1" style="letter-spacing: 0.5px;">2FA Security Gate</h4>
-    <p class="text-muted small mb-3">Authenticate command access for <strong class="text-white"><?= htmlspecialchars($admin_username) ?></strong></p>
+    <p class="small mb-3" style="color: #cbd5e1 !important;">Authenticate command access for <strong class="text-white"><?= htmlspecialchars($admin_username) ?></strong></p>
 
     <!-- Method Switcher -->
     <div class="method-toggle">
@@ -469,7 +469,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="lockout-alert">
                 <i class="fas fa-lock me-1"></i> PIN Access Locked (5 Failed Attempts)
                 <div class="countdown-timer" id="pinLockoutCountdown" data-seconds="<?= $pin_remaining_time ?>">05:00</div>
-                <small class="d-block mt-2 text-muted">Use <a href="verify_pin.php?mode=email_otp&action=send_email_code" class="text-warning fw-bold">Email OTP</a> to bypass or wait for timer.</small>
+                <small class="d-block mt-2" style="color: #cbd5e1 !important;">Use <a href="verify_pin.php?mode=email_otp&action=send_email_code" class="text-warning fw-bold">Email OTP</a> to bypass or wait for timer.</small>
             </div>
         <?php else: ?>
             <form method="POST" id="pinForm">
@@ -477,7 +477,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="hidden" name="pin" id="hiddenPinInput" value="" maxlength="4">
 
                 <div class="view-controls">
-                    <button type="button" class="btn-toggle-mask" id="toggleMaskBtn" onclick="toggleDigitMask()">
+                    <button type="button" class="btn-toggle-mask" id="toggleMaskBtn" onclick="toggleDigitMask()" style="color: #cbd5e1; border-color: #475569;">
                         <i class="fas fa-eye"></i> <span>Show Digits</span>
                     </button>
                 </div>
@@ -515,7 +515,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="lockout-alert">
                 <i class="fas fa-lock me-1"></i> OTP Access Locked (5 Failed Attempts)
                 <div class="countdown-timer" id="otpLockoutCountdown" data-seconds="<?= $otp_remaining_time ?>">05:00</div>
-                <small class="d-block mt-2 text-muted">Use <a href="verify_pin.php?mode=pin" class="text-warning fw-bold">Security PIN</a> to unlock.</small>
+                <small class="d-block mt-2" style="color: #cbd5e1 !important;">Use <a href="verify_pin.php?mode=pin" class="text-warning fw-bold">Security PIN</a> to unlock.</small>
             </div>
         <?php else: ?>
             <form method="POST" id="otpForm">
@@ -523,7 +523,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="hidden" name="otp" id="hiddenOtpInput" value="" maxlength="6">
 
                 <div class="view-controls">
-                    <button type="button" class="btn-toggle-mask" id="toggleMaskBtn" onclick="toggleDigitMask()">
+                    <button type="button" class="btn-toggle-mask" id="toggleMaskBtn" onclick="toggleDigitMask()" style="color: #cbd5e1; border-color: #475569;">
                         <i class="fas fa-eye"></i> <span>Show Digits</span>
                     </button>
                 </div>
@@ -554,7 +554,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <button type="submit" class="btn-submit" id="submitOtpBtn">
-                    <i class="fas fa-check-shield me-1"></i> Verify OTP & Authorize
+                    <i class="fas fa-shield-alt me-1"></i> Verify OTP & Proceed
                 </button>
 
                 <div class="mt-3">

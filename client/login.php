@@ -128,9 +128,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     <style>
         body {
-            background-color: #0d0d0e;
-            background-image: radial-gradient(circle at 50% 30%, rgba(254, 204, 86, 0.08) 0%, rgba(13, 13, 14, 0.95) 70%);
-            color: #ffffff;
+            background-color: #0b0e14;
+            background-image: radial-gradient(circle at top right, rgba(254, 204, 86, 0.05), transparent 400px),
+                              radial-gradient(circle at bottom left, rgba(15, 23, 42, 0.8), transparent 500px);
+            color: #f8fafc;
             font-family: 'Montserrat', sans-serif;
             min-height: 100vh;
             display: flex;
@@ -140,13 +141,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             padding: 20px;
         }
         .login-card {
-            background: #181516;
-            border: 1px solid rgba(254, 204, 86, 0.3);
+            background: #151a23;
+            border: 1px solid rgba(254, 204, 86, 0.25);
             border-radius: 16px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(254, 204, 86, 0.08);
             width: 100%;
             max-width: 440px;
-            padding: 40px 35px;
+            padding: 40px 32px;
             position: relative;
             overflow: hidden;
         }
@@ -157,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #fecc56, #f3c14b, #fecc56);
+            background: linear-gradient(90deg, #fecc56, #f59e0b, #fecc56);
         }
         .brand-logo {
             max-width: 180px;
@@ -165,8 +166,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             margin-bottom: 15px;
         }
         .form-control {
-            background-color: #242021 !important;
-            border: 1px solid #3d3738 !important;
+            background-color: #0d1117 !important;
+            border: 1px solid #334155 !important;
             color: #ffffff !important;
             padding: 12px 15px;
             border-radius: 8px;
@@ -175,9 +176,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         .form-control:focus {
             border-color: #fecc56 !important;
             box-shadow: 0 0 8px rgba(254, 204, 86, 0.3) !important;
+            color: #ffffff !important;
+        }
+        .form-control::placeholder {
+            color: #94a3b8 !important;
+            opacity: 1 !important;
+        }
+        .form-control:-ms-input-placeholder {
+            color: #94a3b8 !important;
+        }
+        .form-control::-ms-input-placeholder {
+            color: #94a3b8 !important;
         }
         .btn-warning {
-            background: linear-gradient(90deg, #fecc56, #f3c14b);
+            background: linear-gradient(135deg, #fecc56, #f59e0b);
             border: none;
             color: #000000;
             font-weight: 700;
@@ -188,16 +200,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             transition: all 0.3s ease;
         }
         .btn-warning:hover {
-            background: linear-gradient(90deg, #e5b443, #d9a732);
+            background: linear-gradient(135deg, #e5b443, #d9a732);
             transform: translateY(-1px);
-            box-shadow: 0 5px 15px rgba(254, 204, 86, 0.2);
+            box-shadow: 0 5px 15px rgba(254, 204, 86, 0.25);
+            color: #000000;
         }
         .security-badge {
             background: rgba(254, 204, 86, 0.08);
             border: 1px solid rgba(254, 204, 86, 0.2);
             border-radius: 8px;
             padding: 10px;
-            font-size: 11px;
+            font-size: 11.5px;
             color: #fecc56;
             display: flex;
             align-items: center;
@@ -221,11 +234,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <img src="/media/logos/logo.svg" alt="IFW Global" class="brand-logo" onerror="this.onerror=null; this.src='/media/gallery/IFW-Podcast-Screen.jpg';">
         </a>
         <h5 class="text-warning font-weight-bold mt-2 mb-1" style="letter-spacing: 0.5px;">CLIENT CASE PORTAL</h5>
-        <p class="text-muted small mb-0">Secure Encrypted Case Management Gateway</p>
+        <p class="small mb-0" style="color: #cbd5e1 !important;">Secure Encrypted Case Management Gateway</p>
     </div>
     
     <?php if ($error): ?>
-        <div class="alert alert-danger border-0 font-weight-bold text-center py-2 mb-3" style="font-size: 13px;">
+        <div class="alert alert-danger border-0 font-weight-bold text-center py-2 mb-3" style="font-size: 13px; background: rgba(239,68,68,0.18); color: #fca5a5;">
             <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
         </div>
     <?php endif; ?>
@@ -250,7 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 
     <div class="text-center mt-4">
-        <small><a href="../index.php" class="text-muted text-decoration-none"><i class="fas fa-arrow-left me-1"></i> Return to Main Website</a></small>
+        <small><a href="../index.php" class="text-decoration-none font-weight-bold" style="color: #cbd5e1;"><i class="fas fa-arrow-left me-1"></i> Return to Main Website</a></small>
     </div>
 </div>
 

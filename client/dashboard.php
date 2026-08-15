@@ -193,10 +193,12 @@ if (in_array(strtolower($agent_role_display), ['agent', 'staff', 'admin', 'super
     $agent_role_display = 'Senior Lead Forensic Investigator';
 }
 if (empty($agent_email_display)) {
-    $agent_email_display = get_setting($pdo, 'contact_email', 'investigations@ifwglobal.com');
+    $set_email = get_setting($pdo, 'contact_email', '');
+    $agent_email_display = !empty($set_email) ? trim($set_email) : 'investigations@ifwglobal.com';
 }
 if (empty($agent_phone_display)) {
-    $agent_phone_display = get_setting($pdo, 'contact_phone', '+61 2 9238 2100');
+    $set_phone = get_setting($pdo, 'contact_phone', '');
+    $agent_phone_display = !empty($set_phone) ? trim($set_phone) : '+61 2 9238 2100';
 }
 
 $client['agent_id'] = $agent_user_id;
@@ -1106,19 +1108,15 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                     <span class="badge badge-warning text-dark font-weight-bold px-3 py-1 mb-3 d-inline-block"><?= htmlspecialchars($agent_role_display) ?></span>
                     
                     <div class="p-3 rounded mb-3 text-left border border-secondary" style="background: #11151e; font-size:12.5px;">
-                        <?php if (!empty($client['agent_email'])): ?>
-                            <div class="text-white mb-2 d-flex align-items-center" style="word-break: break-all;">
-                                <i class="fas fa-envelope mr-2 text-warning" style="width:18px;"></i>
-                                <a href="mailto:<?= htmlspecialchars($client['agent_email']) ?>" class="text-white text-decoration-none font-weight-bold"><?= htmlspecialchars($client['agent_email']) ?></a>
-                            </div>
-                        <?php endif; ?>
+                        <div class="text-white mb-2 d-flex align-items-center" style="word-break: break-all;">
+                            <i class="fas fa-envelope mr-2 text-warning" style="width:18px; flex-shrink:0;"></i>
+                            <a href="mailto:<?= htmlspecialchars($agent_email_display ?: 'investigations@ifwglobal.com') ?>" class="text-white text-decoration-none font-weight-bold" style="display:inline !important; color:#ffffff !important; font-size:12.5px;"><?= htmlspecialchars($agent_email_display ?: 'investigations@ifwglobal.com') ?></a>
+                        </div>
                         
-                        <?php if (!empty($client['agent_phone'])): ?>
-                            <div class="text-white d-flex align-items-center">
-                                <i class="fas fa-phone-alt mr-2 text-warning" style="width:18px;"></i>
-                                <a href="tel:<?= htmlspecialchars($client['agent_phone']) ?>" class="text-white text-decoration-none font-weight-bold"><?= htmlspecialchars($client['agent_phone']) ?></a>
-                            </div>
-                        <?php endif; ?>
+                        <div class="text-white d-flex align-items-center">
+                            <i class="fas fa-phone-alt mr-2 text-warning" style="width:18px; flex-shrink:0;"></i>
+                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', $agent_phone_display ?: '+61 2 9238 2100')) ?>" class="text-white text-decoration-none font-weight-bold portal-agent-phone" style="display:inline-block !important; visibility:visible !important; opacity:1 !important; color:#ffffff !important; font-size:12.5px;"><?= htmlspecialchars($agent_phone_display ?: '+61 2 9238 2100') ?></a>
+                        </div>
                     </div>
                     
                     <a href="chat.php" class="btn btn-warning btn-sm btn-block font-weight-bold text-dark shadow-sm py-2" style="background: linear-gradient(135deg, #fecc56, #f59e0b); border:none;">

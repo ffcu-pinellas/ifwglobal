@@ -151,7 +151,7 @@ if (isset($pdo)) {
 <head>
 <?php if (get_setting($pdo, 'display_phone_numbers', '1') == '0'): ?>
 <style>
-.alert__numbers, .phones__link, .phone-number, a[href^="tel:"] { display: none !important; visibility: hidden !important; }
+.alert__numbers, .phones__link, .phone-number, a[href^="tel:"]:not(.portal-agent-phone):not(.agent-phone) { display: none !important; visibility: hidden !important; }
 </style>
 <?php endif; ?>
     <meta charset="UTF-8">

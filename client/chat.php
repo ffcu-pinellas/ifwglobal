@@ -42,23 +42,23 @@ require_once $dir . '/includes/admin_sidebar.php';
 
 <div class="row">
     <?php if ($chat_provider === 'internal'): ?>
-        <!-- INTERNAL LIVE CHAT (FULL WIDTH) -->
-        <div class="col-12 mb-4">
-            <div class="card shadow-lg bg-dark border-secondary">
+        <!-- INTERNAL LIVE CHAT (FULL WIDTH & MOBILE OPTIMIZED) -->
+        <div class="col-12 mb-4 client-chat-col">
+            <div class="card shadow-lg bg-dark border-secondary client-chat-card">
                 <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3">
                     <div class="d-flex align-items-center">
                         <img src="<?= htmlspecialchars($portal_avatar_url ?? '/admin_assets/img/profile/blank.png') ?>" class="rounded-circle border border-warning mr-3 chat-avatar-me" width="38" height="38" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
                         <div>
                             <span class="text-warning font-weight-bold" style="font-size: 1.05rem;">Case Investigation & Legal Support Desk</span>
-                            <div class="text-muted small" style="font-size: 11px;"><span class="text-success mr-1">●</span> Active Live Channel &bull; Direct Case Line</div>
+                            <div class="text-white small" style="font-size: 11px; opacity: 0.9;"><span class="text-success mr-1">●</span> Active Live Channel &bull; Direct Case Line</div>
                         </div>
                     </div>
-                    <span class="badge badge-success px-3 py-2" style="font-size: 12px;"><i class="fas fa-lock mr-1"></i>256-Bit Encrypted</span>
+                    <span class="badge badge-success px-3 py-2 d-none d-sm-inline-block" style="font-size: 12px;"><i class="fas fa-lock mr-1"></i>256-Bit Encrypted</span>
                 </div>
-                <div class="card-body bg-dark text-white p-3 d-flex flex-column" style="min-height: 580px;">
+                <div class="card-body bg-dark text-white p-2 p-md-3 d-flex flex-column" style="min-height: 580px;">
                     <!-- Message Area -->
                     <div id="chat-messages" class="flex-grow-1 p-3 mb-3 border border-secondary rounded overflow-auto d-flex flex-column" style="min-height: 460px; height: 60vh; max-height: 720px; background-color: #0d0d0e; gap: 15px;">
-                        <div class="text-center p-4 text-muted"><i class="fas fa-spinner fa-spin text-warning"></i> Loading Secure Messaging Portal...</div>
+                        <div class="text-center p-4 text-white"><i class="fas fa-spinner fa-spin text-warning mr-2"></i> Loading Secure Messaging Portal...</div>
                     </div>
 
                     <!-- Selected File Preview -->
@@ -68,11 +68,11 @@ require_once $dir . '/includes/admin_sidebar.php';
                     </div>
 
                     <!-- Input Form -->
-                    <form id="chat-form" class="d-flex flex-wrap align-items-center mt-2" style="gap: 10px;" enctype="multipart/form-data">
+                    <form id="chat-form" class="d-flex flex-wrap align-items-center mt-2" style="gap: 8px;" enctype="multipart/form-data">
                         <input type="file" id="chat-file-input" name="chat_file" style="display:none;" onchange="handleChatFileSelect(this)">
                         <button type="button" class="btn btn-outline-warning text-warning px-3 flex-shrink-0" style="height: 48px;" onclick="document.getElementById('chat-file-input').click()" title="Send an image or document"><i class="fas fa-paperclip"></i></button>
-                        <input type="text" id="chat-input" class="form-control bg-dark text-white border-secondary p-3 flex-grow-1" placeholder="Type your message here..." autocomplete="off" required style="height: 48px; min-width: 180px;">
-                        <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4 shadow flex-shrink-0" style="height: 48px;">
+                        <input type="text" id="chat-input" class="form-control bg-dark text-white border-secondary p-3 flex-grow-1" placeholder="Type your message here..." autocomplete="off" required style="height: 48px; min-width: 160px; color: #ffffff !important;">
+                        <button type="submit" class="btn btn-warning font-weight-bold text-dark px-3 px-md-4 shadow flex-shrink-0" style="height: 48px;">
                             <i class="fas fa-paper-plane mr-1"></i> Send
                         </button>
                     </form>
@@ -103,6 +103,44 @@ require_once $dir . '/includes/admin_sidebar.php';
         .msg-sender-name { font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
         .msg-client .msg-sender-name { color: #5a4200; text-align: right; }
         .msg-admin .msg-sender-name { color: #fecc56; text-align: left; }
+
+        @media (max-width: 768px) {
+            .client-chat-col {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+                margin-left: -15px !important;
+                margin-right: -15px !important;
+                width: calc(100% + 30px) !important;
+                max-width: calc(100% + 30px) !important;
+            }
+            .client-chat-card {
+                border-radius: 0 !important;
+                border-left: none !important;
+                border-right: none !important;
+                margin-bottom: 0 !important;
+            }
+            .client-chat-iframe-body {
+                height: calc(100dvh - 145px) !important;
+                min-height: 480px !important;
+                max-height: none !important;
+            }
+            .client-chat-iframe {
+                width: 100% !important;
+                height: 100% !important;
+                min-height: 100% !important;
+            }
+            #chat-messages {
+                height: calc(100dvh - 240px) !important;
+                min-height: 380px !important;
+                max-height: none !important;
+                padding: 12px 10px !important;
+            }
+            .msg-bubble {
+                max-width: 88% !important;
+                font-size: 0.9rem !important;
+                padding: 10px 14px !important;
+            }
+        }
         </style>
 
         <script>
@@ -269,18 +307,18 @@ require_once $dir . '/includes/admin_sidebar.php';
         </script>
 
     <?php elseif ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
-        <!-- TAWK.TO FULL-HEIGHT PROFESSIONAL IN-PAGE IFRAME -->
-        <div class="col-12 mb-4">
-            <div class="card shadow-lg bg-dark border-secondary" style="border-radius: 12px; overflow: hidden;">
-                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3 px-4">
+        <!-- TAWK.TO FULL-HEIGHT PROFESSIONAL IN-PAGE IFRAME (MOBILE FULL SCREEN) -->
+        <div class="col-12 mb-4 client-chat-col">
+            <div class="card shadow-lg bg-dark border-secondary client-chat-card" style="border-radius: 12px; overflow: hidden;">
+                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3 px-3 px-md-4">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-headset fa-lg mr-3 text-warning"></i>
                         <div>
-                            <span class="d-block text-white" style="font-size: 15px;">Live 24/7 Global Case Support Desk</span>
-                            <small class="text-muted" style="font-size: 11px;">Direct encrypted communication channel with IFW global recovery response team</small>
+                            <span class="d-block text-white font-weight-bold" style="font-size: 15px;">Live 24/7 Global Case Support Desk</span>
+                            <small class="text-white small" style="font-size: 11px; opacity: 0.85;">Direct encrypted communication channel with IFW recovery team</small>
                         </div>
                     </div>
-                    <span class="badge badge-success px-3 py-2" style="font-size: 12px;"><i class="fas fa-circle mr-1" style="font-size:8px;"></i> Online</span>
+                    <span class="badge badge-success px-3 py-2 d-none d-sm-inline-block" style="font-size: 12px;"><i class="fas fa-circle mr-1" style="font-size:8px;"></i> Online</span>
                 </div>
                 
                 <?php
@@ -302,19 +340,20 @@ require_once $dir . '/includes/admin_sidebar.php';
                 $direct_chat_url = "https://tawk.to/chat/{$prop_id}/{$chat_hash}";
                 ?>
 
-                <div class="card-body bg-black p-0" style="height: 720px; min-height: 600px; position: relative;">
+                <div class="card-body bg-black p-0 client-chat-iframe-body" style="height: 720px; min-height: 600px; position: relative;">
                     <?php if (!empty($prop_id)): ?>
                         <iframe 
                             src="<?= htmlspecialchars($direct_chat_url) ?>" 
-                            style="width: 100%; height: 100%; min-height: 720px; border: none; display: block; background: #000;" 
+                            class="client-chat-iframe"
+                            style="width: 100%; height: 100%; min-height: 100%; border: none; display: block; background: #000;" 
                             allow="camera; microphone; autoplay; encrypted-media;"
                             title="IFW Live Support">
                         </iframe>
                     <?php else: ?>
-                        <div class="p-5 text-center text-muted">
+                        <div class="p-5 text-center text-white">
                             <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
-                            <h5>Live Chat Configuration Pending</h5>
-                            <p class="text-light">Tawk.to property ID is not configured in Admin Settings.</p>
+                            <h5 class="text-warning">Live Chat Configuration Pending</h5>
+                            <p class="text-white">Tawk.to property ID is not configured in Admin Settings.</p>
                         </div>
                     <?php endif; ?>
                 </div>

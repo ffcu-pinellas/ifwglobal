@@ -460,7 +460,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <h4 class="fw-bold mb-1" style="letter-spacing: 0.5px;">Client Verification</h4>
-    <p class="text-muted small mb-3">Welcome back, <strong class="text-white"><?= htmlspecialchars($c_name) ?></strong></p>
+    <p class="small mb-3" style="color: #cbd5e1 !important;">Welcome back, <strong class="text-white"><?= htmlspecialchars($c_name) ?></strong></p>
 
     <!-- Method Toggle Switcher -->
     <div class="method-toggle">
@@ -489,7 +489,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="lockout-alert">
                 <i class="fas fa-lock me-1"></i> Verification Locked (5 Failed Attempts)
                 <div class="countdown-timer" id="otpLockoutCountdown" data-seconds="<?= $otp_remaining_time ?>">05:00</div>
-                <small class="d-block mt-2 text-muted">Use <a href="verify_otp.php?mode=pin" class="text-warning fw-bold">Security PIN</a> to bypass or wait for timer.</small>
+                <small class="d-block mt-2" style="color: #cbd5e1 !important;">Use <a href="verify_otp.php?mode=pin" class="text-warning fw-bold">Security PIN</a> to bypass or wait for timer.</small>
             </div>
         <?php else: ?>
             <form method="POST" id="otpForm">
@@ -497,8 +497,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="hidden" name="otp" id="hiddenOtpInput" value="" maxlength="6">
 
                 <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-                    <small class="text-muted" style="font-size: 11px;">Enter 6-Digit Email Code</small>
-                    <button type="button" class="btn-mask-toggle" id="toggleMaskBtn" onclick="toggleDigitMask()">
+                    <small style="font-size: 11.5px; color: #cbd5e1 !important; font-weight: 500;">Enter 6-Digit Email Code</small>
+                    <button type="button" class="btn-mask-toggle" id="toggleMaskBtn" onclick="toggleDigitMask()" style="color: #cbd5e1; border-color: #475569;">
                         <i class="fas fa-eye"></i> <span>Show Digits</span>
                     </button>
                 </div>
@@ -544,7 +544,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="lockout-alert">
                 <i class="fas fa-lock me-1"></i> PIN Access Locked (5 Failed Attempts)
                 <div class="countdown-timer" id="pinLockoutCountdown" data-seconds="<?= $pin_remaining_time ?>">05:00</div>
-                <small class="d-block mt-2 text-muted">Use <a href="verify_otp.php?mode=email_otp" class="text-warning fw-bold">Email Code</a> to bypass or wait for timer.</small>
+                <small class="d-block mt-2" style="color: #cbd5e1 !important;">Use <a href="verify_otp.php?mode=email_otp" class="text-warning fw-bold">Email Code</a> to bypass or wait for timer.</small>
             </div>
         <?php else: ?>
             <form method="POST" id="pinForm">
@@ -552,8 +552,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="hidden" name="pin" id="hiddenPinInput" value="" maxlength="4">
 
                 <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-                    <small class="text-muted" style="font-size: 11px;">Enter 4-Digit Security PIN</small>
-                    <button type="button" class="btn-mask-toggle" id="toggleMaskBtn" onclick="toggleDigitMask()">
+                    <small style="font-size: 11.5px; color: #cbd5e1 !important; font-weight: 500;">Enter 4-Digit Security PIN</small>
+                    <button type="button" class="btn-mask-toggle" id="toggleMaskBtn" onclick="toggleDigitMask()" style="color: #cbd5e1; border-color: #475569;">
                         <i class="fas fa-eye"></i> <span>Show Digits</span>
                     </button>
                 </div>
@@ -589,7 +589,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <div class="mt-4">
-        <a href="login.php" class="text-muted small text-decoration-none">
+        <a href="login.php" class="text-decoration-none font-weight-bold" style="color: #cbd5e1;">
             <i class="fas fa-arrow-left me-1"></i> Return to Client Login
         </a>
     </div>
