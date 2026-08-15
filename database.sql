@@ -525,7 +525,7 @@ INSERT INTO `IFW_site_settings` (`setting_key`, `setting_value`) VALUES
 ('company_tagline', 'Intelligence-Led Cyber & Financial Investigations'),
 ('company_address', 'Level 5, 20 Bond Street, Sydney NSW 2000, Australia'),
 ('footer_about', 'IFW Global is a private intelligence and asset recovery firm operating globally to investigate cyber fraud, investment scams, and major multi-jurisdictional financial crimes.'),
-('chat_provider', 'chatwoot'),
+('chat_provider', 'internal'),
 ('chatwoot_website_token', 'uHR3DJPM8AZ2Lpo8tDdJ5tei'),
 ('chatwoot_base_url', 'https://app.chatwoot.com'),
 ('chatwoot_account_id', '180927'),

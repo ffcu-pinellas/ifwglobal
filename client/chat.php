@@ -21,7 +21,7 @@ $client_id = (int)$_SESSION['client_portal_id'];
 $_SESSION['frontend_client_id'] = $client_id;
 $_SESSION['role'] = 'client';
 
-$chat_provider = isset($pdo) ? get_setting($pdo, 'chat_provider', 'chatwoot') : 'chatwoot';
+$chat_provider = isset($pdo) ? get_setting($pdo, 'chat_provider', 'internal') : 'internal';
 $tawk_property = isset($pdo) ? get_setting($pdo, 'tawkto_property_id', '') : '';
 $chatwoot_token = isset($pdo) ? get_setting($pdo, 'chatwoot_website_token', 'uHR3DJPM8AZ2Lpo8tDdJ5tei') : 'uHR3DJPM8AZ2Lpo8tDdJ5tei';
 if (empty($chatwoot_token)) $chatwoot_token = 'uHR3DJPM8AZ2Lpo8tDdJ5tei';
@@ -46,10 +46,30 @@ $client_name = trim(($client_data['first_name'] ?? '') . ' ' . ($client_data['la
 $client_email = $client_data['email'] ?? '';
 $client_phone = $client_data['phone'] ?? '';
 $client_avatar = get_portal_avatar_url($pdo, 'client', $client_id);
+$portal_avatar_url = $client_avatar;
 if (!empty($client_avatar) && strpos($client_avatar, 'http') !== 0) {
     $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'ifwglobalrecovery.site';
     $client_avatar = $scheme . '://' . $host . $client_avatar;
+}
+
+// Resolve Assigned Investigator / Agent info
+$assigned_agent_id = (int)($client_data['assigned_agent_id'] ?? 0);
+$agent_name_display = 'IFW Forensic & Legal Team';
+$agent_role_display = 'Senior Forensic Director';
+$agent_avatar_display = '/media/logos/shield-gold.svg';
+
+if ($assigned_agent_id > 0) {
+    try {
+        $st_ag = $pdo->prepare("SELECT full_name, username, role, email, phone FROM IFW_users WHERE id = ?");
+        $st_ag->execute([$assigned_agent_id]);
+        $ag_row = $st_ag->fetch();
+        if ($ag_row) {
+            $agent_name_display = !empty($ag_row['full_name']) ? $ag_row['full_name'] : $ag_row['username'];
+            $agent_role_display = !empty($ag_row['role']) ? ucwords(str_replace('_', ' ', $ag_row['role'])) : 'Senior Investigator';
+            $agent_avatar_display = get_portal_avatar_url($pdo, 'admin', $assigned_agent_id);
+        }
+    } catch (Exception $e) {}
 }
 
 $chatwoot_user_identifier = 'client_' . $client_id;
@@ -188,10 +208,10 @@ require_once $dir . '/includes/admin_sidebar.php';
             <div class="card shadow-lg bg-dark border-secondary client-chat-card">
                 <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-2 px-3">
                     <div class="d-flex align-items-center">
-                        <img src="<?= htmlspecialchars($portal_avatar_url ?? '/admin_assets/img/profile/blank.png') ?>" class="rounded-circle border border-warning mr-2 chat-avatar-me" width="34" height="34" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
+                        <img src="<?= htmlspecialchars($agent_avatar_display) ?>" class="rounded-circle border border-warning mr-2 chat-avatar-me" width="38" height="38" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
                         <div>
-                            <span class="text-warning font-weight-bold" style="font-size: 0.95rem;">Case Investigation &amp; Legal Support</span>
-                            <div class="text-white small" style="font-size: 10.5px; opacity: 0.9;"><span class="text-success mr-1">●</span> Active Live Channel &bull; Direct Case Line</div>
+                            <span class="text-warning font-weight-bold" style="font-size: 0.95rem;"><?= htmlspecialchars($agent_name_display) ?></span>
+                            <div class="text-white small" style="font-size: 11px; opacity: 0.9;"><span class="text-success mr-1">●</span> <?= htmlspecialchars($agent_role_display) ?> &bull; Direct Case Line</div>
                         </div>
                     </div>
                     <span class="badge badge-success px-2 py-1 d-none d-sm-inline-block" style="font-size: 11px;"><i class="fas fa-lock mr-1"></i>256-Bit Encrypted</span>
