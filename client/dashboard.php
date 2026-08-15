@@ -85,43 +85,73 @@ if (!$client) {
 }
 $_SESSION['user_name'] = $client['first_name'] ?? 'Client';
 
-// Resolve assigned agent details safely
+// Resolve assigned agent details safely (from IFW_case_agents lead, client assigned_agent_id, or case attorney_id)
 $agent_name_display = '';
 $agent_role_display = 'Senior Investigator';
-$client['agent_email'] = '';
-$client['agent_phone'] = '';
+$agent_email_display = '';
+$agent_phone_display = '';
+$agent_user_id = 0;
 
-if (!empty($client['assigned_agent_id'])) {
+// 1. Try Lead Agent from IFW_case_agents for the active case
+if (!empty($latest_case['id'])) {
+    try {
+        $st_lead = $pdo->prepare("
+            SELECT u.*, ca.case_role 
+            FROM IFW_case_agents ca 
+            JOIN IFW_users u ON ca.user_id = u.id 
+            WHERE ca.case_id = ? 
+            ORDER BY (ca.case_role LIKE '%Lead%') DESC, ca.id ASC 
+            LIMIT 1
+        ");
+        $st_lead->execute([$latest_case['id']]);
+        $lead_ag = $st_lead->fetch();
+        if ($lead_ag) {
+            $agent_user_id = (int)$lead_ag['id'];
+            $agent_name_display = !empty($lead_ag['full_name']) ? $lead_ag['full_name'] : $lead_ag['username'];
+            $agent_role_display = !empty($lead_ag['case_role']) ? $lead_ag['case_role'] : (!empty($lead_ag['custom_role_title']) ? $lead_ag['custom_role_title'] : ucwords(str_replace('_', ' ', $lead_ag['role'] ?? 'Senior Investigator')));
+            $agent_email_display = trim($lead_ag['email'] ?? '');
+            $agent_phone_display = trim($lead_ag['phone'] ?? '');
+        }
+    } catch(Exception $e) {}
+}
+
+// 2. Try Client's Assigned Agent
+if (empty($agent_name_display) && !empty($client['assigned_agent_id'])) {
     try {
         $sa = $pdo->prepare("SELECT * FROM IFW_users WHERE id = ?");
         $sa->execute([$client['assigned_agent_id']]);
         $ag = $sa->fetch();
         if ($ag) {
+            $agent_user_id = (int)$ag['id'];
             $agent_name_display = !empty($ag['full_name']) ? $ag['full_name'] : $ag['username'];
-            $agent_role_display = !empty($ag['role']) ? ucwords(str_replace('_', ' ', $ag['role'])) : 'Senior Investigator';
-            $client['agent_email'] = $ag['email'] ?? '';
-            $client['agent_phone'] = $ag['phone'] ?? '';
+            $agent_role_display = !empty($ag['custom_role_title']) ? $ag['custom_role_title'] : (!empty($ag['role']) ? ucwords(str_replace('_', ' ', $ag['role'])) : 'Senior Investigator');
+            $agent_email_display = trim($ag['email'] ?? '');
+            $agent_phone_display = trim($ag['phone'] ?? '');
         }
     } catch(Exception $e) {}
 }
 
-// Fallback to case investigator if client has no assigned_agent_id
+// 3. Fallback to case attorney_id
 if (empty($agent_name_display)) {
     try {
         $sc = $pdo->prepare("SELECT ca.attorney_id, u.* FROM IFW_cases ca JOIN IFW_users u ON ca.attorney_id = u.id WHERE ca.client_id = ? AND ca.attorney_id IS NOT NULL LIMIT 1");
         $sc->execute([$client_id]);
         $agCase = $sc->fetch();
         if ($agCase) {
+            $agent_user_id = (int)$agCase['id'];
             $agent_name_display = !empty($agCase['full_name']) ? $agCase['full_name'] : $agCase['username'];
-            $agent_role_display = !empty($agCase['role']) ? ucwords(str_replace('_', ' ', $agCase['role'])) : 'Senior Investigator';
-            $client['agent_email'] = $agCase['email'] ?? '';
-            $client['agent_phone'] = $agCase['phone'] ?? '';
+            $agent_role_display = !empty($agCase['custom_role_title']) ? $agCase['custom_role_title'] : (!empty($agCase['role']) ? ucwords(str_replace('_', ' ', $agCase['role'])) : 'Senior Investigator');
+            $agent_email_display = trim($agCase['email'] ?? '');
+            $agent_phone_display = trim($agCase['phone'] ?? '');
         }
     } catch(Exception $e) {}
 }
 
+$client['agent_id'] = $agent_user_id;
 $client['agent_name'] = $agent_name_display;
 $client['agent_role'] = $agent_role_display;
+$client['agent_email'] = $agent_email_display;
+$client['agent_phone'] = $agent_phone_display;
 
 // KYC status from IFW_kyc_submissions
 $kyc_status = null; $kyc_record = null;
@@ -1040,17 +1070,34 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
 
         <!-- YOUR FORENSIC INVESTIGATOR -->
         <div class="portal-card mb-4 shadow-sm">
-            <div class="portal-card-header py-3 px-4 font-weight-bold">
-                <i class="fas fa-user-shield mr-2"></i>Your Forensic Investigator
+            <div class="portal-card-header py-3 px-4 font-weight-bold d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-user-shield mr-2"></i>Your Forensic Investigator</span>
+                <span class="badge badge-success px-2 py-1" style="font-size:10px;"><i class="fas fa-circle mr-1" style="font-size:7px;"></i> Active Lead</span>
             </div>
             <div class="card-body text-center py-4 px-3">
-                <div style="width:68px; height:68px; border-radius:50%; background: linear-gradient(135deg,#fecc56,#f0a500); display:flex; align-items:center; justify-content:center; margin:0 auto 12px; box-shadow:0 4px 15px rgba(254,204,86,0.35); border: 2px solid rgba(255,255,255,0.2);">
-                    <i class="fas fa-user-tie fa-2x text-dark"></i>
+                <div style="width:72px; height:72px; border-radius:50%; margin:0 auto 12px; position:relative;">
+                    <img src="<?= htmlspecialchars(get_portal_avatar_url($pdo, 'admin', $client['agent_id'] ?? 0)) ?>" class="rounded-circle border border-warning shadow-sm" width="72" height="72" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
                 </div>
                 <?php if ($agent_name_display): ?>
                     <h5 class="font-weight-bold mb-1 text-white" style="font-size: 1.15rem;"><?= htmlspecialchars($agent_name_display) ?></h5>
-                    <span class="badge badge-warning text-dark font-weight-bold px-3 py-1 mb-2"><?= htmlspecialchars($agent_role_display) ?></span>
-                    <p class="text-muted small mb-3"><i class="fas fa-envelope mr-1"></i><?= htmlspecialchars($client['agent_email'] ?? 'investigations@ifwglobal.com') ?></p>
+                    <span class="badge badge-warning text-dark font-weight-bold px-3 py-1 mb-3 d-inline-block"><?= htmlspecialchars($agent_role_display) ?></span>
+                    
+                    <div class="p-2 rounded mb-3 text-left border border-secondary" style="background: rgba(255,255,255,0.03); font-size:12px;">
+                        <?php if (!empty($client['agent_email'])): ?>
+                            <div class="text-light mb-1 d-flex align-items-center" style="word-break: break-all;">
+                                <i class="fas fa-envelope mr-2 text-warning" style="width:16px;"></i>
+                                <a href="mailto:<?= htmlspecialchars($client['agent_email']) ?>" class="text-light text-decoration-none font-weight-bold"><?= htmlspecialchars($client['agent_email']) ?></a>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if (!empty($client['agent_phone'])): ?>
+                            <div class="text-light d-flex align-items-center">
+                                <i class="fas fa-phone-alt mr-2 text-warning" style="width:16px;"></i>
+                                <a href="tel:<?= htmlspecialchars($client['agent_phone']) ?>" class="text-light text-decoration-none font-weight-bold"><?= htmlspecialchars($client['agent_phone']) ?></a>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    
                     <a href="chat.php" class="btn btn-warning btn-sm btn-block font-weight-bold text-dark shadow-sm py-2" style="background: linear-gradient(135deg, #fecc56, #f59e0b); border:none;">
                         <i class="fas fa-comments mr-1"></i> Direct Message Investigator
                     </a>

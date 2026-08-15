@@ -76,6 +76,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
             log_audit_action($pdo, $admin_id, 'UPDATE_STATUS', "Changed status of client #$client_id to '$status'");
             header("Location: client_manager.php?status_updated=1");
             exit;
+        } elseif ($_POST['action'] == 'impersonate_client' && !$is_agent) {
+            $client_id = (int)$_POST['client_id'];
+            $stmt = $pdo->prepare("SELECT * FROM IFW_clients WHERE id = ?");
+            $stmt->execute([$client_id]);
+            $target_client = $stmt->fetch();
+            
+            if ($target_client) {
+                // Save admin session state
+                $_SESSION['impersonator_admin'] = [
+                    'id' => $_SESSION['admin_id'],
+                    'username' => $_SESSION['admin_username'] ?? 'admin',
+                    'role' => $_SESSION['admin_role'] ?? 'admin',
+                    'full_name' => $_SESSION['admin_name'] ?? 'Super Admin'
+                ];
+                
+                // Set Client Portal session
+                $_SESSION['client_logged_in'] = true;
+                $_SESSION['client_portal_id'] = $target_client['id'];
+                $_SESSION['client_id'] = $target_client['id'];
+                $_SESSION['client_name'] = trim(($target_client['first_name'] ?? '') . ' ' . ($target_client['last_name'] ?? '')) ?: $target_client['email'];
+                $_SESSION['client_email'] = $target_client['email'];
+                $_SESSION['role'] = 'client';
+                $_SESSION['pin_verified'] = true;
+                $_SESSION['2fa_verified'] = true;
+                $_SESSION['is_impersonating'] = true;
+                
+                log_audit_action($pdo, $admin_id, 'IMPERSONATE_CLIENT', "Super Admin launched impersonation session for client #{$target_client['id']} ({$target_client['email']})");
+                
+                header("Location: ../client/dashboard.php");
+                exit;
+            }
         }
     } catch (Exception $e) {
         $error = "Error processing client update: " . $e->getMessage();
@@ -216,6 +247,14 @@ require_once '../includes/admin_sidebar.php';
                                     <?php endif; ?>
                                 </td>
                                 <td data-label="Actions">
+                                    <?php if (!$is_agent): ?>
+                                        <form method="POST" class="d-inline mr-1" onsubmit="return confirm('Launch secure impersonation session as <?= htmlspecialchars($client['first_name']) ?> <?= htmlspecialchars($client['last_name']) ?>?');">
+                                            <input type="hidden" name="action" value="impersonate_client">
+                                            <input type="hidden" name="client_id" value="<?= $client['id'] ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-success font-weight-bold" title="Log into Client Portal as this client"><i class="fas fa-user-secret mr-1"></i> Login As</button>
+                                        </form>
+                                    <?php endif; ?>
+
                                     <a href="chat.php?client_id=<?= $client['id'] ?>" class="btn btn-sm btn-info text-white mr-1" title="Direct Messaging Workspace"><i class="fas fa-comments"></i> Chat</a>
                                     
                                     <?php if (!$is_agent): ?>

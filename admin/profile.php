@@ -17,27 +17,35 @@ try {
 // Handle Profile Updates
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'update_profile') {
+        $username = trim($_POST['username'] ?? '');
         $full_name = trim($_POST['full_name'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
         $custom_title = trim($_POST['custom_role_title'] ?? '');
         
-        if (!empty($full_name) && !empty($email)) {
+        if (!empty($full_name) && !empty($email) && !empty($username)) {
             try {
-                $stmt = $pdo->prepare("UPDATE IFW_users SET full_name = ?, email = ?, phone = ?, custom_role_title = ? WHERE id = ?");
-                $stmt->execute([$full_name, $email, $phone, $custom_title, $admin_id]);
-                
-                $_SESSION['admin_username'] = $full_name;
-                
-                if (function_exists('log_audit_action')) {
-                    log_audit_action($pdo, $admin_id, 'Admin Profile Update', "Updated profile details (Name: {$full_name}, Title: {$custom_title})", 'admin');
+                // Check if username is taken by another user
+                $chk_u = $pdo->prepare("SELECT id FROM IFW_users WHERE username = ? AND id != ?");
+                $chk_u->execute([$username, $admin_id]);
+                if ($chk_u->fetch()) {
+                    $err = "Username '{$username}' is already taken by another account.";
+                } else {
+                    $stmt = $pdo->prepare("UPDATE IFW_users SET username = ?, full_name = ?, email = ?, phone = ?, custom_role_title = ? WHERE id = ?");
+                    $stmt->execute([$username, $full_name, $email, $phone, $custom_title, $admin_id]);
+                    
+                    $_SESSION['admin_username'] = $username;
+                    
+                    if (function_exists('log_audit_action')) {
+                        log_audit_action($pdo, $admin_id, 'Admin Profile Update', "Updated profile details (Username: {$username}, Name: {$full_name}, Title: {$custom_title})", 'admin');
+                    }
+                    $msg = "Profile details and login username updated successfully.";
                 }
-                $msg = "Profile details updated successfully.";
             } catch (Exception $e) {
-                $err = "Could not update profile. Email may already be in use.";
+                $err = "Could not update profile. Email or username may already be in use.";
             }
         } else {
-            $err = "Full name and email are required.";
+            $err = "Username, full name, and email are required.";
         }
     } elseif ($_POST['action'] === 'update_password') {
         $old_pwd = $_POST['old_password'] ?? '';
@@ -124,13 +132,13 @@ require_once '../includes/admin_sidebar.php';
                     
                     <div class="row mb-3">
                         <div class="col-md-6 form-group">
-                            <label class="small text-muted font-weight-bold text-uppercase">Username (System)</label>
-                            <input type="text" class="form-control bg-secondary text-white border-0" value="<?= htmlspecialchars($user['username'] ?? '') ?>" disabled>
-                            <small class="text-muted">Unique login identifier (read-only)</small>
+                            <label class="small text-warning font-weight-bold text-uppercase">Login Username <span class="text-warning">*</span></label>
+                            <input type="text" name="username" class="form-control bg-dark text-white border-secondary font-weight-bold" value="<?= htmlspecialchars($user['username'] ?? '') ?>" required pattern="[A-Za-z0-9_\-\.]{3,50}" placeholder="e.g. admin">
+                            <small class="text-muted">Unique login identifier (change anytime)</small>
                         </div>
                         <div class="col-md-6 form-group">
                             <label class="small text-warning font-weight-bold text-uppercase">System Access Role</label>
-                            <input type="text" class="form-control bg-secondary text-white border-0" value="<?= htmlspecialchars(ucwords(str_replace('_', ' ', $user['role'] ?? 'Agent'))) ?>" disabled>
+                            <input type="text" class="form-control bg-secondary text-white border-0 font-weight-bold" value="<?= htmlspecialchars(ucwords(str_replace('_', ' ', $user['role'] ?? 'Agent'))) ?>" disabled>
                             <small class="text-muted">Permission authority level</small>
                         </div>
                     </div>

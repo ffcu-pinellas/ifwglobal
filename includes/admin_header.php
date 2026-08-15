@@ -500,6 +500,24 @@ if (isset($pdo)) {
     </style>
 </head>
 <body>
+    <?php if (!empty($_SESSION['impersonator_admin'])): ?>
+        <div id="impersonationBanner" style="position: sticky; top: 0; z-index: 999999; background: linear-gradient(90deg, #92400e 0%, #d97706 50%, #92400e 100%); color: #000; padding: 10px 20px; font-weight: 700; font-size: 13.5px; box-shadow: 0 4px 18px rgba(0,0,0,0.6); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 2px solid #fecc56;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="background: #000; color: #fecc56; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+                    <i class="fas fa-user-secret"></i>
+                </div>
+                <span>
+                    <strong style="color: #000; letter-spacing: 0.5px;">ADMIN IMPERSONATION MODE:</strong>
+                    <span style="color: #1a1a1a;">Currently viewing as <strong><?= htmlspecialchars($_SESSION['client_name'] ?? $_SESSION['admin_username'] ?? 'User') ?></strong></span>
+                </span>
+            </div>
+            <div>
+                <a href="<?= BASE_URL ?>/admin/exit_impersonate.php" class="btn btn-dark btn-sm font-weight-bold shadow" style="background: #000; color: #fecc56; border: 1.5px solid #fecc56; padding: 5px 16px; border-radius: 6px; text-decoration: none; font-size: 12.5px; transition: all 0.2s ease;">
+                    <i class="fas fa-sign-out-alt mr-1"></i> Exit Impersonation & Return to Admin
+                </a>
+            </div>
+        </div>
+    <?php endif; ?>
     <div id="wrapper" class="bg-dark">
         <div id="mobileSidebarBackdrop" onclick="document.getElementById('wrapper').classList.remove('toggled');" aria-hidden="true"></div>
         <!-- WRAPPER HEADER -->

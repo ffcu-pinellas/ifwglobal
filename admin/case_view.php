@@ -34,7 +34,7 @@ if (!in_array($_SESSION['admin_role'], ['super_admin', 'superadmin', 'admin']) &
     }
 }
 
-// Ensure columns in IFW_cases
+// Ensure columns in IFW_cases & multi-agent case assignment table
 try {
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS lifecycle_stage INT DEFAULT 1");
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS progress_percent INT DEFAULT 20");
@@ -53,6 +53,33 @@ try {
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS flow_node_4 VARCHAR(255) NULL");
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_lifecycle_bar INT DEFAULT 1");
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_flow_visualizer INT DEFAULT 1");
+
+    // Multi-Staff Case Assignment & Capability Matrix
+    $pdo->exec("CREATE TABLE IF NOT EXISTS IFW_case_agents (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        case_id INT NOT NULL,
+        user_id INT NOT NULL,
+        case_role VARCHAR(100) DEFAULT 'Senior Investigator',
+        can_view_financials TINYINT(1) DEFAULT 1,
+        can_edit_timeline TINYINT(1) DEFAULT 1,
+        can_chat_client TINYINT(1) DEFAULT 1,
+        can_manage_wallets TINYINT(1) DEFAULT 1,
+        can_upload_docs TINYINT(1) DEFAULT 1,
+        assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_case_user (case_id, user_id),
+        KEY idx_case (case_id),
+        KEY idx_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // Auto-seed attorney_id if not yet in IFW_case_agents
+    if (!empty($case['attorney_id'])) {
+        $chk_ca = $pdo->prepare("SELECT id FROM IFW_case_agents WHERE case_id = ? AND user_id = ?");
+        $chk_ca->execute([$case_id, $case['attorney_id']]);
+        if (!$chk_ca->fetch()) {
+            $pdo->prepare("INSERT INTO IFW_case_agents (case_id, user_id, case_role, can_view_financials, can_edit_timeline, can_chat_client, can_manage_wallets, can_upload_docs) VALUES (?, ?, 'Lead Investigator', 1, 1, 1, 1, 1)")
+                ->execute([$case_id, $case['attorney_id']]);
+        }
+    }
 } catch(Exception $e) {}
 
 // Handle Case Lifecycle & Details Update
@@ -347,6 +374,110 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $success = "Jurisdiction action pin removed.";
 }
 
+// Handle Assign Staff Member to Case
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'assign_case_agent') {
+    $staff_user_id = (int)($_POST['staff_user_id'] ?? 0);
+    $case_role = trim($_POST['case_role'] ?? 'Senior Investigator');
+    $can_fin = isset($_POST['can_view_financials']) ? 1 : 0;
+    $can_time = isset($_POST['can_edit_timeline']) ? 1 : 0;
+    $can_chat = isset($_POST['can_chat_client']) ? 1 : 0;
+    $can_wal = isset($_POST['can_manage_wallets']) ? 1 : 0;
+    $can_doc = isset($_POST['can_upload_docs']) ? 1 : 0;
+
+    if ($staff_user_id > 0) {
+        try {
+            $stmt = $pdo->prepare("
+                INSERT INTO IFW_case_agents (case_id, user_id, case_role, can_view_financials, can_edit_timeline, can_chat_client, can_manage_wallets, can_upload_docs)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE 
+                    case_role = VALUES(case_role),
+                    can_view_financials = VALUES(can_view_financials),
+                    can_edit_timeline = VALUES(can_edit_timeline),
+                    can_chat_client = VALUES(can_chat_client),
+                    can_manage_wallets = VALUES(can_manage_wallets),
+                    can_upload_docs = VALUES(can_upload_docs)
+            ");
+            $stmt->execute([$case_id, $staff_user_id, $case_role, $can_fin, $can_time, $can_chat, $can_wal, $can_doc]);
+            
+            // If designated as Lead Investigator, also update attorney_id on the case
+            if (stripos($case_role, 'Lead') !== false) {
+                $pdo->prepare("UPDATE IFW_cases SET attorney_id = ? WHERE id = ?")->execute([$staff_user_id, $case_id]);
+            }
+            
+            if (function_exists('log_audit_action')) {
+                log_audit_action($pdo, $_SESSION['admin_id'], 'Case Team Update', "Assigned staff member ID #{$staff_user_id} ({$case_role}) to Case #{$case['case_number']}", 'admin');
+            }
+            $success = "Staff member successfully assigned to case with designated permissions.";
+        } catch (Exception $e) {
+            $error = "Failed to assign staff member: " . $e->getMessage();
+        }
+    } else {
+        $error = "Please select a valid staff member.";
+    }
+}
+
+// Handle Update Case Staff Permissions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_case_agent_perms') {
+    $assignment_id = (int)($_POST['assignment_id'] ?? 0);
+    $case_role = trim($_POST['case_role'] ?? 'Senior Investigator');
+    $can_fin = isset($_POST['can_view_financials']) ? 1 : 0;
+    $can_time = isset($_POST['can_edit_timeline']) ? 1 : 0;
+    $can_chat = isset($_POST['can_chat_client']) ? 1 : 0;
+    $can_wal = isset($_POST['can_manage_wallets']) ? 1 : 0;
+    $can_doc = isset($_POST['can_upload_docs']) ? 1 : 0;
+
+    try {
+        $stmt = $pdo->prepare("UPDATE IFW_case_agents SET case_role = ?, can_view_financials = ?, can_edit_timeline = ?, can_chat_client = ?, can_manage_wallets = ?, can_upload_docs = ? WHERE id = ? AND case_id = ?");
+        $stmt->execute([$case_role, $can_fin, $can_time, $can_chat, $can_wal, $can_doc, $assignment_id, $case_id]);
+        
+        // If lead, sync attorney_id
+        if (stripos($case_role, 'Lead') !== false) {
+            $u_stmt = $pdo->prepare("SELECT user_id FROM IFW_case_agents WHERE id = ?");
+            $u_stmt->execute([$assignment_id]);
+            $uid = $u_stmt->fetchColumn();
+            if ($uid) {
+                $pdo->prepare("UPDATE IFW_cases SET attorney_id = ? WHERE id = ?")->execute([$uid, $case_id]);
+            }
+        }
+        
+        $success = "Assigned staff role and case permissions updated successfully.";
+    } catch (Exception $e) {
+        $error = "Error updating staff case permissions.";
+    }
+}
+
+// Handle Remove Staff from Case
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'remove_case_agent') {
+    $assignment_id = (int)($_POST['assignment_id'] ?? 0);
+    try {
+        $stmt = $pdo->prepare("DELETE FROM IFW_case_agents WHERE id = ? AND case_id = ?");
+        $stmt->execute([$assignment_id, $case_id]);
+        $success = "Staff member removed from this case assignment.";
+    } catch (Exception $e) {
+        $error = "Error removing staff member.";
+    }
+}
+
+// Fetch Assigned Investigation Team for Case
+$assigned_team = [];
+try {
+    $teamStmt = $pdo->prepare("
+        SELECT ca.*, u.username, u.full_name, u.email, u.phone, u.role as user_role, u.custom_role_title, u.avatar_url 
+        FROM IFW_case_agents ca 
+        JOIN IFW_users u ON ca.user_id = u.id 
+        WHERE ca.case_id = ? 
+        ORDER BY (ca.case_role LIKE '%Lead%') DESC, ca.assigned_at ASC
+    ");
+    $teamStmt->execute([$case_id]);
+    $assigned_team = $teamStmt->fetchAll();
+} catch(Exception $e) {}
+
+// Fetch All Available Staff Members for Assignment Dropdown
+$all_staff = [];
+try {
+    $all_staff = $pdo->query("SELECT id, username, full_name, email, role, custom_role_title FROM IFW_users ORDER BY username ASC")->fetchAll();
+} catch(Exception $e) {}
+
 // Fetch Notes
 $notesStmt = $pdo->prepare("
     SELECT n.*, u.username 
@@ -580,6 +711,83 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- ASSIGNED CASE INVESTIGATION TEAM & PERMISSIONS MATRIX -->
+        <div class="card border-0 shadow-sm mb-4 bg-dark text-white border-secondary">
+            <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3">
+                <span><i class="fas fa-users-cog mr-2"></i>Assigned Case Investigation Team (<?= count($assigned_team) ?>)</span>
+                <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark" data-toggle="modal" data-target="#assignStaffModal">
+                    <i class="fas fa-user-plus mr-1"></i> Assign Staff Member
+                </button>
+            </div>
+            <div class="card-body bg-dark text-white p-3">
+                <?php if (empty($assigned_team)): ?>
+                    <p class="text-muted text-center py-3 mb-0">No staff members currently assigned to this case.</p>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0" style="font-size:13px;">
+                            <thead style="background:#161a23; color:#fecc56;">
+                                <tr>
+                                    <th>Staff Member</th>
+                                    <th>Assigned Role</th>
+                                    <th>Granular Case Capabilities</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($assigned_team as $tm): ?>
+                                <tr>
+                                    <td class="align-middle">
+                                        <div class="d-flex align-items-center">
+                                            <img src="<?= htmlspecialchars(get_portal_avatar_url($pdo, 'admin', $tm['user_id'])) ?>" class="rounded-circle border border-warning mr-2" width="36" height="36" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
+                                            <div>
+                                                <strong class="text-white"><?= htmlspecialchars($tm['full_name'] ?: $tm['username']) ?></strong>
+                                                <div class="small text-muted"><?= htmlspecialchars($tm['email'] ?? '') ?></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle">
+                                        <span class="badge badge-warning text-dark font-weight-bold"><?= htmlspecialchars($tm['case_role']) ?></span>
+                                    </td>
+                                    <td class="align-middle">
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <span class="badge badge-<?= $tm['can_view_financials'] ? 'success' : 'secondary' ?> mr-1 mb-1" title="Financials & Settlements">
+                                                <i class="fas fa-<?= $tm['can_view_financials'] ? 'check' : 'times' ?> mr-1"></i> Financials
+                                            </span>
+                                            <span class="badge badge-<?= $tm['can_edit_timeline'] ? 'success' : 'secondary' ?> mr-1 mb-1" title="Timeline Milestones">
+                                                <i class="fas fa-<?= $tm['can_edit_timeline'] ? 'check' : 'times' ?> mr-1"></i> Timeline
+                                            </span>
+                                            <span class="badge badge-<?= $tm['can_chat_client'] ? 'success' : 'secondary' ?> mr-1 mb-1" title="Direct Client Chat">
+                                                <i class="fas fa-<?= $tm['can_chat_client'] ? 'check' : 'times' ?> mr-1"></i> Live Chat
+                                            </span>
+                                            <span class="badge badge-<?= $tm['can_manage_wallets'] ? 'success' : 'secondary' ?> mr-1 mb-1" title="Blockchain Tracker">
+                                                <i class="fas fa-<?= $tm['can_manage_wallets'] ? 'check' : 'times' ?> mr-1"></i> Blockchain
+                                            </span>
+                                            <span class="badge badge-<?= $tm['can_upload_docs'] ? 'success' : 'secondary' ?> mb-1" title="Vault Documents">
+                                                <i class="fas fa-<?= $tm['can_upload_docs'] ? 'check' : 'times' ?> mr-1"></i> Vault Docs
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle text-right text-nowrap">
+                                        <button type="button" class="btn btn-sm btn-outline-warning mr-1" data-toggle="modal" data-target="#editStaffPermsModal_<?= $tm['id'] ?>" title="Edit Permissions">
+                                            <i class="fas fa-shield-alt mr-1"></i> Permissions
+                                        </button>
+                                        <form method="POST" class="d-inline" onsubmit="return confirm('Remove this staff member from this case?');">
+                                            <input type="hidden" name="action" value="remove_case_agent">
+                                            <input type="hidden" name="assignment_id" value="<?= $tm['id'] ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove from Case">
+                                                <i class="fas fa-user-minus"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -1525,6 +1733,140 @@ function previewCustomDoc() {
     </div>
   </div>
 </div>
+
+<!-- ==========================================
+     MODAL 4: ASSIGN STAFF MEMBER TO CASE
+     ========================================== -->
+<div class="modal fade" id="assignStaffModal" tabindex="-1">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content bg-dark text-white border-warning">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-warning font-weight-bold"><i class="fas fa-user-plus mr-2"></i>Assign Staff Member to Case</h5>
+        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+      </div>
+      <form method="POST">
+        <input type="hidden" name="action" value="assign_case_agent">
+        <div class="modal-body p-4">
+            <div class="form-group mb-3">
+                <label class="small text-warning font-weight-bold text-uppercase">Select Staff Member <span class="text-danger">*</span></label>
+                <select name="staff_user_id" class="form-control bg-black text-white border-secondary" required>
+                    <option value="">-- Choose Staff User --</option>
+                    <?php foreach ($all_staff as $st): ?>
+                        <option value="<?= $st['id'] ?>">
+                            <?= htmlspecialchars($st['full_name'] ?: $st['username']) ?> (<?= htmlspecialchars($st['role']) ?><?= !empty($st['custom_role_title']) ? ' - ' . htmlspecialchars($st['custom_role_title']) : '' ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="small text-warning font-weight-bold text-uppercase">Case Role / Title <span class="text-danger">*</span></label>
+                <input type="text" name="case_role" class="form-control bg-black text-white border-secondary font-weight-bold" list="caseRolesList" required value="Senior Investigator" placeholder="e.g. Lead Investigator, Forensic Analyst">
+                <datalist id="caseRolesList">
+                    <option value="Lead Investigator">
+                    <option value="Senior Forensic Analyst">
+                    <option value="Legal Counsel & Barrister">
+                    <option value="Blockchain Intelligence Officer">
+                    <option value="Case Manager">
+                    <option value="Asset Recovery Specialist">
+                    <option value="Junior Auditor">
+                </datalist>
+            </div>
+
+            <label class="small text-warning font-weight-bold text-uppercase mb-2">Granular Capabilities for This Case</label>
+            <div class="p-3 rounded border border-secondary" style="background:#161a23;">
+                <div class="custom-control custom-checkbox mb-2">
+                    <input type="checkbox" class="custom-control-input" id="new_can_fin" name="can_view_financials" value="1" checked>
+                    <label class="custom-control-label text-light" for="new_can_fin"><strong>Financials & Settlement Desk</strong> (Invoices & Payouts)</label>
+                </div>
+                <div class="custom-control custom-checkbox mb-2">
+                    <input type="checkbox" class="custom-control-input" id="new_can_time" name="can_edit_timeline" value="1" checked>
+                    <label class="custom-control-label text-light" for="new_can_time"><strong>Timeline Milestones</strong> (Create/Edit updates)</label>
+                </div>
+                <div class="custom-control custom-checkbox mb-2">
+                    <input type="checkbox" class="custom-control-input" id="new_can_chat" name="can_chat_client" value="1" checked>
+                    <label class="custom-control-label text-light" for="new_can_chat"><strong>Live Client Chat</strong> (Send/Receive direct messages)</label>
+                </div>
+                <div class="custom-control custom-checkbox mb-2">
+                    <input type="checkbox" class="custom-control-input" id="new_can_wal" name="can_manage_wallets" value="1" checked>
+                    <label class="custom-control-label text-light" for="new_can_wal"><strong>Blockchain Radar</strong> (Tracked wallets & TX hops)</label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="new_can_doc" name="can_upload_docs" value="1" checked>
+                    <label class="custom-control-label text-light" for="new_can_doc"><strong>Vault Document Access</strong> (Upload & review evidence)</label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4">Assign Staff Member</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODALS: EDIT STAFF CASE PERMISSIONS
+     ========================================== -->
+<?php foreach ($assigned_team as $tm): ?>
+<div class="modal fade" id="editStaffPermsModal_<?= $tm['id'] ?>" tabindex="-1">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content bg-dark text-white border-warning">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-warning font-weight-bold"><i class="fas fa-shield-alt mr-2"></i>Edit Case Permissions</h5>
+        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+      </div>
+      <form method="POST">
+        <input type="hidden" name="action" value="update_case_agent_perms">
+        <input type="hidden" name="assignment_id" value="<?= $tm['id'] ?>">
+        <div class="modal-body p-4">
+            <div class="d-flex align-items-center mb-3 p-2 rounded bg-black border border-secondary">
+                <img src="<?= htmlspecialchars(get_portal_avatar_url($pdo, 'admin', $tm['user_id'])) ?>" class="rounded-circle border border-warning mr-2" width="40" height="40" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
+                <div>
+                    <h6 class="text-white font-weight-bold mb-0"><?= htmlspecialchars($tm['full_name'] ?: $tm['username']) ?></h6>
+                    <small class="text-muted"><?= htmlspecialchars($tm['email'] ?? '') ?></small>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="small text-warning font-weight-bold text-uppercase">Case Role / Title <span class="text-danger">*</span></label>
+                <input type="text" name="case_role" class="form-control bg-black text-white border-secondary font-weight-bold" required value="<?= htmlspecialchars($tm['case_role']) ?>">
+            </div>
+
+            <label class="small text-warning font-weight-bold text-uppercase mb-2">Granular Capabilities for This Case</label>
+            <div class="p-3 rounded border border-secondary" style="background:#161a23;">
+                <div class="custom-control custom-checkbox mb-2">
+                    <input type="checkbox" class="custom-control-input" id="edit_can_fin_<?= $tm['id'] ?>" name="can_view_financials" value="1" <?= $tm['can_view_financials'] ? 'checked' : '' ?>>
+                    <label class="custom-control-label text-light" for="edit_can_fin_<?= $tm['id'] ?>"><strong>Financials & Settlement Desk</strong></label>
+                </div>
+                <div class="custom-control custom-checkbox mb-2">
+                    <input type="checkbox" class="custom-control-input" id="edit_can_time_<?= $tm['id'] ?>" name="can_edit_timeline" value="1" <?= $tm['can_edit_timeline'] ? 'checked' : '' ?>>
+                    <label class="custom-control-label text-light" for="edit_can_time_<?= $tm['id'] ?>"><strong>Timeline Milestones</strong></label>
+                </div>
+                <div class="custom-control custom-checkbox mb-2">
+                    <input type="checkbox" class="custom-control-input" id="edit_can_chat_<?= $tm['id'] ?>" name="can_chat_client" value="1" <?= $tm['can_chat_client'] ? 'checked' : '' ?>>
+                    <label class="custom-control-label text-light" for="edit_can_chat_<?= $tm['id'] ?>"><strong>Live Client Chat</strong></label>
+                </div>
+                <div class="custom-control custom-checkbox mb-2">
+                    <input type="checkbox" class="custom-control-input" id="edit_can_wal_<?= $tm['id'] ?>" name="can_manage_wallets" value="1" <?= $tm['can_manage_wallets'] ? 'checked' : '' ?>>
+                    <label class="custom-control-label text-light" for="edit_can_wal_<?= $tm['id'] ?>"><strong>Blockchain Radar</strong></label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="edit_can_doc_<?= $tm['id'] ?>" name="can_upload_docs" value="1" <?= $tm['can_upload_docs'] ? 'checked' : '' ?>>
+                    <label class="custom-control-label text-light" for="edit_can_doc_<?= $tm['id'] ?>"><strong>Vault Document Access</strong></label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4">Update Permissions</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<?php endforeach; ?>
 
 <?php require_once '../includes/admin_footer.php'; ?>
 

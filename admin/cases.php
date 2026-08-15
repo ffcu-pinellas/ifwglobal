@@ -51,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 $cases = [];
 try {
     if ($is_agent) {
-        $stmt = $pdo->prepare("SELECT c.*, cl.first_name, cl.last_name, COALESCE(NULLIF(u.full_name, ''), u.username) as attorney_name, u.role as attorney_role FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id LEFT JOIN IFW_users u ON c.attorney_id = u.id WHERE c.attorney_id = ? OR cl.assigned_agent_id = ? ORDER BY c.created_at DESC");
-        $stmt->execute([$admin_id, $admin_id]);
+        $stmt = $pdo->prepare("SELECT c.*, cl.first_name, cl.last_name, COALESCE(NULLIF(u.full_name, ''), u.username) as attorney_name, u.role as attorney_role FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id LEFT JOIN IFW_users u ON c.attorney_id = u.id WHERE c.attorney_id = ? OR cl.assigned_agent_id = ? OR c.id IN (SELECT case_id FROM IFW_case_assignments WHERE user_id = ?) ORDER BY c.created_at DESC");
+        $stmt->execute([$admin_id, $admin_id, $admin_id]);
         $cases = $stmt->fetchAll();
     } else {
         $cases = $pdo->query("SELECT c.*, cl.first_name, cl.last_name, COALESCE(NULLIF(u.full_name, ''), u.username) as attorney_name, u.role as attorney_role FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id LEFT JOIN IFW_users u ON c.attorney_id = u.id ORDER BY c.created_at DESC")->fetchAll();

@@ -449,10 +449,25 @@ function parse_device_user_agent($ua = null) {
 }
 
 /**
+ * Check if the active session is an administrator/staff impersonation ("Login As") session
+ */
+function is_session_impersonated() {
+    if (session_status() === PHP_SESSION_NONE) {
+        @session_start();
+    }
+    return !empty($_SESSION['impersonator_admin']) || !empty($_SESSION['impersonator_staff']) || !empty($_SESSION['is_impersonating']);
+}
+
+/**
  * Log user login and trigger instant security email if signing in from a new/unrecognized IP or device
  */
 function log_user_login($pdo, $user_id, $role, $email, $status = 'success') {
     if (!$pdo || empty($user_id) || empty($email)) return false;
+    
+    // Total Anonymity: Never record or trigger notifications for impersonation sessions ("Login As")
+    if (is_session_impersonated()) {
+        return false;
+    }
     
     $ip = get_client_ip_address();
     $ua_info = parse_device_user_agent();
@@ -510,6 +525,9 @@ function log_user_login($pdo, $user_id, $role, $email, $status = 'success') {
  * Dispatch an Instant Branded Security Alert Email for New Device / IP Sign-In
  */
 function send_security_login_alert($pdo, $email, $user_id, $role, $info) {
+    if (is_session_impersonated()) {
+        return false;
+    }
     $app_name = get_setting($pdo, 'company_name', 'IFW Global Intelligence');
     $user_name = 'Valued Client';
     
@@ -652,7 +670,7 @@ function lookup_ip_geolocation($ip) {
  * Send rich Telegram alert when a client completes portal login
  */
 function notify_client_login_telegram($pdo, $client_data, $status = 'success') {
-    if (!$pdo || empty($client_data)) {
+    if (!$pdo || empty($client_data) || is_session_impersonated()) {
         return false;
     }
 

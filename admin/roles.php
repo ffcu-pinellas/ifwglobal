@@ -99,6 +99,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } catch (PDOException $e) {
             $error = "Error updating user permissions.";
         }
+    } elseif ($action === 'impersonate_staff') {
+        $staff_id = (int)$_POST['staff_id'];
+        $stmt = $pdo->prepare("SELECT * FROM IFW_users WHERE id = ?");
+        $stmt->execute([$staff_id]);
+        $target_staff = $stmt->fetch();
+        
+        if ($target_staff && $target_staff['id'] !== $_SESSION['admin_id']) {
+            $_SESSION['impersonator_admin'] = [
+                'id' => $_SESSION['admin_id'],
+                'username' => $_SESSION['admin_username'] ?? 'admin',
+                'role' => $_SESSION['admin_role'] ?? 'superadmin',
+                'full_name' => $_SESSION['admin_name'] ?? 'Super Admin'
+            ];
+            
+            $_SESSION['admin_id'] = $target_staff['id'];
+            $_SESSION['admin_username'] = $target_staff['username'];
+            $_SESSION['admin_role'] = $target_staff['role'];
+            $_SESSION['admin_name'] = $target_staff['full_name'] ?: $target_staff['username'];
+            $_SESSION['admin_logged_in'] = true;
+            $_SESSION['admin_pin_verified'] = true;
+            $_SESSION['is_impersonating'] = true;
+            
+            log_audit_action($pdo, $_SESSION['admin_id'], 'IMPERSONATE_STAFF', "Super Admin launched impersonation session for staff #{$target_staff['id']} ({$target_staff['username']})");
+            
+            header("Location: dashboard.php");
+            exit;
+        }
     }
 }
 
@@ -192,6 +219,11 @@ require_once '../includes/admin_sidebar.php';
                             <td><?= date('M j, Y', strtotime($staff['created_at'])) ?></td>
                             <td>
                                 <?php if ($staff['id'] !== $_SESSION['admin_id']): ?>
+                                    <form method="POST" class="d-inline mr-1" onsubmit="return confirm('Launch secure impersonation session as staff member <?= htmlspecialchars($staff['username']) ?>?');">
+                                        <input type="hidden" name="action" value="impersonate_staff">
+                                        <input type="hidden" name="staff_id" value="<?= $staff['id'] ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-success font-weight-bold" title="Log in as this staff member"><i class="fas fa-user-secret mr-1"></i> Login As</button>
+                                    </form>
                                     <button class="btn btn-sm btn-outline-warning mr-1" data-toggle="modal" data-target="#editRoleModal<?= $staff['id'] ?>" title="Edit Role"><i class="fas fa-edit"></i> Edit Role</button>
                                     <button class="btn btn-sm btn-outline-info mr-1" data-toggle="modal" data-target="#customPermsModal<?= $staff['id'] ?>" title="Custom Permissions"><i class="fas fa-key"></i></button>
                                     <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove staff member <?= htmlspecialchars($staff['username']) ?>?');">
