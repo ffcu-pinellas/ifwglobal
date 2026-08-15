@@ -371,11 +371,11 @@ require_once '../includes/admin_sidebar.php';
                     <?php else: ?>
                         <?php foreach($invoices as $inv): ?>
                             <tr>
-                                <td><strong class="text-white"><?= htmlspecialchars($inv['invoice_number']) ?></strong></td>
-                                <td><?= htmlspecialchars($inv['first_name'] . ' ' . $inv['last_name']) ?></td>
-                                <td><?= date('M j, Y', strtotime($inv['issue_date'])) ?></td>
-                                <td><strong class="text-success"><?= htmlspecialchars($inv['currency'] ?? 'USD') ?> <?= number_format($inv['total_amount'], 2) ?></strong></td>
-                                <td>
+                                <td data-label="Invoice #"><strong class="text-white"><?= htmlspecialchars($inv['invoice_number']) ?></strong></td>
+                                <td data-label="Client"><?= htmlspecialchars($inv['first_name'] . ' ' . $inv['last_name']) ?></td>
+                                <td data-label="Issue Date"><?= date('M j, Y', strtotime($inv['issue_date'])) ?></td>
+                                <td data-label="Amount"><strong class="text-success"><?= htmlspecialchars($inv['currency'] ?? 'USD') ?> <?= number_format($inv['total_amount'], 2) ?></strong></td>
+                                <td data-label="Status">
                                     <form method="POST">
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="invoice_id" value="<?= $inv['id'] ?>">
@@ -387,7 +387,7 @@ require_once '../includes/admin_sidebar.php';
                                         </select>
                                     </form>
                                 </td>
-                                <td>
+                                <td data-label="Actions">
                                     <a href="invoice_print.php?id=<?= $inv['id'] ?>" target="_blank" class="btn btn-sm btn-info mr-1" title="Print / PDF"><i class="fas fa-print"></i></a>
                                     <?php if (!$is_agent): ?>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Delete this invoice?');">
@@ -432,15 +432,15 @@ require_once '../includes/admin_sidebar.php';
                     <?php else: ?>
                         <?php foreach($payments as $p): ?>
                             <tr>
-                                <td><?= date('M j, Y h:i A', strtotime($p['created_at'])) ?></td>
-                                <td><?= htmlspecialchars($p['first_name'] . ' ' . $p['last_name']) ?></td>
-                                <td><strong><?= htmlspecialchars($p['invoice_number']) ?></strong></td>
-                                <td><strong class="text-success"><?= htmlspecialchars($p['currency'] ?? 'USD') ?> <?= number_format($p['amount'], 2) ?></strong></td>
-                                <td>
+                                <td data-label="Date Submitted"><?= date('M j, Y h:i A', strtotime($p['created_at'])) ?></td>
+                                <td data-label="Client"><?= htmlspecialchars($p['first_name'] . ' ' . $p['last_name']) ?></td>
+                                <td data-label="Invoice"><strong><?= htmlspecialchars($p['invoice_number']) ?></strong></td>
+                                <td data-label="Amount Paid"><strong class="text-success"><?= htmlspecialchars($p['currency'] ?? 'USD') ?> <?= number_format($p['amount'], 2) ?></strong></td>
+                                <td data-label="Method & Ref">
                                     <span class="badge badge-info"><?= htmlspecialchars($p['payment_method']) ?></span><br>
                                     <small class="text-muted">Ref: <?= htmlspecialchars($p['reference_number']) ?></small>
                                 </td>
-                                <td>
+                                <td data-label="Proof File">
                                     <?php if (!empty($p['proof_file'])): ?>
                                         <a href="<?= BASE_URL . '/' . htmlspecialchars($p['proof_file']) ?>" target="_blank" class="btn btn-sm btn-outline-warning">
                                             <i class="fas fa-file-download mr-1"></i> View Receipt
@@ -449,7 +449,7 @@ require_once '../includes/admin_sidebar.php';
                                         <span class="text-muted">No file uploaded</span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     <?php if ($p['status'] === 'Pending'): ?>
                                         <span class="badge badge-warning text-dark"><i class="fas fa-clock mr-1"></i> Pending Review</span>
                                     <?php elseif ($p['status'] === 'Confirmed'): ?>
@@ -458,7 +458,7 @@ require_once '../includes/admin_sidebar.php';
                                         <span class="badge badge-danger"><i class="fas fa-times-circle mr-1"></i> Rejected</span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td data-label="Actions">
                                     <?php if ($p['status'] === 'Pending'): ?>
                                         <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark" onclick="openReviewModal(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['first_name'] . ' ' . $p['last_name'])) ?>', '<?= htmlspecialchars(addslashes($p['invoice_number'])) ?>', '<?= htmlspecialchars(addslashes($p['currency'] ?? 'USD')) ?> <?= number_format($p['amount'], 2) ?>')">
                                             <i class="fas fa-gavel mr-1"></i> Review

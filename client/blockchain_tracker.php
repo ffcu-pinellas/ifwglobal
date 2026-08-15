@@ -290,28 +290,28 @@ require_once '../includes/admin_sidebar.php';
                     <?php else: ?>
                         <?php foreach ($transactions as $tx): ?>
                         <tr>
-                            <td class="py-3 px-3 text-muted" style="white-space:nowrap;">
+                            <td data-label="Date / Time (UTC)" class="py-3 px-3 text-muted">
                                 <?= date('M j, Y, H:i', strtotime($tx['tx_time'] ?: $tx['created_at'])) ?>
                             </td>
-                            <td class="py-3 font-monospace">
+                            <td data-label="Transaction Hash (TXID)" class="py-3 font-monospace">
                                 <a href="https://tronscan.org/#/transaction/<?= urlencode($tx['tx_hash']) ?>" target="_blank" class="text-warning font-weight-bold text-decoration-none">
                                     <?= substr($tx['tx_hash'], 0, 10) ?>...<?= substr($tx['tx_hash'], -8) ?> <i class="fas fa-external-link-alt small ml-1"></i>
                                 </a>
                             </td>
-                            <td class="py-3">
+                            <td data-label="Type" class="py-3">
                                 <?php if ($tx['direction'] === 'IN'): ?>
                                     <span class="badge badge-success px-2 py-1"><i class="fas fa-arrow-down mr-1"></i>INFLOW</span>
                                 <?php else: ?>
                                     <span class="badge badge-danger px-2 py-1"><i class="fas fa-arrow-up mr-1"></i>OUTFLOW</span>
                                 <?php endif; ?>
                             </td>
-                            <td class="py-3 text-right font-weight-bold text-white">
+                            <td data-label="Amount" class="py-3 font-weight-bold text-white">
                                 <?= number_format((float)$tx['amount'], 2) ?> <small class="text-warning"><?= htmlspecialchars($tx['crypto_type']) ?></small>
                             </td>
-                            <td class="py-3 text-light font-monospace small" style="max-width:220px; word-break:break-all;">
+                            <td data-label="Source & Destination" class="py-3 text-light font-monospace small" style="max-width:220px; word-break:break-all;">
                                 <?= htmlspecialchars(substr($tx['from_address'] ?? 'Origin', 0, 10)) ?>... &rarr; <?= htmlspecialchars(substr($tx['to_address'] ?? 'Destination', 0, 12)) ?>...
                             </td>
-                            <td class="py-3 px-3">
+                            <td data-label="Forensic Classification" class="py-3 px-3">
                                 <span class="badge badge-dark border border-secondary text-warning px-2 py-1">
                                     <i class="fas fa-flag mr-1"></i><?= htmlspecialchars($tx['flag_tag'] ?: 'Flagged Forensic Hop') ?>
                                 </span>

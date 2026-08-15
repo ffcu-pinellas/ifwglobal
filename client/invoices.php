@@ -321,11 +321,11 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
             Certified legal invoices, retainer instalments, banking details, and cryptographic payment proofs.
         </p>
     </div>
-    <div class="col-md-5 text-md-right mt-3 mt-md-0">
-        <a href="/client/dashboard.php" class="btn btn-sm btn-outline-secondary text-light font-weight-bold mr-2">
+    <div class="col-md-5 text-md-right mt-3 mt-md-0 d-flex flex-wrap justify-content-md-end gap-2">
+        <a href="/client/dashboard.php" class="btn btn-sm btn-outline-secondary text-light font-weight-bold mr-2 mb-2 mb-sm-0">
             <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
         </a>
-        <button type="button" class="btn btn-sm btn-warning text-dark font-weight-bold" onclick="openQuickPayment()" <?= empty($first_unpaid_invoice) ? 'disabled title="No outstanding balance"' : '' ?>>
+        <button type="button" class="btn btn-sm btn-warning text-dark font-weight-bold" onclick="openQuickPayment()">
             <i class="fas fa-credit-card mr-1"></i> Make a Payment
         </button>
     </div>
@@ -806,11 +806,15 @@ function openQuickPayment() {
         <?= (float)$fu_pref ?>
     );
     <?php else: ?>
-    if (typeof toastr !== 'undefined') {
-        toastr.info('You have no outstanding invoices at this time.');
-    } else {
-        alert('You have no outstanding invoices at this time.');
-    }
+    showPayModal(
+        0,
+        'Direct Retainer / Settlement Wire',
+        0.00,
+        <?= json_encode($client_currency) ?>,
+        <?= json_encode($global_payment_info) ?>,
+        <?= json_encode($client_currency) ?>,
+        0.00
+    );
     <?php endif; ?>
 }
 </script>

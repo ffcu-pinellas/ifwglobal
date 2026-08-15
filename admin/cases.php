@@ -120,12 +120,12 @@ require_once '../includes/admin_sidebar.php';
                     <?php else: ?>
                         <?php foreach($cases as $case): ?>
                             <tr>
-                                <td><span class="badge badge-secondary"><?= htmlspecialchars($case['case_number']) ?></span></td>
-                                <td><strong class="text-white"><?= htmlspecialchars($case['title']) ?></strong></td>
-                                <td><?= htmlspecialchars($case['first_name'] . ' ' . $case['last_name']) ?></td>
-                                <td><?= htmlspecialchars($case['attorney_name'] ?: 'Unassigned') ?></td>
-                                <td><?= $case['court_date'] ? date('M j, Y H:i', strtotime($case['court_date'])) : '<em class="text-muted">None</em>' ?></td>
-                                <td>
+                                <td data-label="Case Ref"><span class="badge badge-secondary"><?= htmlspecialchars($case['case_number']) ?></span></td>
+                                <td data-label="Title"><strong class="text-white"><?= htmlspecialchars($case['title']) ?></strong></td>
+                                <td data-label="Client"><?= htmlspecialchars($case['first_name'] . ' ' . $case['last_name']) ?></td>
+                                <td data-label="Officer/Attorney"><?= htmlspecialchars($case['attorney_name'] ?: 'Unassigned') ?></td>
+                                <td data-label="Due / Court Date"><?= $case['court_date'] ? date('M j, Y H:i', strtotime($case['court_date'])) : '<em class="text-muted">None</em>' ?></td>
+                                <td data-label="Status">
                                     <?php $cur_st = normalize_case_status($case['status'] ?? 'Received'); ?>
                                     <form method="POST">
                                         <input type="hidden" name="action" value="update_status">
@@ -137,7 +137,7 @@ require_once '../includes/admin_sidebar.php';
                                         </select>
                                     </form>
                                 </td>
-                                <td>
+                                <td data-label="Actions">
                                     <a href="case_view.php?id=<?= $case['id'] ?>" class="btn btn-sm btn-info text-white" title="Manage Case & Timeline"><i class="fas fa-folder-open mr-1"></i> View & Manage</a>
                                     <?php if (!$is_agent): ?>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Delete this case?');">

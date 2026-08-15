@@ -44,16 +44,25 @@
             $('[data-toggle="tooltip"]').tooltip({ container: 'body' });
         }
 
-        // Universal form submit & button loading spinners
-        $(document).on('submit', 'form', function() {
+        // Universal form submit & button loading spinners (Instant Visual Feedback & Double-Click Prevention)
+        $(document).on('submit', 'form', function(e) {
             var $form = $(this);
-            if ($form.data('no-spinner')) return;
+            if ($form.data('no-spinner') || $form.hasClass('no-spinner')) return;
             var $btn = $form.find('button[type="submit"], input[type="submit"]').first();
-            if ($btn.length && !$btn.prop('disabled') && !$btn.data('spinner-active')) {
+            if ($btn.length && !$btn.data('spinner-active')) {
                 $btn.data('spinner-active', true);
                 $btn.data('original-html', $btn.html());
-                $btn.prop('disabled', true);
-                $btn.html('<span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span> Processing...');
+                $btn.css({'pointer-events': 'none', 'opacity': '0.85', 'cursor': 'wait'});
+                $btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Processing...');
+
+                // Auto-recover after 15s in case of page freeze or validation stall
+                setTimeout(function() {
+                    if ($btn.data('spinner-active')) {
+                        $btn.css({'pointer-events': 'auto', 'opacity': '1', 'cursor': 'default'});
+                        $btn.html($btn.data('original-html'));
+                        $btn.data('spinner-active', false);
+                    }
+                }, 15000);
             }
         });
 
@@ -62,14 +71,16 @@
             if ($btn.data('spinner-active') || $btn.hasClass('no-spinner') || $btn.attr('data-toggle')) return;
             if ($btn.closest('form').length && $btn.attr('type') === 'submit') return;
             if ($btn.is('[data-dismiss], [data-toggle], .dropdown-toggle, #privacyShieldToggle')) return;
+            
             $btn.data('spinner-active', true);
             $btn.data('original-html', $btn.html());
             var origDisabled = $btn.prop('disabled');
-            $btn.prop('disabled', true);
-            $btn.html('<span class="spinner-border spinner-border-sm mr-1"></span> Processing...');
+            $btn.css({'pointer-events': 'none', 'opacity': '0.85'});
+            $btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Processing...');
+            
             setTimeout(function() {
                 if ($btn.data('spinner-active')) {
-                    $btn.prop('disabled', origDisabled);
+                    $btn.prop('disabled', origDisabled).css({'pointer-events': 'auto', 'opacity': '1'});
                     $btn.html($btn.data('original-html'));
                     $btn.data('spinner-active', false);
                 }

@@ -595,8 +595,8 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
 <?php if ($pwd_msg): ?><div class="alert alert-success border-0 shadow-sm"><i class="fas fa-check-circle mr-2"></i><?= $pwd_msg ?></div><?php endif; ?>
 <?php if ($pwd_error): ?><div class="alert alert-danger border-0 shadow-sm"><i class="fas fa-exclamation-triangle mr-2"></i><?= $pwd_error ?></div><?php endif; ?>
 
-<!-- STAT CARDS (EXECUTIVE INSTITUTIONAL DESIGN - HIDDEN ON MOBILE) -->
-<div class="row mb-4 d-none d-md-flex">
+<!-- STAT CARDS (EXECUTIVE INSTITUTIONAL DESIGN - FULLY RESPONSIVE) -->
+<div class="row mb-4">
     <div class="col-6 col-lg-3 mb-3">
         <div class="stat-card-luxury">
             <div class="stat-top">

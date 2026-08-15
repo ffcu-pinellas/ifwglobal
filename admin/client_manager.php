@@ -174,13 +174,13 @@ require_once '../includes/admin_sidebar.php';
                     <?php else: ?>
                         <?php foreach ($clients as $client): ?>
                             <tr>
-                                <td><span class="badge badge-secondary font-weight-bold">Ref #<?= $client['id'] ?></span></td>
-                                <td><strong class="text-white"><?= htmlspecialchars($client['first_name'] . ' ' . $client['last_name']) ?></strong></td>
-                                <td>
+                                <td data-label="Ref ID"><span class="badge badge-secondary font-weight-bold">Ref #<?= $client['id'] ?></span></td>
+                                <td data-label="Client Name"><strong class="text-white"><?= htmlspecialchars($client['first_name'] . ' ' . $client['last_name']) ?></strong></td>
+                                <td data-label="Contact Information">
                                     <a href="mailto:<?= htmlspecialchars($client['email']) ?>" class="text-warning font-weight-bold"><?= htmlspecialchars($client['email']) ?></a><br>
                                     <small class="text-muted"><i class="fas fa-phone mr-1"></i><?= htmlspecialchars($client['phone'] ?: 'N/A') ?></small>
                                 </td>
-                                <td>
+                                <td data-label="Investigation Status">
                                     <form method="POST" class="d-flex align-items-center">
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="client_id" value="<?= $client['id'] ?>">
@@ -191,7 +191,7 @@ require_once '../includes/admin_sidebar.php';
                                         </select>
                                     </form>
                                 </td>
-                                <td>
+                                <td data-label="Assigned Officer">
                                     <?php if ($is_agent): ?>
                                         <span class="badge badge-secondary"><?= htmlspecialchars($client['agent_name'] ?? 'Unassigned') ?></span>
                                     <?php else: ?>
@@ -208,14 +208,14 @@ require_once '../includes/admin_sidebar.php';
                                         </form>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td data-label="Portal Status">
                                     <?php if (!empty($client['password_hash'])): ?>
                                         <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Active</span>
                                     <?php else: ?>
                                         <span class="badge badge-warning text-dark px-2 py-1">No Access</span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td data-label="Actions">
                                     <a href="chat.php?client_id=<?= $client['id'] ?>" class="btn btn-sm btn-info text-white mr-1" title="Direct Messaging Workspace"><i class="fas fa-comments"></i> Chat</a>
                                     
                                     <?php if (!$is_agent): ?>

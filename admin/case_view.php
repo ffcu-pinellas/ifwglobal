@@ -402,10 +402,10 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
 
 <!-- PAGE CONTENT -->
 <div class="row">
-    <div class="col-12 mb-4 d-flex justify-content-between align-items-center">
+    <div class="col-12 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h4 class="text-dark"><?php echo htmlspecialchars($case['title']); ?></h4>
-            <p class="text-muted mb-0">Case #<?php echo htmlspecialchars($case['case_number']); ?> &middot; Client: <?php echo htmlspecialchars($case['first_name'] . ' ' . $case['last_name']); ?></p>
+            <h4 class="text-white font-weight-bold mb-1"><?php echo htmlspecialchars($case['title']); ?></h4>
+            <p class="text-muted mb-0">Case #<?php echo htmlspecialchars($case['case_number']); ?> &middot; Client: <strong class="text-warning"><?php echo htmlspecialchars($case['first_name'] . ' ' . $case['last_name']); ?></strong></p>
         </div>
         <div>
             <?php
@@ -413,7 +413,7 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
             if ($case['status'] === 'active') $badge = 'success';
             if ($case['status'] === 'pending') $badge = 'warning';
             ?>
-            <span class="badge badge-<?php echo $badge; ?> p-2 px-3" style="font-size: 14px;">
+            <span class="badge badge-<?php echo $badge; ?> p-2 px-3 font-weight-bold" style="font-size: 13px;">
                 <?php echo ucfirst($case['status']); ?>
             </span>
         </div>
