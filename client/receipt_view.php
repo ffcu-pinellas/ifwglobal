@@ -88,10 +88,16 @@ if (!$payment) {
 }
 
 $app_name = get_setting($pdo, 'app_name', 'IFW Global');
-$company_address = get_setting($pdo, 'company_address', 'Level 14, 167 Macquarie St, Sydney NSW 2000, Australia');
-$contact_email = get_setting($pdo, 'contact_email', 'inquiries@ifwglobal.com');
-$contact_phone = get_setting($pdo, 'contact_phone', '+61 2 9233 4567');
-$logo_url = get_setting($pdo, 'logo_url', '/admin_assets/img/logo/logo.svg');
+$company_address = get_setting($pdo, 'company_address', 'Level 5, 20 Bond Street, Sydney NSW 2000, Australia');
+$contact_email = get_setting($pdo, 'contact_email', 'investigations@ifwglobalrecovery.site');
+if (empty($contact_email) || strpos($contact_email, 'ifwglobal.com') !== false) {
+    $contact_email = 'investigations@ifwglobalrecovery.site';
+}
+$contact_phone = get_setting($pdo, 'contact_phone', '(216) 230-1837');
+if (empty($contact_phone) || strpos($contact_phone, '8000') !== false || strpos($contact_phone, '9233') !== false || strpos($contact_phone, '9238') !== false) {
+    $contact_phone = '(216) 230-1837';
+}
+$logo_url = '/media/logos/logo-dark.svg';
 
 $receipt_num = 'REC-' . str_pad($payment['id'] ?? $invoice_id, 6, '0', STR_PAD_LEFT);
 $inv_ref = !empty($payment['invoice_number']) ? $payment['invoice_number'] : '#INV-' . str_pad($payment['invoice_id'] ?? $invoice_id, 5, '0', STR_PAD_LEFT);
@@ -203,7 +209,7 @@ $verification_hash = hash('sha256', $receipt_num . '|' . $amount_paid . '|' . $p
             <div class="col-sm-7">
                 <div class="mb-2">
                     <a href="/client/dashboard.php">
-                        <img src="/media/logos/logo.svg" alt="IFW Global" style="height: 48px; max-width: 220px; object-fit: contain; margin-bottom: 6px;" onerror="this.onerror=null; this.src='/media/gallery/IFW-Podcast-Screen.jpg';">
+                        <img src="/media/logos/logo-dark.svg" alt="IFW Global" style="height: 48px; max-width: 220px; object-fit: contain; margin-bottom: 6px;" onerror="this.onerror=null; this.src='/media/gallery/IFW-Podcast-Screen.jpg';">
                     </a>
                     <div style="color:#d97706; font-weight:800; font-size:10.5px; letter-spacing:1.2px; text-transform:uppercase;">Private Intelligence &bull; Asset Recovery</div>
                 </div>

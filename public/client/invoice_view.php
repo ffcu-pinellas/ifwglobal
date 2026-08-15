@@ -160,10 +160,19 @@ $global_payment = get_setting($pdo, 'bank_details', '');
 $global_instructions = get_setting($pdo, 'payment_instructions', '');
 $payment_info = !empty($invoice['payment_info']) ? $invoice['payment_info'] : ($global_payment ?: $global_instructions);
 $app_name = get_setting($pdo, 'app_name', 'IFW Global');
-$company_address = get_setting($pdo, 'company_address', '');
-$company_email   = get_setting($pdo, 'contact_email', '');
-$company_phone   = get_setting($pdo, 'contact_phone', '');
+$company_address = get_setting($pdo, 'company_address', 'Level 5, 20 Bond Street, Sydney NSW 2000, Australia');
+$company_email   = get_setting($pdo, 'contact_email', 'investigations@ifwglobalrecovery.site');
+if (empty($company_email) || strpos($company_email, 'ifwglobal.com') !== false) {
+    $company_email = 'investigations@ifwglobalrecovery.site';
+}
+$company_phone   = get_setting($pdo, 'contact_phone', '(216) 230-1837');
+if (empty($company_phone) || strpos($company_phone, '8000') !== false || strpos($company_phone, '9238') !== false || strpos($company_phone, '9233') !== false) {
+    $company_phone = '(216) 230-1837';
+}
 $logo_url        = get_brand_logo_url($pdo);
+if (empty($logo_url) || strpos($logo_url, 'blank') !== false) {
+    $logo_url = '/media/logos/logo-dark.svg';
+}
 
 $is_print = isset($_GET['print']);
 

@@ -28,6 +28,116 @@ require_once $dir . '/includes/admin_header.php';
 require_once $dir . '/includes/admin_sidebar.php';
 ?>
 
+<style>
+/* Global Portal Chat Layout */
+.chat-container {
+    display: flex; flex-direction: column; height: 650px;
+}
+#chat-messages {
+    flex-grow: 1; overflow-y: auto; padding: 20px; background-color: #0a0a0a; border-radius: 8px;
+    display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth;
+}
+.msg-bubble {
+    max-width: 75%; padding: 12px 18px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; position: relative; word-wrap: break-word;
+}
+.msg-client {
+    background: #fecc56; color: #000; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 500;
+}
+.msg-admin {
+    background: #222226; color: #f8f9fa; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #444; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.msg-time { font-size: 0.72rem; margin-top: 5px; opacity: 0.75; }
+.msg-client .msg-time { text-align: right; color: #333; }
+.msg-admin .msg-time { text-align: left; color: #aaa; }
+.msg-sender-name { font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
+.msg-client .msg-sender-name { color: #5a4200; text-align: right; }
+.msg-admin .msg-sender-name { color: #fecc56; text-align: left; }
+
+@media (max-width: 768px) {
+    #wrapper-content, .container-fluid, .content-wrapper, #content {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        padding-top: 52px !important;
+        padding-bottom: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+    .chat-top-row {
+        padding: 8px 10px !important;
+        margin: 0 !important;
+        background: rgba(17, 21, 30, 0.98) !important;
+        border-bottom: 1px solid rgba(254, 204, 86, 0.25) !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+    }
+    .chat-top-row h3 {
+        font-size: 1.05rem !important;
+        margin-bottom: 0 !important;
+    }
+    .client-chat-row {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+    }
+    .client-chat-col {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        flex: 0 0 100vw !important;
+    }
+    .client-chat-card {
+        border-radius: 0 !important;
+        border: none !important;
+        margin: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        background: #000000 !important;
+        box-shadow: none !important;
+    }
+    .client-chat-card .card-header {
+        padding: 8px 12px !important;
+        border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+    }
+    .client-chat-iframe-body {
+        height: calc(100dvh - 110px) !important;
+        min-height: calc(100vh - 110px) !important;
+        max-height: none !important;
+        width: 100vw !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .client-chat-iframe {
+        width: 100vw !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    #chat-messages {
+        height: calc(100dvh - 180px) !important;
+        min-height: 360px !important;
+        max-height: none !important;
+        padding: 10px 8px !important;
+        border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+    }
+    .msg-bubble {
+        max-width: 90% !important;
+        font-size: 0.88rem !important;
+        padding: 8px 12px !important;
+    }
+}
+</style>
+
 <div class="row chat-top-row">
     <div class="col-12 mb-2 d-flex align-items-center justify-content-between">
         <div>
@@ -40,7 +150,7 @@ require_once $dir . '/includes/admin_sidebar.php';
     </div>
 </div>
 
-<div class="row m-0">
+<div class="row m-0 client-chat-row">
     <?php if ($chat_provider === 'internal'): ?>
         <!-- INTERNAL LIVE CHAT (FULL WIDTH & MOBILE OPTIMIZED) -->
         <div class="col-12 p-0 mb-0 client-chat-col">
@@ -79,90 +189,6 @@ require_once $dir . '/includes/admin_sidebar.php';
                 </div>
             </div>
         </div>
-
-        <style>
-        .chat-container {
-            display: flex; flex-direction: column; height: 650px;
-        }
-        #chat-messages {
-            flex-grow: 1; overflow-y: auto; padding: 20px; background-color: #0a0a0a; border-radius: 8px;
-            display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth;
-        }
-        .msg-bubble {
-            max-width: 75%; padding: 12px 18px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; position: relative; word-wrap: break-word;
-        }
-        .msg-client {
-            background: #fecc56; color: #000; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 500;
-        }
-        .msg-admin {
-            background: #222226; color: #f8f9fa; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #444; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-        .msg-time { font-size: 0.72rem; margin-top: 5px; opacity: 0.75; }
-        .msg-client .msg-time { text-align: right; color: #333; }
-        .msg-admin .msg-time { text-align: left; color: #aaa; }
-        .msg-sender-name { font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
-        .msg-client .msg-sender-name { color: #5a4200; text-align: right; }
-        .msg-admin .msg-sender-name { color: #fecc56; text-align: left; }
-
-        @media (max-width: 768px) {
-            #wrapper-content {
-                padding-left: 0 !important;
-                padding-right: 0 !important;
-                padding-top: 58px !important;
-            }
-            .chat-top-row {
-                padding: 6px 10px !important;
-                margin-left: 0 !important;
-                margin-right: 0 !important;
-                margin-bottom: 2px !important;
-            }
-            .chat-top-row h3 {
-                font-size: 1.05rem !important;
-            }
-            .client-chat-col {
-                padding: 0 !important;
-                margin: 0 !important;
-                width: 100vw !important;
-                max-width: 100vw !important;
-            }
-            .client-chat-card {
-                border-radius: 0 !important;
-                border: none !important;
-                margin-bottom: 0 !important;
-                background: #000000 !important;
-            }
-            .client-chat-card .card-header {
-                padding: 8px 12px !important;
-                border-radius: 0 !important;
-            }
-            .client-chat-iframe-body {
-                height: calc(100dvh - 115px) !important;
-                min-height: calc(100vh - 115px) !important;
-                max-height: none !important;
-                width: 100% !important;
-            }
-            .client-chat-iframe {
-                width: 100% !important;
-                height: 100% !important;
-                min-height: 100% !important;
-                border: none !important;
-            }
-            #chat-messages {
-                height: calc(100dvh - 185px) !important;
-                min-height: 380px !important;
-                max-height: none !important;
-                padding: 10px 8px !important;
-                border-radius: 0 !important;
-                border-left: none !important;
-                border-right: none !important;
-            }
-            .msg-bubble {
-                max-width: 90% !important;
-                font-size: 0.88rem !important;
-                padding: 8px 12px !important;
-            }
-        }
-        </style>
 
         <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -328,14 +354,14 @@ require_once $dir . '/includes/admin_sidebar.php';
         </script>
 
     <?php elseif ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
-        <!-- TAWK.TO FULL-HEIGHT PROFESSIONAL IN-PAGE IFRAME (MOBILE FULL SCREEN) -->
-        <div class="col-12 mb-4 client-chat-col">
-            <div class="card shadow-lg bg-dark border-secondary client-chat-card" style="border-radius: 12px; overflow: hidden;">
-                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3 px-3 px-md-4">
+        <!-- TAWK.TO FULL-HEIGHT PROFESSIONAL IN-PAGE IFRAME (MOBILE FULL SCREEN EDGE-TO-EDGE) -->
+        <div class="col-12 p-0 mb-0 client-chat-col">
+            <div class="card shadow-lg bg-dark border-secondary client-chat-card">
+                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-2 px-3 px-md-4">
                     <div class="d-flex align-items-center">
-                        <i class="fas fa-headset fa-lg mr-3 text-warning"></i>
+                        <i class="fas fa-headset fa-lg mr-2 mr-md-3 text-warning"></i>
                         <div>
-                            <span class="d-block text-white font-weight-bold" style="font-size: 15px;">Live 24/7 Global Case Support Desk</span>
+                            <span class="d-block text-white font-weight-bold" style="font-size: 14px;">Live 24/7 Global Case Support Desk</span>
                             <small class="text-white small" style="font-size: 11px; opacity: 0.85;">Direct encrypted communication channel with IFW recovery team</small>
                         </div>
                     </div>
@@ -361,7 +387,7 @@ require_once $dir . '/includes/admin_sidebar.php';
                 $direct_chat_url = "https://tawk.to/chat/{$prop_id}/{$chat_hash}";
                 ?>
 
-                <div class="card-body bg-black p-0 client-chat-iframe-body" style="height: 720px; min-height: 600px; position: relative;">
+                <div class="card-body bg-black p-0 client-chat-iframe-body" style="height: calc(100dvh - 120px); min-height: 520px; position: relative;">
                     <?php if (!empty($prop_id)): ?>
                         <iframe 
                             src="<?= htmlspecialchars($direct_chat_url) ?>" 

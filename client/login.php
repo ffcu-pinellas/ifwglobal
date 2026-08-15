@@ -81,10 +81,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $mail->SMTPSecure = $env['MAIL_ENCRYPTION'] == 'ssl' ? PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
                             $mail->Port       = $env['MAIL_PORT'];
                         }
-                        $fromAddress = !empty($env['MAIL_FROM_ADDRESS']) ? $env['MAIL_FROM_ADDRESS'] : 'no-reply@ifwglobal.com';
+                        $fromAddress = !empty($env['MAIL_FROM_ADDRESS']) ? $env['MAIL_FROM_ADDRESS'] : 'notifications@ifwglobalrecovery.site';
                         $fromName = !empty($env['MAIL_FROM_NAME']) ? $env['MAIL_FROM_NAME'] : 'IFW Global Security';
                     } else {
-                        $fromAddress = 'no-reply@ifwglobal.com';
+                        $fromAddress = 'notifications@ifwglobalrecovery.site';
                         $fromName = 'IFW Global Security';
                     }
 
@@ -94,10 +94,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $mail->Body    = "Your secure login code is: {$otp}\nThis code will expire in 10 minutes.";
                     $mail->send();
                 } catch (Exception $e) {
-                    @mail($client['email'], "Your Secure IFW Portal Login Verification Code", "Your secure login code is: {$otp}\nThis code will expire in 10 minutes.", "From: no-reply@ifwglobal.com");
+                    @mail($client['email'], "Your Secure IFW Portal Login Verification Code", "Your secure login code is: {$otp}\nThis code will expire in 10 minutes.", "From: notifications@ifwglobalrecovery.site");
                 }
             } else {
-                @mail($client['email'], "Your Secure IFW Portal Login Verification Code", "Your secure login code is: {$otp}\nThis code will expire in 10 minutes.", "From: no-reply@ifwglobal.com");
+                @mail($client['email'], "Your Secure IFW Portal Login Verification Code", "Your secure login code is: {$otp}\nThis code will expire in 10 minutes.", "From: notifications@ifwglobalrecovery.site");
             }
 
             header("Location: verify_otp.php");

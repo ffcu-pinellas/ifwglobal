@@ -610,20 +610,36 @@ function send_security_login_alert($pdo, $email, $user_id, $role, $info) {
  */
 function get_portal_avatar_url($pdo, $role, $user_id) {
     $default = '/admin_assets/img/profile/blank.png';
-    if (!$pdo || empty($user_id)) {
+    if (!$pdo) {
         return $default;
     }
+    $user_id = (int)$user_id;
     try {
+        $url = null;
         if ($role === 'client') {
             $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL");
-            $stmt = $pdo->prepare("SELECT avatar_url FROM IFW_clients WHERE id = ?");
+            if ($user_id > 0) {
+                $stmt = $pdo->prepare("SELECT avatar_url FROM IFW_clients WHERE id = ?");
+                $stmt->execute([$user_id]);
+                $url = $stmt->fetchColumn();
+            }
         } else {
             $pdo->exec("ALTER TABLE IFW_users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL");
-            $stmt = $pdo->prepare("SELECT avatar_url FROM IFW_users WHERE id = ?");
+            if ($user_id > 0) {
+                $stmt = $pdo->prepare("SELECT avatar_url FROM IFW_users WHERE id = ?");
+                $stmt->execute([$user_id]);
+                $url = $stmt->fetchColumn();
+            }
+            if (empty($url)) {
+                $stmt2 = $pdo->query("SELECT avatar_url FROM IFW_users WHERE avatar_url IS NOT NULL AND avatar_url != '' ORDER BY (role='agent') DESC, id ASC LIMIT 1");
+                $url = $stmt2 ? $stmt2->fetchColumn() : null;
+            }
         }
-        $stmt->execute([(int)$user_id]);
-        $url = $stmt->fetchColumn();
-        if (!empty($url) && (strpos($url, '/uploads/avatars/') === 0 || strpos($url, 'http') === 0)) {
+        if (!empty($url)) {
+            $url = trim($url);
+            if (strpos($url, '/') !== 0 && strpos($url, 'http') !== 0) {
+                $url = '/' . $url;
+            }
             return $url;
         }
     } catch (Exception $e) {}

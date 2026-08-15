@@ -915,10 +915,59 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
 </div>
 <?php endif; ?>
 
+<?php
+$render_investigator_card = function() use ($pdo, $client, $agent_user_id, $agent_name_display, $agent_role_display, $agent_email_display, $agent_phone_display) {
+    $avatar = get_portal_avatar_url($pdo, 'admin', $client['agent_id'] ?? $agent_user_id ?? 0);
+?>
+    <!-- YOUR FORENSIC INVESTIGATOR CARD -->
+    <div class="portal-card mb-4 shadow-sm">
+        <div class="portal-card-header py-3 px-4 font-weight-bold d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-user-shield mr-2"></i>Your Forensic Investigator</span>
+            <span class="badge badge-success px-2 py-1" style="font-size:10px;"><i class="fas fa-circle mr-1" style="font-size:7px;"></i> Active Lead</span>
+        </div>
+        <div class="card-body text-center py-4 px-3">
+            <div style="width:72px; height:72px; border-radius:50%; margin:0 auto 12px; position:relative;">
+                <img src="<?= htmlspecialchars($avatar) ?>" class="rounded-circle border border-warning shadow-sm" width="72" height="72" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
+            </div>
+            <?php if (!empty($agent_name_display)): ?>
+                <h5 class="font-weight-bold mb-1 text-white" style="font-size: 1.15rem;"><?= htmlspecialchars($agent_name_display) ?></h5>
+                <span class="badge badge-warning text-dark font-weight-bold px-3 py-1 mb-3 d-inline-block"><?= htmlspecialchars($agent_role_display) ?></span>
+                
+                <div class="p-3 rounded mb-3 text-left border border-secondary" style="background: #11151e; font-size:12.5px;">
+                    <div class="text-white mb-2 d-flex align-items-center" style="word-break: break-all;">
+                        <i class="fas fa-envelope mr-2 text-warning" style="width:18px; flex-shrink:0;"></i>
+                        <a href="mailto:<?= htmlspecialchars($agent_email_display ?: 'investigations@ifwglobalrecovery.site') ?>" class="text-white text-decoration-none font-weight-bold" style="display:inline !important; color:#ffffff !important; font-size:12.5px;"><?= htmlspecialchars($agent_email_display ?: 'investigations@ifwglobalrecovery.site') ?></a>
+                    </div>
+                    
+                    <div class="text-white d-flex align-items-center">
+                        <i class="fas fa-phone-alt mr-2 text-warning" style="width:18px; flex-shrink:0;"></i>
+                        <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', $agent_phone_display ?: '(216) 230-1837')) ?>" class="text-white text-decoration-none font-weight-bold portal-agent-phone" style="display:inline-block !important; visibility:visible !important; opacity:1 !important; color:#ffffff !important; font-size:12.5px;"><?= htmlspecialchars($agent_phone_display ?: '(216) 230-1837') ?></a>
+                    </div>
+                </div>
+                
+                <a href="chat.php" class="btn btn-warning btn-sm btn-block font-weight-bold text-dark shadow-sm py-2" style="background: linear-gradient(135deg, #fecc56, #f59e0b); border:none;">
+                    <i class="fas fa-comments mr-1"></i> Direct Message Investigator
+                </a>
+            <?php else: ?>
+                <h6 class="font-weight-bold mb-1 text-white">Pending Allocation</h6>
+                <p class="text-white small mb-2">A certified investigator is being assigned to your case.</p>
+                <span class="badge badge-warning text-dark">Pending Assignment</span>
+            <?php endif; ?>
+        </div>
+    </div>
+<?php
+};
+?>
+
 <!-- MAIN DASHBOARD CONTENT (BALANCED 2-COLUMN INSTITUTIONAL LAYOUT) -->
 <div class="row">
-    <!-- LEFT MAIN COLUMN: ACTIVE CASE SNAPSHOT & ALL CASES -->
-    <div class="col-lg-8 order-2 order-lg-1">
+    <!-- 1. MOBILE ONLY: YOUR FORENSIC INVESTIGATOR (APPEARS FIRST ON MOBILE) -->
+    <div class="col-12 d-block d-lg-none">
+        <?php $render_investigator_card(); ?>
+    </div>
+
+    <!-- 2 & 3. LEFT MAIN COLUMN: ACTIVE CASE SNAPSHOT & ALL CASES -->
+    <div class="col-12 col-lg-8">
         
         <!-- KYC BANNER (IF NOT APPROVED) -->
         <?php if ($kyc_status !== 'approved'): ?>
@@ -1090,44 +1139,12 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
         </div>
     </div>
 
-    <!-- RIGHT SIDEBAR COLUMN: INVESTIGATOR, SETTLEMENT & BANKING, SECURITY PIN (ORDER-1 ON MOBILE, ORDER-LG-2 ON DESKTOP) -->
-    <div class="col-lg-4 order-1 order-lg-2">
+    <!-- 4 & 5. RIGHT SIDEBAR COLUMN: INVESTIGATOR (DESKTOP ONLY), SETTLEMENT & BANKING, SECURITY PIN -->
+    <div class="col-12 col-lg-4">
 
-        <!-- YOUR FORENSIC INVESTIGATOR -->
-        <div class="portal-card mb-4 shadow-sm">
-            <div class="portal-card-header py-3 px-4 font-weight-bold d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-user-shield mr-2"></i>Your Forensic Investigator</span>
-                <span class="badge badge-success px-2 py-1" style="font-size:10px;"><i class="fas fa-circle mr-1" style="font-size:7px;"></i> Active Lead</span>
-            </div>
-            <div class="card-body text-center py-4 px-3">
-                <div style="width:72px; height:72px; border-radius:50%; margin:0 auto 12px; position:relative;">
-                    <img src="<?= htmlspecialchars(get_portal_avatar_url($pdo, 'admin', $client['agent_id'] ?? 0)) ?>" class="rounded-circle border border-warning shadow-sm" width="72" height="72" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
-                </div>
-                <?php if (!empty($agent_name_display)): ?>
-                    <h5 class="font-weight-bold mb-1 text-white" style="font-size: 1.15rem;"><?= htmlspecialchars($agent_name_display) ?></h5>
-                    <span class="badge badge-warning text-dark font-weight-bold px-3 py-1 mb-3 d-inline-block"><?= htmlspecialchars($agent_role_display) ?></span>
-                    
-                    <div class="p-3 rounded mb-3 text-left border border-secondary" style="background: #11151e; font-size:12.5px;">
-                        <div class="text-white mb-2 d-flex align-items-center" style="word-break: break-all;">
-                            <i class="fas fa-envelope mr-2 text-warning" style="width:18px; flex-shrink:0;"></i>
-                            <a href="mailto:<?= htmlspecialchars($agent_email_display ?: 'investigations@ifwglobalrecovery.site') ?>" class="text-white text-decoration-none font-weight-bold" style="display:inline !important; color:#ffffff !important; font-size:12.5px;"><?= htmlspecialchars($agent_email_display ?: 'investigations@ifwglobalrecovery.site') ?></a>
-                        </div>
-                        
-                        <div class="text-white d-flex align-items-center">
-                            <i class="fas fa-phone-alt mr-2 text-warning" style="width:18px; flex-shrink:0;"></i>
-                            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', $agent_phone_display ?: '(216) 230-1837')) ?>" class="text-white text-decoration-none font-weight-bold portal-agent-phone" style="display:inline-block !important; visibility:visible !important; opacity:1 !important; color:#ffffff !important; font-size:12.5px;"><?= htmlspecialchars($agent_phone_display ?: '(216) 230-1837') ?></a>
-                        </div>
-                    </div>
-                    
-                    <a href="chat.php" class="btn btn-warning btn-sm btn-block font-weight-bold text-dark shadow-sm py-2" style="background: linear-gradient(135deg, #fecc56, #f59e0b); border:none;">
-                        <i class="fas fa-comments mr-1"></i> Direct Message Investigator
-                    </a>
-                <?php else: ?>
-                    <h6 class="font-weight-bold mb-1 text-white">Pending Allocation</h6>
-                    <p class="text-white small mb-2">A certified investigator is being assigned to your case.</p>
-                    <span class="badge badge-warning text-dark">Pending Assignment</span>
-                <?php endif; ?>
-            </div>
+        <!-- YOUR FORENSIC INVESTIGATOR (DESKTOP ONLY) -->
+        <div class="d-none d-lg-block">
+            <?php $render_investigator_card(); ?>
         </div>
 
         <!-- SETTLEMENT & BANKING DETAILS (IN RIGHT COLUMN) -->
