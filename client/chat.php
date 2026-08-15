@@ -439,41 +439,34 @@ require_once $dir . '/includes/admin_sidebar.php';
         </div>
 
     <?php elseif ($chat_provider === 'chatwoot'): ?>
-        <!-- CHATWOOT LIVE SUPPORT (MULTI-AGENT CRM & PERSISTENT USER IDENTITY) -->
+        <!-- CHATWOOT LIVE SUPPORT (FULL-HEIGHT PROFESSIONAL IN-PAGE IFRAME & USER IDENTITY) -->
         <div class="col-12 p-0 mb-0 client-chat-col">
             <div class="card shadow-lg bg-dark border-secondary client-chat-card">
                 <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-2 px-3 px-md-4">
                     <div class="d-flex align-items-center">
-                        <i class="fas fa-comments fa-lg mr-2 mr-md-3 text-warning"></i>
+                        <i class="fas fa-headset fa-lg mr-2 mr-md-3 text-warning"></i>
                         <div>
-                            <span class="d-block text-white font-weight-bold" style="font-size: 14px;">Live Multi-Agent Case Communications</span>
-                            <small class="text-white small" style="font-size: 11px; opacity: 0.85;">Connected to IFW Forensic & Legal Team &bull; Persistent History</small>
+                            <span class="d-block text-white font-weight-bold" style="font-size: 14px;">Live 24/7 Global Case Support Desk</span>
+                            <small class="text-white small" style="font-size: 11px; opacity: 0.85;">Direct encrypted communication channel with IFW recovery team &bull; <?= htmlspecialchars($client_name) ?></small>
                         </div>
                     </div>
                     <span class="badge badge-success px-3 py-2 d-none d-sm-inline-block" style="font-size: 12px;"><i class="fas fa-shield-alt mr-1"></i> Identity Verified</span>
                 </div>
 
-                <div class="card-body bg-dark text-white p-4 p-md-5 text-center" style="min-height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <div class="card-body bg-black p-0 client-chat-iframe-body" style="height: calc(100dvh - 120px); min-height: 560px; position: relative;">
                     <?php if (!empty($chatwoot_token)): ?>
-                        <div style="width:84px; height:84px; border-radius:50%; background:rgba(254, 204, 86, 0.12); border: 2px solid #fecc56; display:flex; align-items:center; justify-content:center; margin:0 auto 20px;">
-                            <i class="fas fa-headset fa-3x text-warning"></i>
-                        </div>
-                        <h4 class="font-weight-bold text-white mb-2">Live Support Line Active</h4>
-                        <p class="text-light small max-width-600 mb-4" style="line-height: 1.6; max-width: 540px;">
-                            You are connected to our multi-agent support network as <strong class="text-warning"><?= htmlspecialchars($client_name) ?></strong> (<code><?= htmlspecialchars($client_email) ?></code>). 
-                            Your entire conversation history and case files are preserved automatically.
-                        </p>
-                        <button type="button" class="btn btn-warning font-weight-bold text-dark px-4 py-2 shadow-lg mb-3" onclick="if(window.$chatwoot){ window.$chatwoot.toggle('open'); } else { alert('Chat widget initializing, please wait a moment...'); }">
-                            <i class="fas fa-comment-dots mr-2"></i> Open Live Chat Window
-                        </button>
-                        <div class="small text-muted mt-2">
-                            <i class="fas fa-lock text-warning mr-1"></i> 256-Bit Encrypted Multi-Agent Channel
-                        </div>
+                        <iframe 
+                            src="<?= htmlspecialchars($chatwoot_base_url) ?>/widget?website_token=<?= htmlspecialchars($chatwoot_token) ?>&locale=en" 
+                            class="client-chat-iframe"
+                            style="width: 100%; height: 100%; min-height: 100%; border: none; display: block; background: #000;" 
+                            allow="camera; microphone; autoplay; encrypted-media;"
+                            title="IFW Live Support">
+                        </iframe>
 
-                        <!-- Chatwoot SDK Integration with User Identity Validation -->
+                        <!-- Chatwoot Background Identity Synchronizer -->
                         <script>
                         window.chatwootSettings = {
-                            hideMessageBubble: false,
+                            hideMessageBubble: true, // Hide extra floating bubble on this dedicated iframe page
                             position: 'right',
                             locale: 'en',
                             type: 'expanded_bubble',
@@ -510,11 +503,6 @@ require_once $dir . '/includes/admin_sidebar.php';
                                     client_id: '<?= (int)$client_id ?>',
                                     portal: 'IFW Client Portal'
                                 });
-
-                                // Auto open on direct chat page
-                                setTimeout(function() {
-                                    window.$chatwoot.toggle("open");
-                                }, 500);
                             }
                         });
                         </script>
