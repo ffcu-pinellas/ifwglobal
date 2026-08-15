@@ -1,12 +1,14 @@
- <?php
+<?php
+ob_start();
 // admin/settings.php
 require_once '../config.php';
 require_once '../includes/functions.php';
 require_admin_login();
 
-$user_role = $_SESSION['admin_role'] ?? 'viewer';
-if (!in_array($user_role, ['super_admin', 'superadmin', 'admin'])) {
-    die("Unauthorized access to settings.");
+$user_role = $_SESSION['admin_role'] ?? $_SESSION['role'] ?? 'admin';
+if (!in_array($user_role, ['super_admin', 'superadmin', 'admin', 'staff', 'agent'])) {
+    header("Location: index.php");
+    exit;
 }
 
 // Handle Form Submission
@@ -15,11 +17,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'phone_australia', 'phone_australia_secondary', 'phone_uk', 'phone_usa', 'display_phone_numbers',
         'contact_email', 'contact_phone', 'office_address',
         'bank_name', 'bank_account_name', 'bank_account_number', 'bank_swift_iban',
-        'crypto_wallet_address', 'crypto_wallet_type', 'payment_instructions',
+        'crypto_wallet_address', 'crypto_wallet_type', 'crypto_usdt_trc20_address', 'crypto_usdt_erc20_address', 'crypto_btc_address', 'crypto_eth_address', 'payment_instructions',
         'hero_headline', 'hero_subheadline', 'hero_cta', 
         'announcement_bar_text', 'announcement_bar_active',
         'meta_title', 'meta_description', 'meta_keywords', 'maintenance_mode',
         'chat_provider', 'manychat_script_code', 'tawkto_property_id', 'custom_chat_code', 'logo_url',
+        'show_lifecycle_tracker', 'show_fund_flow_visualizer',
         'telegram_bot_token', 'telegram_chat_id'
     ];
     
@@ -180,19 +183,30 @@ while ($row = $stmt->fetch()) {
                     </div>
 
                     <div class="row">
-                        <div class="col-md-8 form-group mb-3">
-                            <label class="font-weight-bold text-light">Crypto Wallet Address (Optional)</label>
-                            <input type="text" name="crypto_wallet_address" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['crypto_wallet_address'] ?? ''); ?>" placeholder="0x... or bc1q...">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light"><i class="fab fa-bitcoin text-warning mr-1"></i>Bitcoin (BTC) Wallet Address</label>
+                            <input type="text" name="crypto_btc_address" class="form-control bg-secondary text-white border-0 font-weight-bold" value="<?php echo htmlspecialchars($s['crypto_btc_address'] ?? 'bc1q9xle8v2kwj6d234p8cmnrqtvq80f3w9a2lx7kd'); ?>" placeholder="bc1q...">
                         </div>
-                        <div class="col-md-4 form-group mb-3">
-                            <label class="font-weight-bold text-light">Wallet Network</label>
-                            <input type="text" name="crypto_wallet_type" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['crypto_wallet_type'] ?? 'USDT (TRC20)'); ?>" placeholder="USDT TRC20 / BTC">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light"><i class="fas fa-coins text-success mr-1"></i>USDT (TRC-20) Wallet Address</label>
+                            <input type="text" name="crypto_usdt_trc20_address" class="form-control bg-secondary text-white border-0 font-weight-bold" value="<?php echo htmlspecialchars($s['crypto_usdt_trc20_address'] ?? 'TYDvsPq9xL3r6K2oH41N8xQzVmM7pB3kRa'); ?>" placeholder="T...">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light"><i class="fab fa-ethereum text-info mr-1"></i>USDT (ERC-20) Wallet Address</label>
+                            <input type="text" name="crypto_usdt_erc20_address" class="form-control bg-secondary text-white border-0 font-weight-bold" value="<?php echo htmlspecialchars($s['crypto_usdt_erc20_address'] ?? '0x71C8360f38bB2902f4D3e1b78297bB32789cA854'); ?>" placeholder="0x...">
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light"><i class="fab fa-ethereum text-primary mr-1"></i>Ethereum (ETH) Wallet Address</label>
+                            <input type="text" name="crypto_eth_address" class="form-control bg-secondary text-white border-0 font-weight-bold" value="<?php echo htmlspecialchars($s['crypto_eth_address'] ?? '0x71C8360f38bB2902f4D3e1b78297bB32789cA854'); ?>" placeholder="0x...">
                         </div>
                     </div>
 
                     <div class="form-group mb-0">
-                        <label class="font-weight-bold text-light">Payment Instructions for Clients</label>
-                        <textarea name="payment_instructions" class="form-control bg-secondary text-white border-0" rows="2"><?php echo htmlspecialchars($s['payment_instructions'] ?? 'Please include your Case Reference Number in the transaction memo.'); ?></textarea>
+                        <label class="font-weight-bold text-light">Payment & Wire Memo Instructions for Clients</label>
+                        <textarea name="payment_instructions" class="form-control bg-secondary text-white border-0" rows="2"><?php echo htmlspecialchars($s['payment_instructions'] ?? 'Please include your Invoice # or Case Reference Number in the transaction memo/reference.'); ?></textarea>
                     </div>
                 </div>
             </div>
@@ -230,7 +244,7 @@ while ($row = $stmt->fetch()) {
 
                     <div class="form-group mb-0">
                         <label class="font-weight-bold text-light">Site & Invoice Brand Logo URL</label>
-                        <input type="text" name="logo_url" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['logo_url'] ?? '/admin_assets/img/logo/logo.svg'); ?>" placeholder="e.g. /admin_assets/img/logo/logo.svg">
+                        <input type="text" name="logo_url" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['logo_url'] ?? '/media/logos/logo.svg'); ?>" placeholder="e.g. /media/logos/logo.svg">
                         <small class="text-muted" style="font-size:10px;">Enter a custom image URL for the logo displayed on invoices, PDFs, and client portals.</small>
                     </div>
                 </div>
@@ -257,6 +271,35 @@ while ($row = $stmt->fetch()) {
                     <div class="form-group mb-0">
                         <label class="font-weight-bold text-light">Meta Keywords</label>
                         <input type="text" name="meta_keywords" class="form-control bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['meta_keywords'] ?? 'asset recovery, fraud investigation, crypto tracing, private intelligence'); ?>">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. CLIENT PORTAL VISUAL MODULES & FEATURES -->
+        <div class="col-lg-12 mb-4">
+            <div class="card shadow-sm border-secondary">
+                <div class="card-header bg-dark text-warning border-secondary d-flex align-items-center">
+                    <i class="fas fa-cubes mr-2"></i>Client Portal Visual Modules & Interactive Trackers
+                </div>
+                <div class="card-body bg-dark text-white">
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light">1. Investigation & Asset Recovery Lifecycle Tracker</label>
+                            <select name="show_lifecycle_tracker" class="form-control bg-secondary text-white border-0">
+                                <option value="1" <?php echo ($s['show_lifecycle_tracker'] ?? '1') == '1' ? 'selected' : ''; ?>>Enabled (Show 5-Stage Recovery Lifecycle on Client Portal)</option>
+                                <option value="0" <?php echo ($s['show_lifecycle_tracker'] ?? '1') == '0' ? 'selected' : ''; ?>>Disabled (Hide Lifecycle Bar)</option>
+                            </select>
+                            <small class="text-muted">Managed and updated per case in the Admin Recovery Cases section.</small>
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-light">2. Forensic Fund Tracing & Asset Recovery Flow</label>
+                            <select name="show_fund_flow_visualizer" class="form-control bg-secondary text-white border-0">
+                                <option value="1" <?php echo ($s['show_fund_flow_visualizer'] ?? '1') == '1' ? 'selected' : ''; ?>>Enabled (Show Interactive Flow Diagram on Client Dashboard)</option>
+                                <option value="0" <?php echo ($s['show_fund_flow_visualizer'] ?? '1') == '0' ? 'selected' : ''; ?>>Disabled (Hide Flow Diagram)</option>
+                            </select>
+                            <small class="text-muted">Displays the 4-step fund interception and repatriation flow to clients.</small>
+                        </div>
                     </div>
                 </div>
             </div>

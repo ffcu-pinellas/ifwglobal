@@ -32,15 +32,9 @@ require_once $dir . '/includes/admin_sidebar.php';
     <div class="col-12 mb-3 d-flex align-items-center justify-content-between">
         <div>
             <h3 class="text-warning font-weight-bold mb-1">
-                <i class="fas fa-comments mr-2"></i>
-                <?php 
-                if ($chat_provider === 'tawkto' || $chat_provider === 'tawk') echo 'Live Chat Support';
-                elseif ($chat_provider === 'manychat') echo 'ManyChat Support';
-                elseif ($chat_provider === 'custom') echo 'Support Center';
-                else echo 'Secure Case Messaging';
-                ?>
+                <i class="fas fa-comments mr-2"></i>Live Chat & Support
             </h3>
-            <p class="text-muted mb-0">Direct support channel with your assigned recovery team & case investigators.</p>
+            <p class="text-muted mb-0">Send a message or ask a question. Our support team is here to help you.</p>
         </div>
         <a href="dashboard.php" class="btn btn-outline-warning btn-sm font-weight-bold"><i class="fas fa-arrow-left mr-1"></i> Back to Dashboard</a>
     </div>
@@ -48,14 +42,12 @@ require_once $dir . '/includes/admin_sidebar.php';
 
 <div class="row">
     <?php if ($chat_provider === 'internal'): ?>
-        <!-- INTERNAL SECURE CHAT (FULL WIDTH) -->
+        <!-- INTERNAL LIVE CHAT (FULL WIDTH) -->
         <div class="col-12 mb-4">
             <div class="card shadow-lg bg-dark border-secondary">
                 <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3">
                     <div class="d-flex align-items-center">
-                        <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center mr-3 font-weight-bold" style="width: 38px; height: 38px; font-size: 1.1rem;">
-                            <i class="fas fa-user-shield"></i>
-                        </div>
+                        <img src="<?= htmlspecialchars($portal_avatar_url ?? '/admin_assets/img/profile/blank.png') ?>" class="rounded-circle border border-warning mr-3 chat-avatar-me" width="38" height="38" style="object-fit:cover;" onerror="this.onerror=null;this.src='/admin_assets/img/profile/blank.png';">
                         <div>
                             <span class="text-warning font-weight-bold" style="font-size: 1.05rem;">Case Investigation & Legal Support Desk</span>
                             <div class="text-muted small" style="font-size: 11px;"><span class="text-success mr-1">●</span> Active Live Channel &bull; Direct Case Line</div>
@@ -78,8 +70,8 @@ require_once $dir . '/includes/admin_sidebar.php';
                     <!-- Input Form -->
                     <form id="chat-form" class="d-flex flex-wrap align-items-center mt-2" style="gap: 10px;" enctype="multipart/form-data">
                         <input type="file" id="chat-file-input" name="chat_file" style="display:none;" onchange="handleChatFileSelect(this)">
-                        <button type="button" class="btn btn-outline-warning text-warning px-3 flex-shrink-0" style="height: 48px;" onclick="document.getElementById('chat-file-input').click()" title="Share File/Document"><i class="fas fa-paperclip"></i></button>
-                        <input type="text" id="chat-input" class="form-control bg-dark text-white border-secondary p-3 flex-grow-1" placeholder="Type your secure message to your assigned investigator..." autocomplete="off" required style="height: 48px; min-width: 180px;">
+                        <button type="button" class="btn btn-outline-warning text-warning px-3 flex-shrink-0" style="height: 48px;" onclick="document.getElementById('chat-file-input').click()" title="Send an image or document"><i class="fas fa-paperclip"></i></button>
+                        <input type="text" id="chat-input" class="form-control bg-dark text-white border-secondary p-3 flex-grow-1" placeholder="Type your message here..." autocomplete="off" required style="height: 48px; min-width: 180px;">
                         <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4 shadow flex-shrink-0" style="height: 48px;">
                             <i class="fas fa-paper-plane mr-1"></i> Send
                         </button>
@@ -194,10 +186,16 @@ require_once $dir . '/includes/admin_sidebar.php';
                             `;
                             elChatMessages.appendChild(div);
                             
-                            if (hasNewAdminMsg && m.id > lastMsgId) {
+                            if (hasNewAdminMsg && m.id > lastMsgId && lastMsgId > 0) {
+                                if (typeof playNotificationChime === 'function') {
+                                    playNotificationChime();
+                                }
                                 showNotification("New message from " + (m.sender_name || 'Support'), m.message);
+                                if (typeof toastr !== 'undefined') {
+                                    toastr.info(m.message, '💬 ' + (m.sender_name || 'Investigator'));
+                                }
                             }
-                            lastMsgId = m.id;
+                            lastMsgId = Math.max(lastMsgId, m.id);
                         });
 
                         if (scrollDown || isScrolledToBottom) {
@@ -266,44 +264,57 @@ require_once $dir . '/includes/admin_sidebar.php';
             };
 
             fetchMessages(true);
-            pollingInterval = setInterval(() => fetchMessages(false), 3000);
+            pollingInterval = setInterval(() => fetchMessages(false), 2000);
         });
         </script>
 
     <?php elseif ($chat_provider === 'tawkto' || $chat_provider === 'tawk'): ?>
-        <!-- TAWK.TO DIRECT EMBED -->
+        <!-- TAWK.TO FULL-HEIGHT PROFESSIONAL IN-PAGE IFRAME -->
         <div class="col-12 mb-4">
-            <div class="card shadow-lg bg-dark border-secondary">
-                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center">
-                    <span><i class="fas fa-headset mr-2"></i>Live 24/7 Support Desk</span>
-                    <span class="badge badge-warning text-dark font-weight-bold">Tawk.to Chat</span>
+            <div class="card shadow-lg bg-dark border-secondary" style="border-radius: 12px; overflow: hidden;">
+                <div class="card-header bg-dark border-secondary text-warning font-weight-bold d-flex justify-content-between align-items-center py-3 px-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-headset fa-lg mr-3 text-warning"></i>
+                        <div>
+                            <span class="d-block text-white" style="font-size: 15px;">Live 24/7 Global Case Support Desk</span>
+                            <small class="text-muted" style="font-size: 11px;">Direct encrypted communication channel with IFW global recovery response team</small>
+                        </div>
+                    </div>
+                    <span class="badge badge-success px-3 py-2" style="font-size: 12px;"><i class="fas fa-circle mr-1" style="font-size:8px;"></i> Online</span>
                 </div>
-                <div class="card-body bg-dark p-2" style="height: 550px;">
-                    <?php if (!empty($tawk_property)): ?>
-                        <?php
-                        $clean_tawk = $tawk_property;
-                        $clean_tawk = strip_tags($clean_tawk);
-                        $clean_tawk = preg_replace('/<!--.*?-->/s', '', $clean_tawk);
-                        $clean_tawk = preg_replace('/var\s+Tawk_API[\s\S]*?embed\.tawk\.to\//i', '', $clean_tawk);
-                        $clean_tawk = preg_replace('/[\'"];.*$/s', '', $clean_tawk);
-                        $clean_tawk = trim($clean_tawk, " \t\n\r;'\"/");
-                        if (strpos($clean_tawk, 'tawk.to/chat/') !== false) {
-                            $clean_tawk = preg_replace('/.*tawk\.to\/chat\//', '', $clean_tawk);
-                        } elseif (strpos($clean_tawk, 'embed.tawk.to/') !== false) {
-                            $clean_tawk = preg_replace('/.*embed\.tawk\.to\//', '', $clean_tawk);
-                        }
-                        $clean_tawk = trim($clean_tawk, " \t\n\r;'\"/");
-                        $parts = explode('/', $clean_tawk);
-                        $prop_id = $parts[0] ?? '';
-                        $chat_hash = $parts[1] ?? 'default';
-                        $iframe_src = "https://tawk.to/chat/{$prop_id}/{$chat_hash}?pop=1";
-                        ?>
-                        <iframe src="<?= htmlspecialchars($iframe_src) ?>" style="width: 100%; height: 100%; border: none; border-radius: 8px; background: #111;"></iframe>
+                
+                <?php
+                $clean_tawk = $tawk_property;
+                $clean_tawk = strip_tags($clean_tawk);
+                $clean_tawk = preg_replace('/<!--.*?-->/s', '', $clean_tawk);
+                $clean_tawk = preg_replace('/var\s+Tawk_API[\s\S]*?embed\.tawk\.to\//i', '', $clean_tawk);
+                $clean_tawk = preg_replace('/[\'"];.*$/s', '', $clean_tawk);
+                $clean_tawk = trim($clean_tawk, " \t\n\r;'\"/");
+                if (strpos($clean_tawk, 'tawk.to/chat/') !== false) {
+                    $clean_tawk = preg_replace('/.*tawk\.to\/chat\//', '', $clean_tawk);
+                } elseif (strpos($clean_tawk, 'embed.tawk.to/') !== false) {
+                    $clean_tawk = preg_replace('/.*embed\.tawk\.to\//', '', $clean_tawk);
+                }
+                $clean_tawk = trim($clean_tawk, " \t\n\r;'\"/");
+                $parts = explode('/', $clean_tawk);
+                $prop_id = $parts[0] ?? '';
+                $chat_hash = $parts[1] ?? 'default';
+                $direct_chat_url = "https://tawk.to/chat/{$prop_id}/{$chat_hash}";
+                ?>
+
+                <div class="card-body bg-black p-0" style="height: 720px; min-height: 600px; position: relative;">
+                    <?php if (!empty($prop_id)): ?>
+                        <iframe 
+                            src="<?= htmlspecialchars($direct_chat_url) ?>" 
+                            style="width: 100%; height: 100%; min-height: 720px; border: none; display: block; background: #000;" 
+                            allow="camera; microphone; autoplay; encrypted-media;"
+                            title="IFW Live Support">
+                        </iframe>
                     <?php else: ?>
                         <div class="p-5 text-center text-muted">
                             <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
-                            <h5>Tawk.to Support is Active</h5>
-                            <p>Please use the chat bubble in the bottom right corner of the page to speak with our support staff.</p>
+                            <h5>Live Chat Configuration Pending</h5>
+                            <p class="text-light">Tawk.to property ID is not configured in Admin Settings.</p>
                         </div>
                     <?php endif; ?>
                 </div>

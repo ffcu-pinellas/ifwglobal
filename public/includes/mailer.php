@@ -90,7 +90,14 @@ HTML;
             ];
         }
         
-        $fromAddress = !empty($env['MAIL_FROM_ADDRESS']) ? $env['MAIL_FROM_ADDRESS'] : 'no-reply@' . parse_url($app_url, PHP_URL_HOST);
+        $parsed_host = parse_url($app_url, PHP_URL_HOST);
+        if (!empty($env['MAIL_FROM_ADDRESS'])) {
+            $fromAddress = $env['MAIL_FROM_ADDRESS'];
+        } elseif (!empty($parsed_host) && filter_var('no-reply@' . $parsed_host, FILTER_VALIDATE_EMAIL)) {
+            $fromAddress = 'no-reply@' . $parsed_host;
+        } else {
+            $fromAddress = 'no-reply@ifwglobalrecovery.site';
+        }
         $fromName = !empty($env['MAIL_FROM_NAME']) ? $env['MAIL_FROM_NAME'] : $app_name;
         
         $mail->setFrom($fromAddress, $fromName);

@@ -223,6 +223,26 @@ if (isset($pdo)) {
             margin-left: 0 !important; 
         }
 
+        /* ==========================================================================
+           PERFECT MOBILE RESPONSIVENESS (ZERO HORIZONTAL SCROLLING & ADAPTIVE CARDS)
+           ========================================================================== */
+        html, body {
+            max-width: 100vw;
+            overflow-x: hidden !important;
+            position: relative;
+        }
+
+        #wrapper, #wrapper-content, .container, .container-fluid {
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }
+
+        /* Force long hashes, wallet addresses, and TXIDs to wrap nicely on mobile */
+        .crypto-address, .txid-hash, .font-monospace, code, pre, td strong, td span {
+            word-break: break-word !important;
+            overflow-wrap: anywhere !important;
+        }
+
         /* MOBILE RESPONSIVE SIDEBAR & NAVBAR OVERRIDE */
         @media (max-width: 768px) {
             #wrapper-left {
@@ -280,18 +300,118 @@ if (isset($pdo)) {
             }
             .card { margin-bottom: 1rem; }
             .table-responsive {
-                -webkit-overflow-scrolling: touch;
                 border-radius: 6px;
+                border: none !important;
+                overflow-x: visible !important;
             }
             .table-responsive::after {
-                content: '← scroll →';
-                display: block;
-                text-align: center;
-                font-size: 10px;
-                color: #64748b;
-                padding: 4px 0 2px;
-                letter-spacing: 0.5px;
+                display: none !important;
+                content: none !important;
             }
+
+            /* Responsive Table to Cards Transformation */
+            .table-responsive > table,
+            .table-portal,
+            .table.table-dark,
+            .table.table-hover {
+                min-width: 0 !important;
+                width: 100% !important;
+                display: block !important;
+                border: none !important;
+            }
+            
+            .table-responsive > table thead,
+            .table-portal thead,
+            .table.table-dark thead,
+            .table.table-hover thead {
+                display: none !important;
+            }
+            
+            .table-responsive > table tbody,
+            .table-portal tbody,
+            .table.table-dark tbody,
+            .table.table-hover tbody {
+                display: block !important;
+                width: 100% !important;
+            }
+            
+            .table-responsive > table tbody tr,
+            .table-portal tbody tr,
+            .table.table-dark tbody tr,
+            .table.table-hover tbody tr {
+                display: block !important;
+                width: 100% !important;
+                margin-bottom: 14px !important;
+                background: #181d27 !important;
+                border: 1px solid rgba(254, 204, 86, 0.2) !important;
+                border-radius: 10px !important;
+                padding: 14px 16px !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+            }
+            
+            .table-responsive > table tbody tr td,
+            .table-portal tbody tr td,
+            .table.table-dark tbody tr td,
+            .table.table-hover tbody tr td {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding: 8px 0 !important;
+                border: none !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+                text-align: right !important;
+                font-size: 13px !important;
+                min-height: 38px;
+                word-break: break-word !important;
+            }
+            
+            .table-responsive > table tbody tr td:last-child,
+            .table-portal tbody tr td:last-child,
+            .table.table-dark tbody tr td:last-child,
+            .table.table-hover tbody tr td:last-child {
+                border-bottom: none !important;
+                padding-top: 10px !important;
+                padding-bottom: 2px !important;
+                justify-content: stretch !important;
+                gap: 6px !important;
+            }
+            
+            .table-responsive > table tbody tr td::before,
+            .table-portal tbody tr td::before,
+            .table.table-dark tbody tr td::before,
+            .table.table-hover tbody tr td::before {
+                content: attr(data-label) !important;
+                font-weight: 700 !important;
+                color: #94a3b8 !important;
+                font-size: 11px !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.5px !important;
+                text-align: left !important;
+                margin-right: 10px !important;
+                flex-shrink: 0 !important;
+            }
+            
+            .table-responsive > table tbody tr td:last-child::before,
+            .table-portal tbody tr td:last-child::before,
+            .table.table-dark tbody tr td:last-child::before,
+            .table.table-hover tbody tr td:last-child::before {
+                display: none !important;
+            }
+
+            .table-responsive > table tbody tr td:last-child a,
+            .table-responsive > table tbody tr td:last-child button,
+            .table-responsive > table tbody tr td:last-child form,
+            .table-portal tbody tr td:last-child a,
+            .table-portal tbody tr td:last-child button,
+            .table-portal tbody tr td:last-child form {
+                flex: 1 !important;
+                text-align: center !important;
+                justify-content: center !important;
+                padding: 8px 10px !important;
+                font-size: 12px !important;
+                margin: 0 !important;
+            }
+
             .modal-dialog {
                 margin: 10px auto !important;
                 max-width: calc(100vw - 20px) !important;
@@ -313,6 +433,25 @@ if (isset($pdo)) {
             }
             .card-body { padding: 1rem !important; }
             h3, .h3 { font-size: 1.25rem !important; }
+
+            .table-responsive > table tbody tr td,
+            .table-portal tbody tr td,
+            .table.table-dark tbody tr td,
+            .table.table-hover tbody tr td {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                text-align: left !important;
+                padding: 6px 0 !important;
+                gap: 2px !important;
+            }
+
+            .table-responsive > table tbody tr td:last-child,
+            .table-portal tbody tr td:last-child,
+            .table.table-dark tbody tr td:last-child,
+            .table.table-hover tbody tr td:last-child {
+                flex-direction: row !important;
+                align-items: center !important;
+            }
         }
         @media (max-width: 390px) {
             #wrapper-header .navbar-nav .nav-item.dropdown .nav-link {
@@ -361,6 +500,24 @@ if (isset($pdo)) {
     </style>
 </head>
 <body>
+    <?php if (!empty($_SESSION['impersonator_admin'])): ?>
+        <div id="impersonationBanner" style="position: sticky; top: 0; z-index: 999999; background: linear-gradient(90deg, #92400e 0%, #d97706 50%, #92400e 100%); color: #000; padding: 10px 20px; font-weight: 700; font-size: 13.5px; box-shadow: 0 4px 18px rgba(0,0,0,0.6); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 2px solid #fecc56;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="background: #000; color: #fecc56; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+                    <i class="fas fa-user-secret"></i>
+                </div>
+                <span>
+                    <strong style="color: #000; letter-spacing: 0.5px;">ADMIN IMPERSONATION MODE:</strong>
+                    <span style="color: #1a1a1a;">Currently viewing as <strong><?= htmlspecialchars($_SESSION['client_name'] ?? $_SESSION['admin_username'] ?? 'User') ?></strong></span>
+                </span>
+            </div>
+            <div>
+                <a href="<?= BASE_URL ?>/admin/exit_impersonate.php" class="btn btn-dark btn-sm font-weight-bold shadow" style="background: #000; color: #fecc56; border: 1.5px solid #fecc56; padding: 5px 16px; border-radius: 6px; text-decoration: none; font-size: 12.5px; transition: all 0.2s ease;">
+                    <i class="fas fa-sign-out-alt mr-1"></i> Exit Impersonation & Return to Admin
+                </a>
+            </div>
+        </div>
+    <?php endif; ?>
     <div id="wrapper" class="bg-dark">
         <div id="mobileSidebarBackdrop" onclick="document.getElementById('wrapper').classList.remove('toggled');" aria-hidden="true"></div>
         <!-- WRAPPER HEADER -->

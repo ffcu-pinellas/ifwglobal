@@ -179,15 +179,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
         $update = $pdo->prepare("UPDATE IFW_invoice_payments SET status = ?, notes = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?");
         $update->execute([$new_status, $notes, $_SESSION['admin_id'], $payment_id]);
         
+        // Fetch client details for email notification
+        $stmtClient = $pdo->prepare("SELECT first_name, last_name, email FROM IFW_clients WHERE id = ?");
+        $stmtClient->execute([$payment['client_id']]);
+        $client_info = $stmtClient->fetch();
+
+        $inv_ref = !empty($inv['invoice_number']) ? $inv['invoice_number'] : '#INV-' . str_pad($payment['invoice_id'], 5, '0', STR_PAD_LEFT);
+        $currency_code = $inv['currency'] ?? 'USD';
+
         if ($new_status === 'Confirmed') {
             $invoice_id = $payment['invoice_id'];
             $client_id = $payment['client_id'];
             
             // Fetch invoice total amount, late fee accumulated, and currency
-            $stmtInv = $pdo->prepare("SELECT amount, total_amount, late_fee_accumulated, currency FROM IFW_invoices WHERE id = ?");
+            $stmtInv = $pdo->prepare("SELECT invoice_number, amount, total_amount, late_fee_accumulated, currency FROM IFW_invoices WHERE id = ?");
             $stmtInv->execute([$invoice_id]);
             $inv = $stmtInv->fetch();
             
+            $remaining_due = 0.00;
             if ($inv) {
                 $total_billed = ($inv['total_amount'] > 0 ? $inv['total_amount'] : $inv['amount']) + ($inv['late_fee_accumulated'] ?? 0);
                 
@@ -196,19 +205,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
                 $stmtSum->execute([$invoice_id]);
                 $total_paid = $stmtSum->fetchColumn() ?: 0.00;
                 
+                $remaining_due = max(0, $total_billed - $total_paid);
                 $new_invoice_status = ($total_paid >= $total_billed) ? 'Paid' : 'Partial';
                 
                 $updateInv = $pdo->prepare("UPDATE IFW_invoices SET status = ? WHERE id = ?");
                 $updateInv->execute([$new_invoice_status, $invoice_id]);
+                
+                $inv_ref = !empty($inv['invoice_number']) ? $inv['invoice_number'] : '#INV-' . str_pad($invoice_id, 5, '0', STR_PAD_LEFT);
+                $currency_code = $inv['currency'] ?? 'USD';
             }
             
             // Client Notification
             $pdo->prepare("INSERT INTO IFW_notifications (client_id, type, title, body, icon, link) VALUES (?, 'invoice', 'Payment Confirmed', ?, 'check-circle', '/client/dashboard.php')")
-                ->execute([$client_id, "Your payment of " . number_format($payment['amount'], 2) . " " . ($inv['currency'] ?? 'USD') . " has been verified & approved."]);
+                ->execute([$client_id, "Your payment of " . number_format($payment['amount'], 2) . " " . $currency_code . " has been verified & approved."]);
+
+            // Email Notification to Client
+            if ($client_info && !empty($client_info['email']) && function_exists('send_html_email')) {
+                $subj = "Payment Verified & Receipt — Invoice {$inv_ref}";
+                $body = "
+                    <h2>Payment Verified & Approved</h2>
+                    <p>Dear " . htmlspecialchars($client_info['first_name']) . ",</p>
+                    <p>We are pleased to inform you that your payment transaction has been verified and applied to your account.</p>
+                    <div style='background:#f8f9fa; border-left:4px solid #28a745; padding:15px; margin:15px 0; border-radius:4px;'>
+                        <strong>Invoice Number:</strong> {$inv_ref}<br>
+                        <strong>Amount Verified:</strong> {$currency_code} " . number_format($payment['amount'], 2) . "<br>
+                        <strong>Payment Method:</strong> " . htmlspecialchars($payment['payment_method']) . "<br>
+                        <strong>Status:</strong> <span style='color:#28a745; font-weight:bold;'>Confirmed & Applied</span><br>
+                        <strong>Remaining Balance Due:</strong> {$currency_code} " . number_format($remaining_due, 2) . "
+                    </div>
+                    <p><a href='" . BASE_URL . "/client/dashboard.php' style='display:inline-block; padding:10px 20px; background:#28a745; color:#fff; text-decoration:none; font-weight:bold; border-radius:4px;'>View Dashboard & Receipt</a></p>
+                ";
+                send_html_email($client_info['email'], $subj, $body);
+            }
         } else {
             $client_id = $payment['client_id'];
             $pdo->prepare("INSERT INTO IFW_notifications (client_id, type, title, body, icon, link) VALUES (?, 'invoice', 'Payment Rejected', ?, 'times-circle', '/client/dashboard.php')")
                 ->execute([$client_id, "Your payment proof reference " . htmlspecialchars($payment['reference_number']) . " was rejected. Reason: " . htmlspecialchars($notes)]);
+
+            // Email Notification to Client on Rejection
+            if ($client_info && !empty($client_info['email']) && function_exists('send_html_email')) {
+                $subj = "Action Required: Payment Verification Update — Invoice {$inv_ref}";
+                $body = "
+                    <h2>Payment Proof Verification Update</h2>
+                    <p>Dear " . htmlspecialchars($client_info['first_name']) . ",</p>
+                    <p>Our compliance team was unable to verify the recent payment proof submitted for invoice <strong>{$inv_ref}</strong>.</p>
+                    <div style='background:#fff5f5; border-left:4px solid #dc3545; padding:15px; margin:15px 0; border-radius:4px;'>
+                        <strong>Invoice Number:</strong> {$inv_ref}<br>
+                        <strong>Amount:</strong> " . number_format($payment['amount'], 2) . "<br>
+                        <strong>Reason / Notes:</strong> " . (!empty($notes) ? htmlspecialchars($notes) : "Unable to verify transaction details against banking records. Please provide a clear wire transfer receipt.") . "
+                    </div>
+                    <p>Please log in to your client portal to review your invoice and submit updated payment verification details.</p>
+                    <p><a href='" . BASE_URL . "/client/dashboard.php' style='display:inline-block; padding:10px 20px; background:#dc3545; color:#fff; text-decoration:none; font-weight:bold; border-radius:4px;'>Go to Client Portal</a></p>
+                ";
+                send_html_email($client_info['email'], $subj, $body);
+            }
         }
         
         header("Location: invoices.php?payment_reviewed=1");
@@ -321,11 +371,11 @@ require_once '../includes/admin_sidebar.php';
                     <?php else: ?>
                         <?php foreach($invoices as $inv): ?>
                             <tr>
-                                <td><strong class="text-white"><?= htmlspecialchars($inv['invoice_number']) ?></strong></td>
-                                <td><?= htmlspecialchars($inv['first_name'] . ' ' . $inv['last_name']) ?></td>
-                                <td><?= date('M j, Y', strtotime($inv['issue_date'])) ?></td>
-                                <td><strong class="text-success"><?= htmlspecialchars($inv['currency'] ?? 'USD') ?> <?= number_format($inv['total_amount'], 2) ?></strong></td>
-                                <td>
+                                <td data-label="Invoice #"><strong class="text-white"><?= htmlspecialchars($inv['invoice_number']) ?></strong></td>
+                                <td data-label="Client"><?= htmlspecialchars($inv['first_name'] . ' ' . $inv['last_name']) ?></td>
+                                <td data-label="Issue Date"><?= date('M j, Y', strtotime($inv['issue_date'])) ?></td>
+                                <td data-label="Amount"><strong class="text-success"><?= htmlspecialchars($inv['currency'] ?? 'USD') ?> <?= number_format($inv['total_amount'], 2) ?></strong></td>
+                                <td data-label="Status">
                                     <form method="POST">
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="invoice_id" value="<?= $inv['id'] ?>">
@@ -337,7 +387,7 @@ require_once '../includes/admin_sidebar.php';
                                         </select>
                                     </form>
                                 </td>
-                                <td>
+                                <td data-label="Actions">
                                     <a href="invoice_print.php?id=<?= $inv['id'] ?>" target="_blank" class="btn btn-sm btn-info mr-1" title="Print / PDF"><i class="fas fa-print"></i></a>
                                     <?php if (!$is_agent): ?>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Delete this invoice?');">
@@ -382,15 +432,15 @@ require_once '../includes/admin_sidebar.php';
                     <?php else: ?>
                         <?php foreach($payments as $p): ?>
                             <tr>
-                                <td><?= date('M j, Y h:i A', strtotime($p['created_at'])) ?></td>
-                                <td><?= htmlspecialchars($p['first_name'] . ' ' . $p['last_name']) ?></td>
-                                <td><strong><?= htmlspecialchars($p['invoice_number']) ?></strong></td>
-                                <td><strong class="text-success"><?= htmlspecialchars($p['currency'] ?? 'USD') ?> <?= number_format($p['amount'], 2) ?></strong></td>
-                                <td>
+                                <td data-label="Date Submitted"><?= date('M j, Y h:i A', strtotime($p['created_at'])) ?></td>
+                                <td data-label="Client"><?= htmlspecialchars($p['first_name'] . ' ' . $p['last_name']) ?></td>
+                                <td data-label="Invoice"><strong><?= htmlspecialchars($p['invoice_number']) ?></strong></td>
+                                <td data-label="Amount Paid"><strong class="text-success"><?= htmlspecialchars($p['currency'] ?? 'USD') ?> <?= number_format($p['amount'], 2) ?></strong></td>
+                                <td data-label="Method & Ref">
                                     <span class="badge badge-info"><?= htmlspecialchars($p['payment_method']) ?></span><br>
                                     <small class="text-muted">Ref: <?= htmlspecialchars($p['reference_number']) ?></small>
                                 </td>
-                                <td>
+                                <td data-label="Proof File">
                                     <?php if (!empty($p['proof_file'])): ?>
                                         <a href="<?= BASE_URL . '/' . htmlspecialchars($p['proof_file']) ?>" target="_blank" class="btn btn-sm btn-outline-warning">
                                             <i class="fas fa-file-download mr-1"></i> View Receipt
@@ -399,7 +449,7 @@ require_once '../includes/admin_sidebar.php';
                                         <span class="text-muted">No file uploaded</span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     <?php if ($p['status'] === 'Pending'): ?>
                                         <span class="badge badge-warning text-dark"><i class="fas fa-clock mr-1"></i> Pending Review</span>
                                     <?php elseif ($p['status'] === 'Confirmed'): ?>
@@ -408,9 +458,9 @@ require_once '../includes/admin_sidebar.php';
                                         <span class="badge badge-danger"><i class="fas fa-times-circle mr-1"></i> Rejected</span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td data-label="Actions">
                                     <?php if ($p['status'] === 'Pending'): ?>
-                                        <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark" onclick="openReviewModal(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['first_name'] . ' ' . $p['last_name'])) ?>', '<?= htmlspecialchars(addslashes($p['invoice_number'])) ?>', '<?= number_format($p['amount'], 2) ?>')">
+                                        <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark" onclick="openReviewModal(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['first_name'] . ' ' . $p['last_name'])) ?>', '<?= htmlspecialchars(addslashes($p['invoice_number'])) ?>', '<?= htmlspecialchars(addslashes($p['currency'] ?? 'USD')) ?> <?= number_format($p['amount'], 2) ?>')">
                                             <i class="fas fa-gavel mr-1"></i> Review
                                         </button>
                                     <?php else: ?>
@@ -516,6 +566,9 @@ function openReviewModal(paymentId, clientName, invoiceRef, amount) {
                         <option value="GBP">GBP (£)</option>
                         <option value="AUD">AUD ($)</option>
                         <option value="CAD">CAD ($)</option>
+                        <option value="BTC">BTC (₿)</option>
+                        <option value="BUSD">BUSD</option>
+                        <option value="USDT">USDT</option>
                     </select>
                 </div>
             </div>

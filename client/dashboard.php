@@ -1201,10 +1201,10 @@ $fn4 = !empty($latest_case['flow_node_4']) ? $latest_case['flow_node_4'] : '4. C
                             <?php else: ?>
                                 <?php foreach ($activity_logs as $log): ?>
                                     <tr>
-                                        <td class="text-muted" style="white-space: nowrap;"><?= date('M j, Y H:i:s', strtotime($log['created_at'])) ?></td>
-                                        <td><span class="badge badge-warning text-dark font-weight-bold"><?= htmlspecialchars(str_replace('_', ' ', $log['action'])) ?></span></td>
-                                        <td class="text-light"><?= htmlspecialchars($log['details']) ?></td>
-                                        <td><code class="text-muted"><?= htmlspecialchars($log['ip_address'] ?? '—') ?></code></td>
+                                        <td data-label="Timestamp" class="text-muted" style="white-space: nowrap;"><?= date('M j, Y H:i:s', strtotime($log['created_at'])) ?></td>
+                                        <td data-label="Action"><span class="badge badge-warning text-dark font-weight-bold"><?= htmlspecialchars(str_replace('_', ' ', $log['action'])) ?></span></td>
+                                        <td data-label="Details" class="text-light"><?= htmlspecialchars($log['details']) ?></td>
+                                        <td data-label="IP Address"><code class="text-muted"><?= htmlspecialchars($log['ip_address'] ?? '—') ?></code></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>

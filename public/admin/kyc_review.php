@@ -24,6 +24,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt = $pdo->prepare("UPDATE IFW_kyc_submissions SET status = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, rejection_reason = ? WHERE id = ?");
         $stmt->execute([$status, $admin_id, $reason, $sub_id]);
         
+        // Fetch client info
+        $sub_stmt = $pdo->prepare("SELECT s.client_id, c.first_name, c.last_name, c.email FROM IFW_kyc_submissions s JOIN IFW_clients c ON s.client_id = c.id WHERE s.id = ?");
+        $sub_stmt->execute([$sub_id]);
+        $client_k = $sub_stmt->fetch();
+
+        if ($client_k && !empty($client_k['email']) && function_exists('send_html_email')) {
+            if ($status === 'Approved') {
+                $k_subj = "Identity Verification Approved — IFW Global";
+                $k_body = "
+                    <h2>Identity Verification Approved</h2>
+                    <p>Dear " . htmlspecialchars($client_k['first_name']) . ",</p>
+                    <p>Your identity documents have been successfully verified and approved by our compliance department.</p>
+                    <p>Your account is now fully verified. All legal case documents, investigative evidence, and asset recovery features are now active.</p>
+                    <p><a href='" . BASE_URL . "/client/dashboard.php' style='display:inline-block; padding:10px 20px; background:#28a745; color:#fff; text-decoration:none; font-weight:bold; border-radius:4px;'>Access Client Portal</a></p>
+                ";
+                send_html_email($client_k['email'], $k_subj, $k_body);
+            } else {
+                $k_subj = "Identity Verification Update Required — IFW Global";
+                $k_body = "
+                    <h2>Identity Verification Update Required</h2>
+                    <p>Dear " . htmlspecialchars($client_k['first_name']) . ",</p>
+                    <p>Our compliance department was unable to approve your recent identity verification submission.</p>
+                    <div style='background:#fff5f5; border-left:4px solid #dc3545; padding:15px; margin:15px 0; border-radius:4px;'>
+                        <strong>Reason:</strong> " . (!empty($reason) ? htmlspecialchars($reason) : "Document images were unclear or expired. Please upload high-resolution government ID and utility bill.") . "
+                    </div>
+                    <p>Please log in to your client portal to resubmit your verification documents.</p>
+                    <p><a href='" . BASE_URL . "/client/kyc.php' style='display:inline-block; padding:10px 20px; background:#fecc56; color:#000; text-decoration:none; font-weight:bold; border-radius:4px;'>Resubmit Verification Documents</a></p>
+                ";
+                send_html_email($client_k['email'], $k_subj, $k_body);
+            }
+        }
+
         log_audit_action($pdo, $admin_id, strtoupper($status) . '_KYC', "KYC Submission #$sub_id $status");
         header("Location: kyc_review.php?success=1");
         exit;

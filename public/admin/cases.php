@@ -4,6 +4,9 @@ require_once '../config.php';
 require_once '../includes/functions.php';
 require_admin_login();
 
+ensure_case_status_varchar($pdo);
+$case_status_options = get_case_status_options();
+
 $is_agent = isset($_SESSION['admin_role']) && in_array($_SESSION['admin_role'], ['agent', 'staff']);
 $admin_id = $_SESSION['admin_id'];
 
@@ -15,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $client_id = (int)$_POST['client_id'];
         $attorney_id = !empty($_POST['attorney_id']) ? (int)$_POST['attorney_id'] : null;
         $court_date = !empty($_POST['court_date']) ? $_POST['court_date'] : null;
-        $status = $_POST['status'];
+        $status = normalize_case_status($_POST['status']);
         $desc = trim($_POST['description']);
         
         $stmt = $pdo->prepare("INSERT INTO IFW_cases (case_number, title, client_id, attorney_id, court_date, status, description) VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -32,8 +35,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
     
     if ($_POST['action'] === 'update_status') {
+        $new_stat = normalize_case_status($_POST['status']);
+        $c_id = (int)$_POST['case_id'];
         $stmt = $pdo->prepare("UPDATE IFW_cases SET status = ? WHERE id = ?");
-        $stmt->execute([$_POST['status'], (int)$_POST['case_id']]);
+        $stmt->execute([$new_stat, $c_id]);
+        if (function_exists('log_audit_action')) {
+            log_audit_action($pdo, $_SESSION['admin_id'] ?? 1, 'Case Status Update', "Updated Case #{$c_id} status to {$new_stat}", 'admin');
+        }
         header("Location: cases.php?updated=1");
         exit;
     }
@@ -43,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 $cases = [];
 try {
     if ($is_agent) {
-        $stmt = $pdo->prepare("SELECT c.*, cl.first_name, cl.last_name, COALESCE(NULLIF(u.full_name, ''), u.username) as attorney_name, u.role as attorney_role FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id LEFT JOIN IFW_users u ON c.attorney_id = u.id WHERE c.attorney_id = ? OR cl.assigned_agent_id = ? ORDER BY c.created_at DESC");
-        $stmt->execute([$admin_id, $admin_id]);
+        $stmt = $pdo->prepare("SELECT c.*, cl.first_name, cl.last_name, COALESCE(NULLIF(u.full_name, ''), u.username) as attorney_name, u.role as attorney_role FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id LEFT JOIN IFW_users u ON c.attorney_id = u.id WHERE c.attorney_id = ? OR cl.assigned_agent_id = ? OR c.id IN (SELECT case_id FROM IFW_case_assignments WHERE user_id = ?) ORDER BY c.created_at DESC");
+        $stmt->execute([$admin_id, $admin_id, $admin_id]);
         $cases = $stmt->fetchAll();
     } else {
         $cases = $pdo->query("SELECT c.*, cl.first_name, cl.last_name, COALESCE(NULLIF(u.full_name, ''), u.username) as attorney_name, u.role as attorney_role FROM IFW_cases c JOIN IFW_clients cl ON c.client_id = cl.id LEFT JOIN IFW_users u ON c.attorney_id = u.id ORDER BY c.created_at DESC")->fetchAll();
@@ -112,24 +120,24 @@ require_once '../includes/admin_sidebar.php';
                     <?php else: ?>
                         <?php foreach($cases as $case): ?>
                             <tr>
-                                <td><span class="badge badge-secondary"><?= htmlspecialchars($case['case_number']) ?></span></td>
-                                <td><strong class="text-white"><?= htmlspecialchars($case['title']) ?></strong></td>
-                                <td><?= htmlspecialchars($case['first_name'] . ' ' . $case['last_name']) ?></td>
-                                <td><?= htmlspecialchars($case['attorney_name'] ?: 'Unassigned') ?></td>
-                                <td><?= $case['court_date'] ? date('M j, Y H:i', strtotime($case['court_date'])) : '<em class="text-muted">None</em>' ?></td>
-                                <td>
+                                <td data-label="Case Ref"><span class="badge badge-secondary"><?= htmlspecialchars($case['case_number']) ?></span></td>
+                                <td data-label="Title"><strong class="text-white"><?= htmlspecialchars($case['title']) ?></strong></td>
+                                <td data-label="Client"><?= htmlspecialchars($case['first_name'] . ' ' . $case['last_name']) ?></td>
+                                <td data-label="Officer/Attorney"><?= htmlspecialchars($case['attorney_name'] ?: 'Unassigned') ?></td>
+                                <td data-label="Due / Court Date"><?= $case['court_date'] ? date('M j, Y H:i', strtotime($case['court_date'])) : '<em class="text-muted">None</em>' ?></td>
+                                <td data-label="Status">
+                                    <?php $cur_st = normalize_case_status($case['status'] ?? 'Received'); ?>
                                     <form method="POST">
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="case_id" value="<?= $case['id'] ?>">
-                                        <select name="status" class="form-control form-control-sm bg-dark text-white border-secondary" style="width:120px;" onchange="this.form.submit()">
-                                            <option value="Pending" <?= $case['status'] === 'Pending' ? 'selected' : '' ?>>Pending</option>
-                                            <option value="Active" <?= $case['status'] === 'Active' ? 'selected' : '' ?>>Active</option>
-                                            <option value="Suspended" <?= $case['status'] === 'Suspended' ? 'selected' : '' ?>>Suspended</option>
-                                            <option value="Resolved" <?= $case['status'] === 'Resolved' ? 'selected' : '' ?>>Resolved</option>
+                                        <select name="status" class="form-control form-control-sm bg-dark text-white border-secondary font-weight-bold" style="width:160px;" onchange="this.form.submit()">
+                                            <?php foreach ($case_status_options as $val => $label): ?>
+                                                <option value="<?= htmlspecialchars($val) ?>" <?= $cur_st === $val ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
+                                            <?php endforeach; ?>
                                         </select>
                                     </form>
                                 </td>
-                                <td>
+                                <td data-label="Actions">
                                     <a href="case_view.php?id=<?= $case['id'] ?>" class="btn btn-sm btn-info text-white" title="Manage Case & Timeline"><i class="fas fa-folder-open mr-1"></i> View & Manage</a>
                                     <?php if (!$is_agent): ?>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Delete this case?');">
@@ -210,10 +218,9 @@ require_once '../includes/admin_sidebar.php';
                 <div class="col-md-6">
                     <label class="text-white font-weight-bold">Status <span class="text-warning">*</span></label>
                     <select name="status" class="form-control bg-dark text-white border-secondary" required>
-                        <option value="Pending">Pending</option>
-                        <option value="Active">Active</option>
-                        <option value="Suspended">Suspended</option>
-                        <option value="Resolved">Resolved</option>
+                        <?php foreach ($case_status_options as $val => $label): ?>
+                            <option value="<?= htmlspecialchars($val) ?>"><?= htmlspecialchars($label) ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
             </div>

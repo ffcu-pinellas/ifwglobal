@@ -41,8 +41,11 @@ try {
         u.phone AS agent_phone
         FROM IFW_cases ca 
         LEFT JOIN IFW_users u ON ca.attorney_id = u.id 
-        WHERE ca.client_id=? ORDER BY ca.created_at DESC");
-    $s->execute([$client_id]);
+        WHERE ca.client_id = ? 
+           OR ca.id IN (SELECT case_id FROM IFW_invoices WHERE client_id = ? AND case_id > 0)
+           OR ca.client_id IN (SELECT id FROM IFW_clients WHERE email = (SELECT email FROM IFW_clients WHERE id = ? LIMIT 1))
+        ORDER BY ca.created_at DESC");
+    $s->execute([$client_id, $client_id, $client_id]);
     $cases = $s->fetchAll();
 } catch(Exception $e) {}
 
@@ -100,17 +103,99 @@ require_once $dir . '/includes/admin_sidebar.php';
 .star-rating .star:hover, .star-rating .star.active { color:#fecc56; }
 .case-meta-row { padding:8px 0; border-bottom:1px solid #f0f0f0; }
 .case-meta-row:last-child { border-bottom:none; }
+
+.table-portal-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto;
+    border: 1px solid #28303f;
+    border-radius: 10px;
+    background: #161a23;
+}
+.table-portal {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 0;
+    color: #f1f5f9;
+    border-collapse: collapse;
+}
+.table-portal thead th {
+    background: #1f2533 !important;
+    color: #fecc56 !important;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-top: none;
+    border-bottom: 2px solid #333d4e !important;
+    padding: 10px 12px;
+}
+.table-portal tbody tr {
+    background: #161a23;
+    border-top: 1px solid #262e3d;
+}
+.table-portal tbody tr:hover {
+    background: #1c2230 !important;
+}
+.table-portal td {
+    padding: 12px;
+    vertical-align: middle;
+    color: #e2e8f0;
+    font-size: 13px;
+    word-break: break-word;
+}
+.table-portal td .btn {
+    white-space: nowrap;
+    margin: 2px;
+}
+
+@media (max-width: 768px) {
+    .table-portal thead { display: none !important; }
+    .table-portal, .table-portal tbody, .table-portal tr, .table-portal td {
+        display: block !important;
+        width: 100% !important;
+    }
+    .table-portal tr {
+        margin-bottom: 12px;
+        background: #1a202c !important;
+        border: 1px solid #2d3748 !important;
+        border-radius: 8px !important;
+        padding: 8px;
+    }
+    .table-portal td {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 8px 10px !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        text-align: right !important;
+    }
+    .table-portal td:last-child {
+        border-bottom: none !important;
+        justify-content: flex-end !important;
+    }
+    .table-portal td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #fecc56;
+        text-align: left;
+        margin-right: 12px;
+    }
+}
 </style>
 
 <div class="row mb-3">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
-                <h4 class="font-weight-bold mb-0"><i class="fas fa-briefcase text-warning mr-2"></i>My Cases</h4>
-                <p class="text-muted small mb-0">Track your active and completed cases with full investigation timeline</p>
+                <h4 class="font-weight-bold mb-0 text-white"><i class="fas fa-briefcase text-warning mr-2"></i>My Investigation Cases</h4>
+                <p class="text-warning small mb-0 font-weight-bold">Track your active and completed recovery cases with forensic milestones</p>
             </div>
-            <a href="/client/dashboard.php" class="btn btn-outline-dark btn-sm font-weight-bold">
-                <i class="fas fa-arrow-left mr-1"></i> Dashboard
+            <a href="/client/dashboard.php" class="btn btn-outline-warning text-warning btn-sm font-weight-bold">
+                <i class="fas fa-arrow-left mr-1"></i> Return to Dashboard
             </a>
         </div>
     </div>
@@ -294,11 +379,16 @@ require_once $dir . '/includes/admin_sidebar.php';
 
         <!-- DOCUMENT VAULT & SECURE E-SIGNATURES -->
         <div class="card shadow-sm border-0 mb-4 bg-dark text-white border-warning">
-            <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-folder-open mr-2"></i>Document Vault & e-Signatures</span>
-                <span class="badge badge-warning text-dark font-weight-bold"><?= count($vault_docs) ?> Files</span>
+            <div class="card-header bg-dark border-bottom font-weight-bold py-3 text-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <i class="fas fa-folder-open mr-2"></i>Document Vault & e-Signatures
+                    <span class="badge badge-warning text-dark font-weight-bold ml-2"><?= count($vault_docs) ?> Files</span>
+                </div>
+                <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark shadow-sm" data-toggle="modal" data-target="#evidenceUploadModal">
+                    <i class="fas fa-cloud-upload-alt mr-1"></i> Upload Case Evidence
+                </button>
             </div>
-            <div class="card-body">
+            <div class="card-body p-3 p-md-4" style="overflow-x: hidden;">
                 <?php if (empty($vault_docs)): ?>
                     <div class="text-center py-4">
                         <i class="fas fa-file-pdf fa-3x text-muted mb-3 d-block"></i>
@@ -306,20 +396,20 @@ require_once $dir . '/includes/admin_sidebar.php';
                     </div>
                 <?php else: ?>
                     <p class="text-light small mb-3">Below are the files assigned to your profile. Documents requiring cryptographic signature can be e-signed immediately with your 4-digit security PIN.</p>
-                    <div class="table-responsive">
-                        <table class="table table-dark table-hover table-striped mb-0" style="background:#111; font-size:13px;">
+                    <div class="table-portal-wrap" style="overflow-x: auto; max-width: 100%;">
+                        <table class="table-portal" style="width: 100%; table-layout: auto;">
                             <thead>
                                 <tr class="text-warning">
-                                    <th>File Name</th>
-                                    <th>Type</th>
-                                    <th>Verification Status</th>
-                                    <th class="text-right">Action</th>
+                                    <th style="min-width: 180px;">File Name</th>
+                                    <th style="min-width: 120px;">Type</th>
+                                    <th style="min-width: 140px;">Verification Status</th>
+                                    <th class="text-right" style="min-width: 130px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach($vault_docs as $doc): ?>
                                     <tr>
-                                        <td class="align-middle">
+                                        <td data-label="File Name" style="word-break: break-all; max-width: 250px;">
                                             <?php if (!empty($doc['document_body'])): ?>
                                                 <a href="view_document.php?id=<?= $doc['id'] ?>" target="_blank" class="text-warning font-weight-bold text-decoration-none">
                                                     <i class="fas fa-file-alt mr-1"></i> <?= htmlspecialchars($doc['file_name']) ?>
@@ -331,13 +421,13 @@ require_once $dir . '/includes/admin_sidebar.php';
                                             <?php endif; ?>
                                             <br><small class="text-muted"><?= date('M j, Y H:i', strtotime($doc['uploaded_at'])) ?></small>
                                         </td>
-                                        <td class="align-middle">
+                                        <td data-label="Type">
                                             <span class="badge badge-secondary"><?= htmlspecialchars($doc['document_type']) ?></span>
                                         </td>
-                                        <td class="align-middle">
+                                        <td data-label="Verification Status">
                                             <?php if ($doc['requires_signature']): ?>
                                                 <?php if ($doc['is_signed']): ?>
-                                                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Cryptographically Signed</span>
+                                                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Signed</span>
                                                 <?php else: ?>
                                                     <span class="badge badge-warning text-dark px-2 py-1"><i class="fas fa-signature mr-1"></i> Pending Signature</span>
                                                 <?php endif; ?>
@@ -345,21 +435,23 @@ require_once $dir . '/includes/admin_sidebar.php';
                                                 <span class="badge badge-info px-2 py-1"><i class="fas fa-eye mr-1"></i> Reference Only</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td class="align-middle text-right">
-                                            <?php if (!empty($doc['document_body'])): ?>
-                                                <a href="view_document.php?id=<?= $doc['id'] ?>" target="_blank" class="btn btn-xs btn-outline-warning mr-1" title="View Document">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                            <?php else: ?>
-                                                <a href="<?= BASE_URL . '/' . htmlspecialchars($doc['file_path']) ?>" target="_blank" class="btn btn-xs btn-outline-warning mr-1" title="Download">
-                                                    <i class="fas fa-download"></i>
-                                                </a>
-                                            <?php endif; ?>
-                                            <?php if ($doc['requires_signature'] && !$doc['is_signed']): ?>
-                                                <button type="button" class="btn btn-xs btn-warning text-dark font-weight-bold" onclick="openSigningModal(<?= $doc['id'] ?>, '<?= htmlspecialchars(addslashes($doc['file_name'])) ?>')">
-                                                    <i class="fas fa-pen mr-1"></i> Sign
-                                                </button>
-                                            <?php endif; ?>
+                                        <td data-label="Action" class="text-right">
+                                            <div class="d-inline-flex flex-wrap justify-content-end" style="gap: 4px;">
+                                                <?php if (!empty($doc['document_body'])): ?>
+                                                    <a href="view_document.php?id=<?= $doc['id'] ?>" target="_blank" class="btn btn-sm btn-outline-warning" title="View Document">
+                                                        <i class="fas fa-eye mr-1"></i> View
+                                                    </a>
+                                                <?php else: ?>
+                                                    <a href="<?= BASE_URL . '/' . htmlspecialchars($doc['file_path']) ?>" target="_blank" class="btn btn-sm btn-outline-warning" title="Download">
+                                                        <i class="fas fa-download mr-1"></i> Download
+                                                    </a>
+                                                <?php endif; ?>
+                                                <?php if ($doc['requires_signature'] && !$doc['is_signed']): ?>
+                                                    <button type="button" class="btn btn-sm btn-warning text-dark font-weight-bold" onclick="openSigningModal(<?= $doc['id'] ?>, '<?= htmlspecialchars(addslashes($doc['file_name'])) ?>')">
+                                                        <i class="fas fa-pen mr-1"></i> Sign Now
+                                                    </button>
+                                                <?php endif; ?>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -511,6 +603,82 @@ require_once $dir . '/includes/admin_sidebar.php';
     </div>
 </div>
 <?php endif; ?>
+
+<!-- Client Case Evidence Upload Modal -->
+<div class="modal fade" id="evidenceUploadModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content bg-dark text-white border-warning">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning font-weight-bold"><i class="fas fa-cloud-upload-alt mr-2"></i>Upload Case Evidence</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="evidenceUploadForm" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">Upload transaction receipts, chat screenshots, wire records, or suspect profile links for your investigator to review.</p>
+                    
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-light small">Select Document / Evidence File</label>
+                        <input type="file" name="vault_file" id="evidenceFileInput" class="form-control-file border border-secondary p-2 rounded w-100 bg-black text-white" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+                        <small class="text-muted">Allowed formats: PDF, DOC, DOCX, JPG, PNG (Max 10MB)</small>
+                    </div>
+                    
+                    <div id="evidenceUploadError" class="alert alert-danger py-2 small" style="display:none;"></div>
+                    <div id="evidenceUploadSuccess" class="alert alert-success py-2 small" style="display:none;"></div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary font-weight-bold btn-sm" data-dismiss="modal">Cancel</button>
+                    <button type="submit" id="evidenceSubmitBtn" class="btn btn-warning font-weight-bold text-dark btn-sm"><i class="fas fa-upload mr-1"></i>Upload to Vault</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var evidenceForm = document.getElementById('evidenceUploadForm');
+    if (evidenceForm) {
+        evidenceForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var errDiv = document.getElementById('evidenceUploadError');
+            var succDiv = document.getElementById('evidenceUploadSuccess');
+            var btn = document.getElementById('evidenceSubmitBtn');
+            
+            errDiv.style.display = 'none';
+            succDiv.style.display = 'none';
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Uploading...';
+            
+            var formData = new FormData(this);
+            fetch('/api/vault_upload.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-upload mr-1"></i> Upload to Vault';
+                if (data.status === 'success') {
+                    succDiv.innerText = 'Evidence uploaded successfully to your vault!';
+                    succDiv.style.display = 'block';
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1200);
+                } else {
+                    errDiv.innerText = data.message || 'Upload failed. Please check file format.';
+                    errDiv.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-upload mr-1"></i> Upload to Vault';
+                errDiv.innerText = 'Connection error. Please try again.';
+                errDiv.style.display = 'block';
+            });
+        });
+    }
+});
+</script>
 
 <style>
 @keyframes pulse { 0%,100%{ box-shadow: 0 0 0 3px #ffc107; } 50%{ box-shadow: 0 0 0 6px rgba(255,193,7,.3); } }

@@ -66,6 +66,18 @@ try {
     $instalments = $s->fetchAll();
 } catch(Exception $e) {}
 
+// Determine status case-insensitively
+$raw_status = strtolower(trim($invoice['status'] ?? 'pending'));
+$is_paid = ($raw_status === 'paid');
+
+// Confirmed payments deduction
+$total_paid = 0.00;
+try {
+    $stmtP = $pdo->prepare("SELECT SUM(amount) FROM IFW_invoice_payments WHERE invoice_id = ? AND status = 'Confirmed'");
+    $stmtP->execute([$id]);
+    $total_paid = floatval($stmtP->fetchColumn() ?: 0.00);
+} catch (Exception $e) {}
+
 // Late fee calculation
 $dynamic_late_fee = 0.00;
 $next_penalty_time = null;
@@ -82,7 +94,8 @@ $symbol = $currency_symbols[$invoice['currency'] ?? 'USD'] ?? '$';
 $base_amount = ($invoice['total_amount'] > 0) ? (float)$invoice['total_amount'] : (float)$invoice['amount'];
 $subtotal_amount = ($invoice['subtotal'] > 0) ? (float)$invoice['subtotal'] : (float)$invoice['amount'];
 
-if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled']) && $invoice['late_fee_amount'] > 0) {
+// Only calculate and charge late fees if invoice is NOT paid
+if (!$is_paid && !empty($invoice['late_fee_enabled']) && $invoice['late_fee_amount'] > 0) {
     $raw_start_date = !empty($invoice['late_fee_start_date']) ? $invoice['late_fee_start_date'] : (!empty($invoice['due_date']) ? $invoice['due_date'] : null);
     $startDate = $raw_start_date ? strtotime($raw_start_date) : 0;
     $now = time();
@@ -115,7 +128,7 @@ if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled']) && $in
         $time_remaining_sec = max(0, $next_penalty_time - $now);
     } else {
         $next_penalty_time = $startDate;
-        $time_remaining_sec = $startDate - $now;
+        $time_remaining_sec = max(0, $startDate - $now);
     }
     
     // Save to DB if higher
@@ -128,19 +141,19 @@ if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled']) && $in
     }
 }
 
-$late_fee = ($invoice['status'] === 'paid') ? ($invoice['late_fee_accumulated'] ?? 0) : max($dynamic_late_fee, $invoice['late_fee_accumulated'] ?? 0);
+$late_fee = $is_paid ? ($invoice['late_fee_accumulated'] ?? 0) : max($dynamic_late_fee, $invoice['late_fee_accumulated'] ?? 0);
 $total_billed = $base_amount + $late_fee;
 
-// Confirmed payments deduction
-$total_paid = 0.00;
-try {
-    $stmtP = $pdo->prepare("SELECT SUM(amount) FROM IFW_invoice_payments WHERE invoice_id = ? AND status = 'Confirmed'");
-    $stmtP->execute([$id]);
-    $total_paid = floatval($stmtP->fetchColumn() ?: 0.00);
-} catch (Exception $e) {}
-
-$balance_due = max(0, $total_billed - $total_paid);
-$total_due = $balance_due;
+if ($is_paid || ($total_billed > 0 && $total_paid >= $total_billed)) {
+    $is_paid = true;
+    $balance_due = 0.00;
+    $total_due = 0.00;
+    $total_paid = max($total_paid, $total_billed);
+    $time_remaining_sec = 0;
+} else {
+    $balance_due = max(0, $total_billed - $total_paid);
+    $total_due = $balance_due;
+}
 
 // Global payment info fallback
 $global_payment = get_setting($pdo, 'bank_details', '');
@@ -150,7 +163,7 @@ $app_name = get_setting($pdo, 'app_name', 'IFW Global');
 $company_address = get_setting($pdo, 'company_address', '');
 $company_email   = get_setting($pdo, 'contact_email', '');
 $company_phone   = get_setting($pdo, 'contact_phone', '');
-$logo_url        = get_setting($pdo, 'logo_url', '/admin_assets/img/logo/logo.svg');
+$logo_url        = get_brand_logo_url($pdo);
 
 $is_print = isset($_GET['print']);
 
@@ -160,19 +173,26 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
 
 <?php if (!$is_print): ?>
 <div class="row mb-3 d-print-none">
-    <div class="col-12 d-flex justify-content-between align-items-center">
-        <div>
-            <h4 class="font-weight-bold mb-0"><i class="fas fa-file-invoice-dollar text-warning mr-2"></i>Invoice #INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?></h4>
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="mb-2 mb-md-0">
+            <h4 class="font-weight-bold mb-0 text-white"><i class="fas fa-file-invoice-dollar text-warning mr-2"></i>Invoice #INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?></h4>
         </div>
         <div>
-            <a href="/client/dashboard.php" class="btn btn-sm btn-outline-dark font-weight-bold mr-2"><i class="fas fa-arrow-left mr-1"></i> Back</a>
-            <button onclick="window.print()" class="btn btn-sm btn-outline-secondary font-weight-bold mr-2"><i class="fas fa-print mr-1"></i> Print</button>
-            <?php if ($balance_due > 0 && $invoice['status'] !== 'paid'): ?>
+            <a href="/client/dashboard.php" class="btn btn-sm btn-outline-warning text-warning font-weight-bold mr-2"><i class="fas fa-arrow-left mr-1"></i> Dashboard</a>
+            <button onclick="window.print()" class="btn btn-sm btn-outline-secondary font-weight-bold mr-2"><i class="fas fa-print mr-1"></i> Print / PDF</button>
+            <?php if (!$is_paid && $balance_due > 0): ?>
                 <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark shadow-sm"
                     onclick="showPayModal(<?= $invoice['id'] ?>, '#INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?>', <?= $balance_due ?>, '<?= htmlspecialchars($invoice['currency'] ?? 'USD') ?>', <?= htmlspecialchars(json_encode($payment_info)) ?>, '<?= htmlspecialchars($client_currency) ?>', <?= convert_currency($balance_due, $invoice['currency'] ?? 'USD', $client_currency) ?>)"
                     data-toggle="modal" data-target="#payNowModal">
                     <i class="fas fa-credit-card mr-1"></i> Pay Balance Due (<?= $symbol ?><?= number_format($balance_due, 2) ?>)
                 </button>
+            <?php else: ?>
+                <span class="badge badge-success font-weight-bold px-3 py-2 mr-2" style="font-size:13px;">
+                    <i class="fas fa-check-circle mr-1"></i> Paid in Full ($0.00 Due)
+                </span>
+                <a href="/client/receipt_view.php?invoice_id=<?= $invoice['id'] ?>" class="btn btn-sm btn-outline-success font-weight-bold shadow-sm">
+                    <i class="fas fa-receipt mr-1"></i> Official Payment Receipt
+                </a>
             <?php endif; ?>
         </div>
     </div>
@@ -182,7 +202,7 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
 <!-- INVOICE DOCUMENT -->
 <div class="card border-0 shadow <?= $is_print ? '' : 'mb-4' ?>" id="invoiceDoc" style="<?= $is_print ? 'box-shadow:none!important;' : '' ?>">
     <div class="card-body p-5">
-        <?php if ($invoice['status'] !== 'paid' && !empty($invoice['late_fee_enabled'])): ?>
+        <?php if (!$is_paid && !empty($invoice['late_fee_enabled']) && $balance_due > 0): ?>
             <!-- LATE FEE URGENCY TICKER -->
             <div class="alert alert-danger border-0 mb-4 p-4 shadow-sm" style="border-left: 5px solid #dc3545 !important; background: #fff5f5; color: #721c24;">
                 <div class="d-flex align-items-center justify-content-between flex-wrap">
@@ -249,27 +269,27 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
         <?php endif; ?>
 
         <!-- INVOICE HEADER -->
-        <div class="row mb-5">
-            <div class="col-6">
+        <div class="row mb-4">
+            <div class="col-sm-6 mb-3 mb-sm-0">
                 <?php if ($logo_url): ?>
                     <img src="<?= htmlspecialchars($logo_url) ?>" alt="<?= htmlspecialchars($app_name) ?>" style="max-height:60px; max-width:200px;" onerror="this.style.display='none'">
                 <?php endif; ?>
-                <h3 class="font-weight-bold text-dark mt-2 mb-0"><?= htmlspecialchars($app_name) ?></h3>
-                <?php if ($company_address): ?><p class="text-muted small mb-0"><?= nl2br(htmlspecialchars($company_address)) ?></p><?php endif; ?>
-                <?php if ($company_email): ?><p class="text-muted small mb-0"><?= htmlspecialchars($company_email) ?></p><?php endif; ?>
-                <?php if ($company_phone): ?><p class="text-muted small mb-0"><?= htmlspecialchars($company_phone) ?></p><?php endif; ?>
+                <h3 class="font-weight-bold text-white mt-2 mb-0"><?= htmlspecialchars($app_name) ?></h3>
+                <?php if ($company_address): ?><p class="text-muted small mb-0 mt-1"><?= nl2br(htmlspecialchars($company_address)) ?></p><?php endif; ?>
+                <?php if ($company_email): ?><p class="text-muted small mb-0"><i class="fas fa-envelope mr-1 text-warning"></i><?= htmlspecialchars($company_email) ?></p><?php endif; ?>
+                <?php if ($company_phone): ?><p class="text-muted small mb-0"><i class="fas fa-phone mr-1 text-warning"></i><?= htmlspecialchars($company_phone) ?></p><?php endif; ?>
             </div>
-            <div class="col-6 text-right">
-                <h1 class="font-weight-bold text-dark mb-1" style="font-size:2.5rem; letter-spacing:2px; opacity:.15;">INVOICE</h1>
-                <div class="badge bg-dark text-warning px-3 py-2 mb-3" style="font-size:1.1rem; background:#1a1a1a !important; display:inline-block; border-radius:6px;">
+            <div class="col-sm-6 text-sm-right">
+                <h1 class="font-weight-bold text-white mb-1" style="font-size:2.2rem; letter-spacing:2px; opacity:.2;">INVOICE</h1>
+                <div class="badge bg-dark text-warning px-3 py-2 mb-2 font-weight-bold" style="font-size:1.1rem; background:#111827 !important; border:1px solid #fecc56; display:inline-block; border-radius:6px;">
                     #INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?>
                 </div>
-                <table class="ml-auto" style="font-size:13px;">
-                    <tr><td class="text-muted pr-3">Issue Date:</td><td class="font-weight-bold"><?= date('F j, Y', strtotime($invoice['issue_date'] ?? $invoice['created_at'])) ?></td></tr>
+                <table class="ml-sm-auto" style="font-size:13px; color:#f1f5f9;">
+                    <tr><td class="text-muted pr-3">Issue Date:</td><td class="font-weight-bold text-white"><?= date('F j, Y', strtotime($invoice['issue_date'] ?? $invoice['created_at'])) ?></td></tr>
                     <?php if ($invoice['due_date']): ?>
                     <tr>
                         <td class="text-muted pr-3">Due Date:</td>
-                        <td class="font-weight-bold <?= (strtotime($invoice['due_date']) < time() && $invoice['status']!=='paid') ? 'text-danger' : '' ?>">
+                        <td class="font-weight-bold <?= (strtotime($invoice['due_date']) < time() && $invoice['status']!=='paid') ? 'text-danger' : 'text-white' ?>">
                             <?= date('F j, Y', strtotime($invoice['due_date'])) ?>
                         </td>
                     </tr>
@@ -278,106 +298,108 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
                         <td>
                             <?php $st = strtolower($invoice['status'] ?? 'unpaid');
                             $badge = ['paid'=>'success','unpaid'=>'danger','partial'=>'warning','overdue'=>'danger'][$st] ?? 'secondary'; ?>
-                            <span class="badge badge-<?= $badge ?>"><?= ucfirst($st) ?></span>
+                            <span class="badge badge-<?= $badge ?> px-2 py-1"><?= ucfirst($st) ?></span>
                         </td>
                     </tr>
                     <?php if (!empty($invoice['case_number'])): ?>
-                    <tr><td class="text-muted pr-3">Case Ref:</td><td class="font-weight-bold"><?= htmlspecialchars($invoice['case_number']) ?></td></tr>
+                    <tr><td class="text-muted pr-3">Case Ref:</td><td class="font-weight-bold text-warning"><?= htmlspecialchars($invoice['case_number']) ?></td></tr>
                     <?php endif; ?>
                 </table>
             </div>
         </div>
 
         <!-- BILLED TO -->
-        <div class="row mb-5">
-            <div class="col-6">
-                <p class="text-muted text-uppercase small font-weight-bold mb-1" style="letter-spacing:1px;">Billed To</p>
-                <div class="bg-light p-3 rounded border">
-                    <strong class="d-block text-dark"><?= htmlspecialchars($invoice['first_name'] . ' ' . $invoice['last_name']) ?></strong>
-                    <span class="text-muted small"><?= htmlspecialchars($invoice['email']) ?></span>
-                    <?php if ($invoice['phone']): ?><br><span class="text-muted small"><?= htmlspecialchars($invoice['phone']) ?></span><?php endif; ?>
-                    <?php if ($invoice['country']): ?><br><span class="text-muted small"><?= htmlspecialchars($invoice['country']) ?></span><?php endif; ?>
+        <div class="row mb-4">
+            <div class="col-sm-6 mb-3 mb-sm-0">
+                <p class="text-warning text-uppercase small font-weight-bold mb-2" style="letter-spacing:1px;"><i class="fas fa-user-circle mr-1"></i> Billed To</p>
+                <div class="p-3 rounded border" style="background:#1f2533; border-color:#2e3849 !important;">
+                    <strong class="d-block text-white" style="font-size:1.05rem;"><?= htmlspecialchars($invoice['first_name'] . ' ' . $invoice['last_name']) ?></strong>
+                    <span class="text-light small d-block mt-1"><?= htmlspecialchars($invoice['email']) ?></span>
+                    <?php if ($invoice['phone']): ?><span class="text-muted small d-block"><?= htmlspecialchars($invoice['phone']) ?></span><?php endif; ?>
+                    <?php if ($invoice['country']): ?><span class="text-muted small d-block"><?= htmlspecialchars($invoice['country']) ?></span><?php endif; ?>
                 </div>
             </div>
             <?php if (!empty($invoice['case_title'])): ?>
-            <div class="col-6">
-                <p class="text-muted text-uppercase small font-weight-bold mb-1" style="letter-spacing:1px;">Related Case</p>
-                <div class="bg-light p-3 rounded border">
-                    <strong class="d-block text-dark"><?= htmlspecialchars($invoice['case_number'] ?? '') ?></strong>
-                    <span class="text-muted small"><?= htmlspecialchars($invoice['case_title']) ?></span>
+            <div class="col-sm-6">
+                <p class="text-warning text-uppercase small font-weight-bold mb-2" style="letter-spacing:1px;"><i class="fas fa-briefcase mr-1"></i> Related Case</p>
+                <div class="p-3 rounded border" style="background:#1f2533; border-color:#2e3849 !important;">
+                    <strong class="d-block text-warning font-weight-bold" style="font-size:1.05rem;"><?= htmlspecialchars($invoice['case_number'] ?? '') ?></strong>
+                    <span class="text-light small d-block mt-1"><?= htmlspecialchars($invoice['case_title']) ?></span>
                 </div>
             </div>
             <?php endif; ?>
         </div>
 
         <!-- LINE ITEMS -->
-        <table class="table table-bordered mb-4" style="font-size:14px;">
-            <thead style="background:#1a1a1a; color:#fecc56;">
-                <tr>
-                    <th style="width:5%">#</th>
-                    <th>Description</th>
-                    <th style="width:12%; text-align:right;">Qty</th>
-                    <th style="width:16%; text-align:right;">Unit Price</th>
-                    <th style="width:16%; text-align:right;">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (!empty($items)): ?>
-                    <?php foreach($items as $i => $item): ?>
+        <div class="table-responsive mb-4" style="border-radius:8px; border:1px solid #28303f; overflow:hidden;">
+            <table class="table table-bordered mb-0" style="font-size:14px; border-color:#28303f; background:#161a23; color:#f1f5f9;">
+                <thead style="background:#1f2533; color:#fecc56; border-color:#2e3849;">
                     <tr>
-                        <td><?= $i+1 ?></td>
-                        <td><?= htmlspecialchars($item['description']) ?><?= !empty($item['notes']) ? '<br><small class="text-muted">'.$item['notes'].'</small>' : '' ?></td>
-                        <td class="text-right"><?= htmlspecialchars($item['qty'] ?? 1) ?></td>
-                        <td class="text-right"><?= $symbol ?><?= number_format($item['rate'] ?? ($base_amount / max(1, count($items))), 2) ?></td>
-                        <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($item['amount'] ?? ($item['qty'] * $item['rate']), 2) ?></td>
+                        <th style="width:5%; border-color:#2e3849; color:#fecc56 !important;">#</th>
+                        <th style="border-color:#2e3849; color:#fecc56 !important;">Description</th>
+                        <th style="width:12%; text-align:right; border-color:#2e3849; color:#fecc56 !important;">Qty</th>
+                        <th style="width:16%; text-align:right; border-color:#2e3849; color:#fecc56 !important;">Unit Price</th>
+                        <th style="width:16%; text-align:right; border-color:#2e3849; color:#fecc56 !important;">Total</th>
                     </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td>1</td>
-                        <td><?= htmlspecialchars($invoice['description'] ?? 'Professional Services') ?></td>
-                        <td class="text-right">1</td>
-                        <td class="text-right"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
-                        <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
+                </thead>
+                <tbody>
+                    <?php if (!empty($items)): ?>
+                        <?php foreach($items as $i => $item): ?>
+                        <tr>
+                            <td style="border-color:#28303f; color:#ffffff !important;"><?= $i+1 ?></td>
+                            <td style="border-color:#28303f; color:#ffffff !important;"><?= htmlspecialchars($item['description']) ?><?= !empty($item['notes']) ? '<br><small class="text-muted">'.$item['notes'].'</small>' : '' ?></td>
+                            <td class="text-right" style="border-color:#28303f; color:#ffffff !important;"><?= htmlspecialchars($item['qty'] ?? 1) ?></td>
+                            <td class="text-right" style="border-color:#28303f; color:#ffffff !important;"><?= $symbol ?><?= number_format($item['rate'] ?? ($base_amount / max(1, count($items))), 2) ?></td>
+                            <td class="text-right font-weight-bold" style="border-color:#28303f; color:#ffffff !important;"><?= $symbol ?><?= number_format($item['amount'] ?? ($item['qty'] * $item['rate']), 2) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td style="border-color:#28303f; color:#ffffff !important;">1</td>
+                            <td style="border-color:#28303f; color:#ffffff !important;"><?= htmlspecialchars($invoice['description'] ?? 'Professional Services') ?></td>
+                            <td class="text-right" style="border-color:#28303f; color:#ffffff !important;">1</td>
+                            <td class="text-right" style="border-color:#28303f; color:#ffffff !important;"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
+                            <td class="text-right font-weight-bold" style="border-color:#28303f; color:#ffffff !important;"><?= $symbol ?><?= number_format($base_amount, 2) ?></td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+                <tfoot>
+                    <tr style="background:#1f2533; border-top:2px solid #2e3849;">
+                        <td colspan="4" class="text-right font-weight-bold" style="color:#ffffff !important; font-size:14px; border-color:#2e3849;">Subtotal</td>
+                        <td class="text-right font-weight-bold" style="color:#ffffff !important; font-size:14px; border-color:#2e3849;"><?= $symbol ?><?= number_format($subtotal_amount, 2) ?></td>
                     </tr>
-                <?php endif; ?>
-            </tbody>
-            <tfoot>
-                <tr class="bg-light">
-                    <td colspan="4" class="text-right font-weight-bold">Subtotal</td>
-                    <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($subtotal_amount, 2) ?></td>
-                </tr>
-                <?php if (!empty($invoice['discount_amount']) && $invoice['discount_amount'] > 0): ?>
-                <tr class="bg-light">
-                    <td colspan="4" class="text-right text-success">Discount</td>
-                    <td class="text-right text-success">-<?= $symbol ?><?= number_format($invoice['discount_amount'], 2) ?></td>
-                </tr>
-                <?php endif; ?>
-                <?php if ($late_fee > 0): ?>
-                <tr class="bg-light">
-                    <td colspan="4" class="text-right text-danger font-weight-bold">Late Fee Penalty Interest</td>
-                    <td class="text-right text-danger font-weight-bold">+<?= $symbol ?><?= number_format($late_fee, 2) ?></td>
-                </tr>
-                <?php endif; ?>
-                <tr class="bg-light">
-                    <td colspan="4" class="text-right font-weight-bold">Total Invoiced Amount</td>
-                    <td class="text-right font-weight-bold"><?= $symbol ?><?= number_format($total_billed, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
-                </tr>
-                <?php if ($total_paid > 0): ?>
-                <tr class="bg-light">
-                    <td colspan="4" class="text-right text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i>Less Verified Payments Received</td>
-                    <td class="text-right text-success font-weight-bold">-<?= $symbol ?><?= number_format($total_paid, 2) ?></td>
-                </tr>
-                <?php endif; ?>
-                <tr style="background:#1a1a1a; color:#fecc56;">
-                    <td colspan="4" class="text-right font-weight-bold" style="font-size:1.1rem;">REMAINING BALANCE DUE</td>
-                    <td class="text-right font-weight-bold" style="font-size:1.25rem; color:#fecc56;"><?= $symbol ?><?= number_format($balance_due, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
-                </tr>
-            </tfoot>
-        </table>
+                    <?php if (!empty($invoice['discount_amount']) && $invoice['discount_amount'] > 0): ?>
+                    <tr style="background:#1f2533;">
+                        <td colspan="4" class="text-right font-weight-bold text-success" style="color:#22c55e !important; border-color:#2e3849;">Discount</td>
+                        <td class="text-right font-weight-bold text-success" style="color:#22c55e !important; border-color:#2e3849;">-<?= $symbol ?><?= number_format($invoice['discount_amount'], 2) ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php if ($late_fee > 0): ?>
+                    <tr style="background:#1f2533;">
+                        <td colspan="4" class="text-right font-weight-bold text-danger" style="color:#ef4444 !important; border-color:#2e3849;">Late Fee Penalty Interest</td>
+                        <td class="text-right font-weight-bold text-danger" style="color:#ef4444 !important; border-color:#2e3849;">+<?= $symbol ?><?= number_format($late_fee, 2) ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <tr style="background:#242c3d; border-top:1px solid #374151; border-bottom:1px solid #374151;">
+                        <td colspan="4" class="text-right font-weight-bold" style="color:#ffffff !important; font-size:15px; border-color:#374151;">Total Invoiced Amount</td>
+                        <td class="text-right font-weight-bold" style="color:#ffffff !important; font-size:15px; border-color:#374151;"><?= $symbol ?><?= number_format($total_billed, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
+                    </tr>
+                    <?php if ($total_paid > 0): ?>
+                    <tr style="background:#1f2533;">
+                        <td colspan="4" class="text-right font-weight-bold text-success" style="color:#22c55e !important; border-color:#2e3849;"><i class="fas fa-check-circle mr-1"></i>Less Verified Payments Received</td>
+                        <td class="text-right font-weight-bold text-success" style="color:#22c55e !important; border-color:#2e3849;">-<?= $symbol ?><?= number_format($total_paid, 2) ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <tr style="background:#111827; border:2px solid #fecc56; color:#fecc56 !important;">
+                        <td colspan="4" class="text-right font-weight-bold" style="font-size:1.1rem; color:#fecc56 !important; border-color:#fecc56;">REMAINING BALANCE DUE</td>
+                        <td class="text-right font-weight-bold" style="font-size:1.25rem; color:#fecc56 !important; border-color:#fecc56;"><?= $symbol ?><?= number_format($balance_due, 2) ?> <?= htmlspecialchars($invoice['currency'] ?? 'USD') ?></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
 
         <?php if (($invoice['currency'] ?? 'USD') !== $client_currency): ?>
-        <div class="card border-0 mb-4 shadow-sm" style="background:#171719; border-left:4px solid #fecc56 !important;">
+        <div class="card border-0 mb-4 shadow-sm" style="background:#1f2533; border-left:4px solid #fecc56 !important;">
             <div class="card-body py-3 px-4">
                 <div class="d-flex justify-content-between align-items-center flex-wrap">
                     <div>
@@ -397,47 +419,54 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
 
         <!-- INSTALMENTS -->
         <?php if (!empty($instalments)): ?>
-        <div class="mb-5">
-            <h6 class="font-weight-bold text-dark mb-3"><i class="fas fa-calendar-alt mr-2 text-warning"></i>Payment Schedule (Instalments)</h6>
-            <table class="table table-sm table-bordered" style="font-size:13px;">
-                <thead class="bg-light"><tr><th>Instalment</th><th>Amount</th><th>Due Date</th><th>Status</th></tr></thead>
-                <tbody>
-                    <?php foreach($instalments as $inst): ?>
-                    <tr>
-                        <td>Instalment #<?= $inst['instalment_number'] ?></td>
-                        <td><?= $symbol ?><?= number_format($inst['amount'], 2) ?></td>
-                        <td><?= date('M j, Y', strtotime($inst['due_date'])) ?></td>
-                        <td>
-                            <?php $is = strtolower($inst['status']);
-                            $ib = ['paid'=>'success','overdue'=>'danger','pending'=>'warning text-dark'][$is] ?? 'secondary'; ?>
-                            <span class="badge badge-<?= $ib ?>"><?= ucfirst($is) ?></span>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-        <?php endif; ?>
-
-        <!-- PAYMENT INFORMATION -->
-        <?php if (!empty($payment_info)): ?>
-        <div class="p-4 rounded mb-4" style="background: #f8f9fa; border: 1px solid #dee2e6;">
-            <h6 class="font-weight-bold text-dark mb-3"><i class="fas fa-university mr-2 text-warning"></i>Payment Information</h6>
-            <p class="text-muted small mb-3">Please use the following details to make your payment. Reference your invoice number in all transactions.</p>
-            <div style="white-space:pre-wrap; font-family: 'Courier New', monospace; font-size:13px; line-height:1.8; background:#fff; border:1px solid #ddd; padding:16px; border-radius:6px; color:#000 !important;">
-                <?= htmlspecialchars($payment_info) ?>
-            </div>
-            <div class="alert alert-warning border-0 mt-3 mb-0 small">
-                <i class="fas fa-exclamation-triangle mr-1"></i>
-                <strong>Important:</strong> Always reference invoice #INV-<?= str_pad($invoice['id'],5,'0',STR_PAD_LEFT) ?> in your payment description. After paying, submit your proof of payment through your dashboard.
+        <div class="mb-4">
+            <h6 class="font-weight-bold text-warning mb-3"><i class="fas fa-calendar-alt mr-2"></i>Payment Schedule & Tranches</h6>
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0" style="font-size:13px; background:#161a23; color:#f1f5f9; border-color:#28303f;">
+                    <thead style="background:#1f2533; color:#fecc56;">
+                        <tr>
+                            <th style="border-color:#2e3849;">Tranche</th>
+                            <th style="border-color:#2e3849;">Milestone / Description</th>
+                            <th style="border-color:#2e3849;">Due Date</th>
+                            <th class="text-right" style="border-color:#2e3849;">Amount</th>
+                            <th class="text-center" style="border-color:#2e3849;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($instalments as $k => $inst): ?>
+                        <tr>
+                            <td class="font-weight-bold text-white" style="border-color:#28303f;">Tranche <?= $k+1 ?></td>
+                            <td style="border-color:#28303f; color:#ffffff;"><?= htmlspecialchars($inst['description'] ?? 'Scheduled Payment') ?></td>
+                            <td style="border-color:#28303f; color:#cbd5e1;"><?= !empty($inst['due_date']) ? date('M j, Y', strtotime($inst['due_date'])) : '—' ?></td>
+                            <td class="text-right font-weight-bold text-white" style="border-color:#28303f;"><?= $symbol ?><?= number_format($inst['amount'], 2) ?></td>
+                            <td class="text-center" style="border-color:#28303f;">
+                                <?php if ($inst['status'] === 'paid'): ?>
+                                    <span class="badge badge-success px-2 py-1">Paid</span>
+                                <?php else: ?>
+                                    <span class="badge badge-warning text-dark px-2 py-1">Pending</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
         <?php endif; ?>
 
-        <!-- FOOTER NOTE -->
-        <div class="text-center text-muted mt-4" style="font-size:12px; border-top:1px solid #eee; padding-top:16px;">
-            <p class="mb-1"><?= htmlspecialchars($app_name) ?> · <?= htmlspecialchars($company_email) ?></p>
-            <p class="mb-0">This invoice is computer-generated and valid without a physical signature. Thank you for your trust in <?= htmlspecialchars($app_name) ?>.</p>
+        <!-- PAYMENT INFORMATION BOX -->
+        <div class="row">
+            <div class="col-12">
+                <div class="p-4 rounded border" style="background:#1f2533; border-color:#2e3849;">
+                    <h6 class="font-weight-bold text-warning mb-2"><i class="fas fa-university mr-2"></i>Official Wire & Settlement Instructions</h6>
+                    <p class="text-muted small mb-3">Please use the following official details to settle this invoice. Reference your invoice number in all memo fields.</p>
+                    <div style="font-family:monospace; font-size:13px; white-space:pre-wrap; line-height:1.8; color:#f1f5f9; background:#111827; padding:16px; border-radius:6px; border:1px solid #28303f;"><?= htmlspecialchars($payment_info) ?></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-top border-secondary text-center text-muted small">
+            <p class="mb-0">This invoice is digitally authenticated and valid without physical signature. Thank you for your trust in <?= htmlspecialchars($app_name) ?>.</p>
         </div>
     </div>
 </div>
@@ -445,59 +474,94 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
 <?php if (!$is_print): ?>
 <!-- PAY NOW MODAL -->
 <div class="modal fade" id="payNowModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content border-0 shadow-lg bg-dark text-white">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-dark text-white" style="border-radius:12px; overflow:hidden;">
             <div class="modal-header bg-dark text-warning border-secondary py-3">
-                <h5 class="modal-title font-weight-bold"><i class="fas fa-credit-card mr-2"></i>Submit Payment — <span id="payInvoiceRef"></span></h5>
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-credit-card mr-2"></i>Submit Payment Proof — <span id="payInvoiceRef"></span></h5>
                 <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body p-0">
                 <div class="bg-black text-white p-4 border-bottom border-secondary">
-                    <div class="text-warning font-weight-bold" style="font-size:1.8rem;" id="payAmount"></div>
-                    <div class="text-muted small">Remaining Balance Due</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="stat-label text-muted small text-uppercase font-weight-bold">Balance Outstanding</div>
+                            <div class="font-weight-bold text-warning" style="font-size:2rem;" id="payAmount"></div>
+                        </div>
+                        <div class="text-right">
+                            <span class="badge badge-danger px-3 py-2" style="font-size:12px;">Action Required</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="p-4 bg-dark">
-                    <h6 class="font-weight-bold mb-3 text-warning"><i class="fas fa-university mr-2"></i>Payment Instructions & Accounts</h6>
-                    <div class="bg-black border border-secondary rounded p-4 mb-4 text-light" id="payInfoBlock" style="white-space:pre-wrap; font-family:monospace; font-size:13px; line-height:1.8;"></div>
-                    <div class="alert alert-warning border-0 mb-4 small text-dark">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>After paying, upload your payment receipt/proof below for verification.
+                    <h6 class="font-weight-bold mb-3 text-warning"><i class="fas fa-university mr-2"></i>Wire & Payment Instructions</h6>
+                    <div class="bg-black border border-secondary rounded p-4 mb-4 text-light" id="payInfoBlock" style="white-space:pre-wrap; font-family: monospace; font-size:13px; line-height:1.8;"></div>
+                    
+                    <div class="alert alert-warning border-0 mb-4 text-dark font-weight-bold" style="font-size:13px;">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        After initiating payment, please submit the exact amount paid and upload your transaction receipt / proof for instant verification.
                     </div>
+
                     <form method="POST" action="/api/submit_payment_proof.php" enctype="multipart/form-data">
                         <input type="hidden" name="invoice_id" id="payInvoiceId">
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold small text-light">Amount Paid (<span id="payModalCurr">USD</span>)</label>
-                                <input type="number" step="0.01" name="amount_paid" id="payAmountInput" class="form-control bg-black text-white border-secondary" required placeholder="Amount paid">
+                                <label class="font-weight-bold text-light small">Amount Paid (<span id="payModalCurr">USD</span>) <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" name="amount_paid" id="payAmountInput" class="form-control bg-black text-white border-secondary font-weight-bold text-warning" required placeholder="0.00">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold small text-light">Payment Method</label>
-                                <select name="payment_method" class="form-control bg-black text-white border-secondary" onchange="if(this.value==='Other'){$('#otherPaymentMethodDiv').show().find('input').attr('required',true);}else{$('#otherPaymentMethodDiv').hide().find('input').removeAttr('required').val('');}" required>
-                                    <option value="">Select...</option>
-                                    <option>Bank Wire Transfer</option>
-                                    <option>Cryptocurrency (Bitcoin)</option>
-                                    <option>Cryptocurrency (USDT)</option>
-                                    <option>Other</option>
+                                <label class="font-weight-bold text-light small">Payment Method <span class="text-danger">*</span></label>
+                                <select name="payment_method" id="invoicePaymentMethodSelect" class="form-control bg-black text-white border-secondary" onchange="handleInvoicePaymentMethodChange(this.value)" required>
+                                    <option value="">Select method...</option>
+                                    <option value="Bank Wire Transfer">🏛️ Bank Wire Transfer</option>
+                                    <option value="USDT (TRC-20)">🪙 Cryptocurrency — USDT (TRC-20)</option>
+                                    <option value="USDT (ERC-20)">🪙 Cryptocurrency — USDT (ERC-20)</option>
+                                    <option value="Bitcoin (BTC)">🪙 Cryptocurrency — Bitcoin (BTC)</option>
+                                    <option value="Ethereum (ETH)">🪙 Cryptocurrency — Ethereum (ETH)</option>
+                                    <option value="Other">✨ Other Payment Method</option>
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="font-weight-bold small text-light">Transaction / Reference No. (Optional)</label>
-                                <input type="text" name="reference_number" class="form-control bg-black text-white border-secondary" placeholder="e.g. TXN12345678">
-                            </div>
-                            <div class="col-md-12 mb-3" id="otherPaymentMethodDiv" style="display:none;">
-                                <label class="font-weight-bold small text-warning">Specify Other Payment Method <span class="text-danger">*</span></label>
-                                <input type="text" name="other_payment_method" class="form-control bg-black text-white border-secondary" placeholder="e.g. PayPal, Cash App, Revolut">
+                                <label class="font-weight-bold text-light small">Transaction Hash / Ref # <span class="text-muted">(Optional)</span></label>
+                                <input type="text" name="reference_number" id="invoiceRefNumberInput" class="form-control bg-black text-white border-secondary" placeholder="e.g. TXID / Wire Ref # (Optional)">
                             </div>
                         </div>
+
+                        <!-- DYNAMIC CRYPTO WALLET & QR BOX -->
+                        <div id="cryptoPaymentDetailsBoxInvoice" class="p-3 rounded mb-3 border border-warning" style="display:none; background:#0b0e14;">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between">
+                                <div class="mr-3 mb-2 text-center" style="min-width:140px;">
+                                    <img id="cryptoQrImgInvoice" src="" alt="Crypto QR" class="img-fluid rounded border border-secondary p-1 bg-white" style="width:130px; height:130px;">
+                                    <div class="text-muted small mt-1 font-weight-bold" style="font-size:10px;" id="cryptoNetworkLabelInvoice">TRC-20 Network</div>
+                                </div>
+                                <div class="flex-grow-1 mb-2">
+                                    <div class="font-weight-bold text-warning mb-1" id="cryptoNameLabelInvoice">USDT TRC-20 Wallet Address</div>
+                                    <p class="text-muted small mb-2">Send only the exact asset on this network. Funds will be credited after 1 network confirmation.</p>
+                                    <div class="input-group">
+                                        <input type="text" id="cryptoWalletInputInvoice" class="form-control bg-dark text-white border-secondary font-weight-bold" style="font-family:monospace; font-size:12px;" readonly>
+                                        <div class="input-group-append">
+                                            <button type="button" class="btn btn-warning text-dark font-weight-bold" onclick="copyCryptoAddressInvoice()"><i class="fas fa-copy mr-1"></i> <span id="copyCryptoBtnTextInvoice">Copy</span></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12 mb-3 px-0" id="otherPaymentMethodDiv" style="display:none;">
+                            <label class="font-weight-bold small text-warning">Specify Other Payment Method <span class="text-danger">*</span></label>
+                            <input type="text" name="other_payment_method" class="form-control bg-black text-white border-secondary" placeholder="e.g. PayPal, Cash App, Revolut">
+                        </div>
+
                         <div class="mb-3">
-                            <label class="font-weight-bold small text-light">Upload Payment Proof / Receipt</label>
+                            <label class="font-weight-bold small text-light">Upload Payment Proof / TX Screenshot <span class="text-danger">*</span></label>
                             <input type="file" name="proof_file" class="form-control-file border border-secondary p-2 rounded w-100 bg-black text-white" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" required>
+                            <small class="text-muted">Accepted: JPG, PNG, PDF, DOC (Max 10MB)</small>
                         </div>
                         <div class="mb-3">
-                            <label class="font-weight-bold small text-light">Notes (Optional)</label>
-                            <textarea name="notes" class="form-control bg-black text-white border-secondary" rows="2" placeholder="Any additional information..."></textarea>
+                            <label class="font-weight-bold small text-light">Additional Transaction Notes (Optional)</label>
+                            <textarea name="notes" class="form-control bg-black text-white border-secondary" rows="2" placeholder="Any additional transaction notes..."></textarea>
                         </div>
                         <button type="submit" class="btn btn-warning btn-block font-weight-bold py-3 text-dark shadow">
-                            <i class="fas fa-paper-plane mr-2"></i>Submit Payment Proof
+                            <i class="fas fa-paper-plane mr-2"></i> Submit Payment Proof for Verification
                         </button>
                     </form>
                 </div>
@@ -506,6 +570,52 @@ if (!$is_print) require_once $dir . '/includes/admin_sidebar.php';
     </div>
 </div>
 <script>
+var cryptoWalletsInvoice = {
+    'USDT (TRC-20)': { name: 'USDT (TRC-20) TRON Network', network: 'TRC-20 Network', address: '<?= addslashes(get_setting($pdo, "crypto_usdt_trc20_address", "TYDvsPq9xL3r6K2oH41N8xQzVmM7pB3kRa")) ?>' },
+    'USDT (ERC-20)': { name: 'USDT (ERC-20) Ethereum Network', network: 'ERC-20 Network', address: '<?= addslashes(get_setting($pdo, "crypto_usdt_erc20_address", "0x71C8360f38bB2902f4D3e1b78297bB32789cA854")) ?>' },
+    'Bitcoin (BTC)': { name: 'Bitcoin (BTC) Native Mainnet', network: 'BTC Mainnet', address: '<?= addslashes(get_setting($pdo, "crypto_btc_address", "bc1q9xle8v2kwj6d234p8cmnrqtvq80f3w9a2lx7kd")) ?>' },
+    'Ethereum (ETH)': { name: 'Ethereum (ETH) Mainnet', network: 'ETH Mainnet', address: '<?= addslashes(get_setting($pdo, "crypto_eth_address", "0x71C8360f38bB2902f4D3e1b78297bB32789cA854")) ?>' }
+};
+
+function handleInvoicePaymentMethodChange(val) {
+    var cryptoBox = document.getElementById('cryptoPaymentDetailsBoxInvoice');
+    var otherDiv = document.getElementById('otherPaymentMethodDiv');
+    var refInput = document.getElementById('invoiceRefNumberInput');
+    
+    if (val === 'Other') {
+        otherDiv.style.display = 'block';
+        otherDiv.querySelector('input').setAttribute('required', 'required');
+    } else {
+        otherDiv.style.display = 'none';
+        otherDiv.querySelector('input').removeAttribute('required');
+        otherDiv.querySelector('input').value = '';
+    }
+    
+    if (cryptoWalletsInvoice[val]) {
+        var w = cryptoWalletsInvoice[val];
+        document.getElementById('cryptoNameLabelInvoice').textContent = w.name;
+        document.getElementById('cryptoNetworkLabelInvoice').textContent = w.network;
+        document.getElementById('cryptoWalletInputInvoice').value = w.address;
+        document.getElementById('cryptoQrImgInvoice').src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(w.address);
+        cryptoBox.style.display = 'block';
+        refInput.placeholder = 'e.g. 64-character Blockchain TXID (Optional)';
+    } else {
+        cryptoBox.style.display = 'none';
+        refInput.placeholder = 'e.g. Wire Ref # / Confirmation Code (Optional)';
+    }
+}
+
+function copyCryptoAddressInvoice() {
+    var copyText = document.getElementById('cryptoWalletInputInvoice');
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(copyText.value);
+    document.getElementById('copyCryptoBtnTextInvoice').textContent = 'Copied!';
+    setTimeout(function() {
+        document.getElementById('copyCryptoBtnTextInvoice').textContent = 'Copy';
+    }, 2500);
+}
+
 function showPayModal(invoiceId, ref, amount, currency, payInfo, prefCurrency, prefBalance) {
     currency = currency || 'USD';
     prefCurrency = prefCurrency || currency;
@@ -520,16 +630,42 @@ function showPayModal(invoiceId, ref, amount, currency, payInfo, prefCurrency, p
     document.getElementById('payAmount').innerHTML = disp;
     document.getElementById('payAmountInput').value = parseFloat(amount).toFixed(2);
     document.getElementById('payInfoBlock').textContent = payInfo || 'Contact your investigator for payment details.';
+    
+    // Reset crypto box
+    document.getElementById('invoicePaymentMethodSelect').value = '';
+    document.getElementById('cryptoPaymentDetailsBoxInvoice').style.display = 'none';
+    
     $('#payNowModal').modal('show');
 }
 </script>
 <?php endif; ?>
 
 <style>
+#invoiceDoc {
+    background: #161a23 !important;
+    border: 1px solid #28303f !important;
+    border-radius: 12px;
+    color: #f1f5f9 !important;
+}
+#invoiceDoc table, #invoiceDoc td, #invoiceDoc th, #invoiceDoc p, #invoiceDoc span:not(.badge):not(.badge-warning):not(.text-warning):not(.text-danger):not(.text-success), #invoiceDoc strong:not(.text-warning):not(.text-danger):not(.text-success) {
+    color: #ffffff !important;
+}
+#invoiceDoc .text-muted {
+    color: #94a3b8 !important;
+}
+@media (max-width: 768px) {
+    #invoiceDoc .card-body {
+        padding: 16px !important;
+    }
+}
 @media print {
     .d-print-none, nav, #sidebar, .btn, .modal { display:none!important; }
     .card { border:none!important; box-shadow:none!important; }
     body { background:#fff!important; }
+    #invoiceDoc, #invoiceDoc table, #invoiceDoc td, #invoiceDoc th, #invoiceDoc p, #invoiceDoc span, #invoiceDoc strong {
+        color: #000 !important;
+        background: #fff !important;
+    }
 }
 </style>
 
