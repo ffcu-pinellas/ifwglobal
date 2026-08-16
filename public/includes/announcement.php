@@ -7,12 +7,12 @@ $announcement_active = function_exists('get_setting') ? get_setting($pdo, 'annou
 $announcement_text = function_exists('get_setting') ? get_setting($pdo, 'announcement_bar_text', 'IFW GLOBAL NOTICE: Protect yourself from scam impersonators. Only interact with our official team.') : 'IFW GLOBAL NOTICE: Protect yourself from scam impersonators. Only interact with our official team.';
 ?>
 <style>
-    /* Hide phone links on mobile to give ample room for logo, search, language, and login */
+    /* Completely hide phone numbers in top header everywhere to prevent linebreaking */
+    .phone-headers {
+        display: none !important;
+    }
+    
     @media screen and (max-width: 47.9375em) {
-        .phone-headers {
-            display: none !important;
-        }
-        
         .site-header__book[href*="/client/login.php"] {
             position: static !important;
             width: auto !important;
@@ -25,8 +25,8 @@ $announcement_text = function_exists('get_setting') ? get_setting($pdo, 'announc
             padding: 0.45rem 0.75rem !important;
             font-size: 0.85rem !important;
             line-height: 1.2 !important;
-            margin-left: 6px !important;
-            margin-right: 6px !important;
+            margin-left: 4px !important;
+            margin-right: 4px !important;
             border-radius: 3px !important;
             z-index: 10 !important;
         }
