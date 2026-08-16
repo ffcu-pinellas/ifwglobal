@@ -219,7 +219,7 @@ try {
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_recovery_map TINYINT(1) DEFAULT 0");
 } catch (Exception $ex) {}
 
-// Self-healing: Default Chat & CRM Settings Auto-Seeder
+// Self-healing: Default Chatwoot Settings Auto-Seeder
 try {
     $cw_check = $pdo->query("SELECT setting_value FROM IFW_site_settings WHERE setting_key = 'chatwoot_website_token' LIMIT 1");
     $cw_val = $cw_check ? $cw_check->fetchColumn() : null;
@@ -232,13 +232,8 @@ try {
             ->execute(['chatwoot_base_url', 'https://app.chatwoot.com', 'https://app.chatwoot.com']);
         $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")
             ->execute(['chatwoot_hmac_key', '6q99KLZgjCtHCd1fvQpQTp2F', '6q99KLZgjCtHCd1fvQpQTp2F']);
-    }
-    // Ensure chat_provider defaults to internal if not explicitly set
-    $cp_check = $pdo->query("SELECT setting_value FROM IFW_site_settings WHERE setting_key = 'chat_provider' LIMIT 1");
-    $cp_val = $cp_check ? $cp_check->fetchColumn() : null;
-    if (empty($cp_val)) {
         $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")
-            ->execute(['chat_provider', 'internal', 'internal']);
+            ->execute(['chat_provider', 'chatwoot', 'chatwoot']);
     }
 } catch (Exception $ex) {}
 

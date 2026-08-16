@@ -139,8 +139,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             curl_close($ch);
         }
         
+        $ref_id = 'IFW-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
+        
         // Return JSON response for AJAX submission
-        echo json_encode(['status' => 'success', 'message' => $success_msg]);
+        echo json_encode([
+            'status' => 'success', 
+            'message' => $success_msg,
+            'ref_id' => $ref_id,
+            'client_email' => $submission_data['email'] ?? '',
+            'contact_email_primary' => 'notifications@ifwglobalrecovery.site',
+            'contact_email_secondary' => 'investigations@ifwglobalrecovery.site'
+        ]);
         exit;
     } else {
         // Return errors

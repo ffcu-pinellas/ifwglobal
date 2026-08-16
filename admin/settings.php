@@ -80,8 +80,8 @@ require_once '../includes/admin_sidebar.php';
                     <div class="form-group mb-4">
                         <label class="font-weight-bold text-warning fs-5">Active Chat Provider</label>
                         <select name="chat_provider" class="form-control bg-secondary text-white border-0 form-control-lg font-weight-bold">
-                            <option value="internal" <?php echo ($s['chat_provider'] ?? 'internal') === 'internal' ? 'selected' : ''; ?>>Internal Secure Portal Chat (Recommended — Professional, Integrated &amp; 100% Whitelabel)</option>
-                            <option value="chatwoot" <?php echo ($s['chat_provider'] ?? '') === 'chatwoot' ? 'selected' : ''; ?>>Chatwoot Multi-Agent CRM Widget</option>
+                            <option value="chatwoot" <?php echo ($s['chat_provider'] ?? 'chatwoot') === 'chatwoot' ? 'selected' : ''; ?>>Chatwoot (Recommended - Multi-Agent Case Routing &amp; Permanent History)</option>
+                            <option value="internal" <?php echo ($s['chat_provider'] ?? '') === 'internal' ? 'selected' : ''; ?>>Internal Secure Database Chat (Client / Agent / Investigator)</option>
                             <option value="tawkto" <?php echo ($s['chat_provider'] ?? '') === 'tawkto' ? 'selected' : ''; ?>>Tawk.to Live Chat Widget</option>
                             <option value="custom" <?php echo ($s['chat_provider'] ?? '') === 'custom' ? 'selected' : ''; ?>>Custom Third-Party Embed Snippet</option>
                         </select>

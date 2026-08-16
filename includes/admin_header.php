@@ -235,6 +235,33 @@ if (isset($pdo)) {
         }
 
         /* ==========================================================================
+           GOOGLE TRANSLATE SEAMLESS INTEGRATION STYLES
+           ========================================================================== */
+        .goog-te-banner-frame.skiptranslate, 
+        .goog-te-banner-frame,
+        #goog-gt-tt,
+        .goog-te-balloon-frame,
+        .goog-tooltip,
+        .goog-tooltip:hover {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        body {
+            top: 0px !important;
+            position: static !important;
+        }
+        #google_translate_element {
+            display: none !important;
+        }
+        .skiptranslate iframe {
+            display: none !important;
+        }
+        font {
+            background-color: transparent !important;
+            box-shadow: none !important;
+        }
+
+        /* ==========================================================================
            PERFECT MOBILE RESPONSIVENESS (ZERO HORIZONTAL SCROLLING & ADAPTIVE CARDS)
            ========================================================================== */
         html, body {
@@ -756,38 +783,56 @@ if (isset($pdo)) {
                 </ul>
 
                 <ul class="navbar-nav ml-auto align-items-center">
-                    <!-- Global Currency Switcher -->
+                    <!-- Global Multi-Language Switcher -->
                     <li class="nav-item dropdown mr-2 mr-md-3 align-self-center">
-                        <?php
-                        $active_portal_currency = get_client_currency($pdo, $_SESSION['client_portal_id'] ?? null);
-                        $avail_currencies = get_available_currencies();
-                        $curr_meta = $avail_currencies[$active_portal_currency] ?? $avail_currencies['USD'];
-                        ?>
-                        <a class="nav-link dropdown-toggle btn btn-sm btn-outline-warning text-warning d-flex align-items-center py-1 px-2 font-weight-bold shadow-sm" href="javascript:void(0);" id="portalCurrencyDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 20px; font-size: 11px; letter-spacing: 0.5px; border-color: rgba(254,204,86,0.6);">
-                            <span class="mr-1" style="font-size: 12px;"><?= $curr_meta['flag'] ?></span>
-                            <span class="d-none d-sm-inline"><?= $curr_meta['code'] ?> (<?= $curr_meta['symbol'] ?>)</span>
-                            <span class="d-inline d-sm-none font-weight-bold"><?= $curr_meta['code'] ?></span>
+                        <a class="nav-link dropdown-toggle btn btn-sm btn-outline-warning text-warning d-flex align-items-center py-1 px-2 font-weight-bold shadow-sm" href="javascript:void(0);" id="portalLanguageDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 20px; font-size: 11px; letter-spacing: 0.5px; border-color: rgba(254,204,86,0.6);">
+                            <span class="mr-1" id="currentLangFlag" style="font-size: 13px;">🌐</span>
+                            <span id="currentLangLabel" class="d-none d-sm-inline font-weight-bold">English</span>
+                            <span id="currentLangShort" class="d-inline d-sm-none font-weight-bold">EN</span>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary p-1" aria-labelledby="portalCurrencyDropdown" style="min-width: 230px; max-height: 380px; overflow-y: auto; font-size: 12px;">
-                            <div class="dropdown-header text-warning small font-weight-bold px-2 py-1 text-uppercase" style="letter-spacing:1px; font-size: 10px;">
-                                <i class="fas fa-globe mr-1"></i> Display Currency
+                        <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary p-1" aria-labelledby="portalLanguageDropdown" style="min-width: 200px; max-height: 380px; overflow-y: auto; font-size: 12px; z-index: 1060;">
+                            <div class="dropdown-header text-warning small font-weight-bold px-2 py-1 text-uppercase d-flex justify-content-between align-items-center" style="letter-spacing:1px; font-size: 10px;">
+                                <span><i class="fas fa-globe mr-1"></i> Portal Language</span>
+                                <span class="badge badge-secondary" style="font-size:9px;">Neural AI</span>
                             </div>
                             <div class="dropdown-divider border-secondary my-1"></div>
-                            <?php foreach ($avail_currencies as $cCode => $cMeta): ?>
-                                <a class="dropdown-item text-white py-1 px-2 d-flex justify-content-between align-items-center rounded <?= $cCode === $active_portal_currency ? 'bg-secondary font-weight-bold text-warning' : '' ?>" href="javascript:void(0);" onclick="changePortalCurrency('<?= $cCode ?>');">
-                                    <span><?= $cMeta['flag'] ?> <strong class="ml-1"><?= $cMeta['code'] ?></strong> <small class="text-muted ml-1">(<?= $cMeta['name'] ?>)</small></span>
-                                    <span class="badge badge-dark border border-secondary text-warning ml-2"><?= $cMeta['symbol'] ?></span>
-                                </a>
-                            <?php endforeach; ?>
+                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('en', 'English', '🇺🇸');">
+                                <span class="mr-2">🇺🇸</span> <strong class="text-white">English</strong> <small class="text-muted ml-auto">EN</small>
+                            </a>
+                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('es', 'Español', '🇪🇸');">
+                                <span class="mr-2">🇪🇸</span> <span class="text-white">Español</span> <small class="text-muted ml-auto">ES</small>
+                            </a>
+                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('fr', 'Français', '🇫🇷');">
+                                <span class="mr-2">🇫🇷</span> <span class="text-white">Français</span> <small class="text-muted ml-auto">FR</small>
+                            </a>
+                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('de', 'Deutsch', '🇩🇪');">
+                                <span class="mr-2">🇩🇪</span> <span class="text-white">Deutsch</span> <small class="text-muted ml-auto">DE</small>
+                            </a>
+                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('it', 'Italiano', '🇮🇹');">
+                                <span class="mr-2">🇮🇹</span> <span class="text-white">Italiano</span> <small class="text-muted ml-auto">IT</small>
+                            </a>
+                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('pt', 'Português', '🇵🇹');">
+                                <span class="mr-2">🇵🇹</span> <span class="text-white">Português</span> <small class="text-muted ml-auto">PT</small>
+                            </a>
+                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('ar', 'العربية', '🇸🇦');">
+                                <span class="mr-2">🇸🇦</span> <span class="text-white">العربية</span> <small class="text-muted ml-auto">AR</small>
+                            </a>
+                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('zh-CN', '中文 (简体)', '🇨🇳');">
+                                <span class="mr-2">🇨🇳</span> <span class="text-white">中文</span> <small class="text-muted ml-auto">ZH</small>
+                            </a>
+                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('ru', 'Русский', '🇷🇺');">
+                                <span class="mr-2">🇷🇺</span> <span class="text-white">Русский</span> <small class="text-muted ml-auto">RU</small>
+                            </a>
+                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('nl', 'Nederlands', '🇳🇱');">
+                                <span class="mr-2">🇳🇱</span> <span class="text-white">Nederlands</span> <small class="text-muted ml-auto">NL</small>
+                            </a>
+                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('ja', '日本語', '🇯🇵');">
+                                <span class="mr-2">🇯🇵</span> <span class="text-white">日本語</span> <small class="text-muted ml-auto">JA</small>
+                            </a>
+                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('tr', 'Türkçe', '🇹🇷');">
+                                <span class="mr-2">🇹🇷</span> <span class="text-white">Türkçe</span> <small class="text-muted ml-auto">TR</small>
+                            </a>
                         </div>
-                    </li>
-
-                    <!-- Privacy Shield / Screen Blur Mode Toggle -->
-                    <li class="nav-item mr-2 mr-md-3 align-self-center">
-                        <button type="button" id="privacyShieldToggle" class="btn btn-sm btn-outline-secondary font-weight-bold d-flex align-items-center" onclick="togglePrivacyShield()" title="Privacy Mode: Blur sensitive financial balances and case details for public browsing" style="border-radius:20px; padding:3px 8px; font-size:11px; border-color:#475569; color:#cbd5e1;">
-                            <i class="fas fa-eye-slash text-warning" id="privacyShieldIcon"></i>
-                            <span id="privacyShieldText" class="d-none d-md-inline ml-1">Privacy Off</span>
-                        </button>
                     </li>
 
                     <!-- Dark / Light Theme Mode Switcher -->
@@ -859,7 +904,8 @@ if (isset($pdo)) {
                         <div class="dropdown-menu dropdown-menu-right shadow-lg bg-dark border-secondary">
                             <a class="dropdown-item text-white" href="/<?php echo ($user_role === 'client') ? 'client' : 'admin'; ?>/chat.php"><i class="material-icons text-warning align-middle mr-1">mail_outline</i> Messages</a>
                             <?php if ($user_role === 'client'): ?>
-                                <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#profileModal"><i class="material-icons text-warning align-middle mr-1">face</i> My Profile</a>
+                                <a class="dropdown-item text-white" href="/client/profile.php"><i class="material-icons text-warning align-middle mr-1">settings</i> Profile &amp; Preferences</a>
+                                <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#profileModal"><i class="material-icons text-warning align-middle mr-1">face</i> Edit Identity</a>
                                 <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#passwordModal"><i class="material-icons text-warning align-middle mr-1">lock_open</i> Change Password</a>
                                 <a class="dropdown-item text-white" href="javascript:void(0);" data-toggle="modal" data-target="#pinModal"><i class="material-icons text-warning align-middle mr-1">security</i> Security PIN</a>
                             <?php else: ?>
@@ -1198,9 +1244,66 @@ if (isset($pdo)) {
             }
         }
 
+        // Google Translate Engine
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                autoDisplay: false,
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+            }, 'google_translate_element');
+        }
+
+        function initPortalLanguage() {
+            try {
+                var savedLang = localStorage.getItem('ifw_portal_lang') || 'en';
+                var savedName = localStorage.getItem('ifw_portal_lang_name') || 'English';
+                var savedFlag = localStorage.getItem('ifw_portal_lang_flag') || '🇺🇸';
+                
+                var label = document.getElementById('currentLangLabel');
+                var flag = document.getElementById('currentLangFlag');
+                var shortLabel = document.getElementById('currentLangShort');
+                if (label) label.textContent = savedName;
+                if (flag) flag.textContent = savedFlag;
+                if (shortLabel) shortLabel.textContent = savedLang.toUpperCase().slice(0, 2);
+            } catch(e) {}
+        }
+
+        function setPortalLanguage(langCode, langName, langFlag) {
+            if (!langCode) return;
+            
+            try {
+                localStorage.setItem('ifw_portal_lang', langCode);
+                localStorage.setItem('ifw_portal_lang_name', langName);
+                localStorage.setItem('ifw_portal_lang_flag', langFlag);
+                
+                var label = document.getElementById('currentLangLabel');
+                var flag = document.getElementById('currentLangFlag');
+                var shortLabel = document.getElementById('currentLangShort');
+                if (label) label.textContent = langName;
+                if (flag) flag.textContent = langFlag;
+                if (shortLabel) shortLabel.textContent = langCode.toUpperCase().slice(0, 2);
+                
+                // Set cookies for Google Translate (googtrans=/en/es)
+                var host = window.location.hostname;
+                document.cookie = "googtrans=/en/" + langCode + "; path=/; domain=" + host;
+                document.cookie = "googtrans=/en/" + langCode + "; path=/;";
+                
+                var combo = document.querySelector('.goog-te-combo');
+                if (combo) {
+                    combo.value = langCode;
+                    combo.dispatchEvent(new Event('change'));
+                } else {
+                    location.reload();
+                }
+            } catch(e) {
+                location.reload();
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             initPrivacyShield();
             initThemeMode();
+            initPortalLanguage();
         });
 
         function uploadPortalAvatar(input) {

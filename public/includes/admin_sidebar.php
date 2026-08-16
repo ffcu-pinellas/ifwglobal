@@ -359,6 +359,14 @@ if (isset($pdo) && $user_role === 'client') {
                         <span class="link-text text-white">Security & Sessions</span>
                     </a>
                 </li>
+
+                <!-- NAV ITEM Profile & Preferences -->
+                <li class="nav-item <?php echo ($current_page == 'profile.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>/client/profile.php" class="nav-link d-flex align-items-center px-3 py-2">
+                        <i class="fas fa-user-cog text-warning mr-3" style="width: 20px;"></i>
+                        <span class="link-text text-white">Profile &amp; Settings</span>
+                    </a>
+                </li>
                 <?php endif; ?>
 
                 <?php if ($user_role !== 'client'): ?>
