@@ -1378,6 +1378,7 @@ if (isset($pdo)) {
             } catch(e) {}
             
             updateThemeModeBtn(newTheme);
+            window.dispatchEvent(new CustomEvent('ifw:theme_changed', { detail: { theme: newTheme } }));
             
             if (typeof toastr !== 'undefined') {
                 if (newTheme === 'light') {
