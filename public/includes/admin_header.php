@@ -786,7 +786,7 @@ if (isset($pdo)) {
                     <!-- Global Multi-Language Switcher -->
                     <li class="nav-item dropdown mr-2 mr-md-3 align-self-center">
                         <a class="nav-link dropdown-toggle btn btn-sm btn-outline-warning text-warning d-flex align-items-center py-1 px-2 font-weight-bold shadow-sm" href="javascript:void(0);" id="portalLanguageDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 20px; font-size: 11px; letter-spacing: 0.5px; border-color: rgba(254,204,86,0.6);">
-                            <span class="mr-1" id="currentLangFlag" style="font-size: 13px;">🌐</span>
+                            <i class="fas fa-globe mr-1 text-warning" style="font-size: 12px;"></i>
                             <span id="currentLangLabel" class="d-none d-sm-inline font-weight-bold">English</span>
                             <span id="currentLangShort" class="d-inline d-sm-none font-weight-bold">EN</span>
                         </a>

@@ -223,13 +223,13 @@ function setPublicLanguage(langCode, langName) {
                 </div>
                 <h3 style="color:#fecc56; font-size:22px; font-weight:700; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; font-family:Antonio, sans-serif;">Enquiry Dispatched Successfully</h3>
                 <p style="color:#cbd5e1; font-size:14px; line-height:1.6; max-width:540px; margin:0 auto 16px;">
-                    Thank you for reaching out to <strong>IFW Global Private Intelligence &amp; Asset Recovery</strong>. Your confidential file has been assigned to our Senior Forensics &amp; Legal Liaison Desk for immediate conflict check and case evaluation.
+                    Thank you for reaching out to <strong>IFW Global Private Intelligence &amp; Asset Recovery</strong>. Your confidential enquiry has been assigned to our Forensics &amp; Legal Liaison Desk for immediate case evaluation.
                 </p>
                 <div style="background:#1a202c; border:1px solid #334155; border-radius:8px; padding:16px; margin-bottom:16px; text-align:left;">
                     <div style="display:flex; align-items:flex-start; margin-bottom:10px;">
                         <span style="font-size:16px; margin-right:10px; line-height:1;">⚡</span>
                         <div style="font-size:13px; color:#f8fafc;">
-                            <strong>Expected Response:</strong> A Senior Case Officer will contact you via email at <strong style="color:#fecc56;">${clientEmail}</strong> within <strong>1 to 4 business hours</strong>.
+                            <strong>Expected Response:</strong> A Case Officer will contact you via email at <strong style="color:#fecc56;">${clientEmail}</strong> within <strong>1 to 6 business hours</strong>.
                         </div>
                     </div>
                     <div style="display:flex; align-items:flex-start;">
@@ -272,7 +272,7 @@ function setPublicLanguage(langCode, langName) {
                 </div>
                 <h3 style="color:#fecc56; font-size:22px; font-weight:700; margin-bottom:8px; text-transform:uppercase; font-family:Antonio, sans-serif; letter-spacing:0.5px;">Enquiry Received</h3>
                 <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin-bottom:16px;">
-                    Your case details have been securely transmitted to our Senior Forensics Team.
+                    Your case details have been securely transmitted to our Forensics Team.
                 </p>
                 <div style="background:#1a202c; border:1px solid #334155; border-radius:8px; padding:14px; text-align:left; margin-bottom:18px;">
                     <div style="color:#f8fafc; font-size:13px; margin-bottom:8px;">
