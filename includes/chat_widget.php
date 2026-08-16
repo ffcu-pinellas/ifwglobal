@@ -346,11 +346,11 @@ function setPublicLanguage(langCode, langName, langFlag) {
                 </div>
                 <h3 style="color:#fecc56; font-size:20px; font-weight:700; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; font-family:Antonio, sans-serif;">CONFIDENTIAL ENQUIRY RECEIVED</h3>
                 <p style="color:#cbd5e1; font-size:13.5px; line-height:1.6; max-width:540px; margin:0 auto 16px;">
-                    Your submission has been securely encrypted and routed to our Senior Forensics &amp; Legal Investigations Desk for case evaluation.
+                    Your submission has been securely encrypted and routed to our Forensics &amp; Legal Investigations Desk for case evaluation.
                 </p>
                 <div style="background:#181d27; border:1px solid #2e384d; border-radius:6px; padding:16px 18px; margin-bottom:16px; text-align:left; font-size:13px; line-height:1.6;">
                     <div style="margin-bottom:10px; color:#f8fafc; border-bottom:1px solid #252e3e; padding-bottom:8px;">
-                        <strong style="color:#94a3b8; text-transform:uppercase; font-size:11px; letter-spacing:0.5px; display:block;">Client Contact Email:</strong>
+                        <strong style="color:#94a3b8; text-transform:uppercase; font-size:11px; letter-spacing:0.5px; display:block;">Contact Email:</strong>
                         <span style="color:#fecc56; font-weight:600; font-size:14px;">${clientEmail}</span>
                     </div>
                     <div style="margin-bottom:10px; color:#f8fafc; border-bottom:1px solid #252e3e; padding-bottom:8px;">
@@ -360,10 +360,10 @@ function setPublicLanguage(langCode, langName, langFlag) {
                     <div style="color:#cbd5e1;">
                         <strong style="color:#94a3b8; text-transform:uppercase; font-size:11px; letter-spacing:0.5px; display:block; margin-bottom:4px;">Next Steps &amp; Communications Advisory:</strong>
                         <p style="margin:0 0 8px 0; color:#e2e8f0; font-size:12.5px;">
-                            A Senior Case Officer will evaluate your submission and contact you directly at <strong style="color:#fecc56;">${clientEmail}</strong> within <strong>1 to 4 business hours</strong>.
+                            A Case Officer will evaluate your submission and contact you directly at <strong style="color:#fecc56;">${clientEmail}</strong> within <strong>1 to 4 business hours</strong>.
                         </p>
                         <p style="margin:0; color:#94a3b8; font-size:12px;">
-                            To ensure confidential case updates and reports are delivered directly to your primary inbox without delay, please whitelist <strong style="color:#fecc56;">${contactPrimary}</strong> and <strong style="color:#fecc56;">${contactSecondary}</strong> in your email client.
+                            To ensure confidential case updates and reports are delivered directly to your primary inbox without delay, please whitelist <strong style="color:#fecc56;">${contactPrimary}</strong> in your email client.
                         </p>
                     </div>
                 </div>
@@ -400,7 +400,7 @@ function setPublicLanguage(langCode, langName, langFlag) {
                 </div>
                 <h3 style="color:#fecc56; font-size:20px; font-weight:700; margin-bottom:8px; text-transform:uppercase; font-family:Antonio, sans-serif; letter-spacing:0.5px;">ENQUIRY RECEIVED</h3>
                 <p style="color:#cbd5e1; font-size:13.5px; line-height:1.5; margin-bottom:16px;">
-                    Your case details have been securely transmitted to our Senior Forensics Team.
+                    Your case details have been securely transmitted to our Forensics Team.
                 </p>
                 <div style="background:#181d27; border:1px solid #2e384d; border-radius:6px; padding:14px 16px; text-align:left; margin-bottom:18px; font-size:12.5px; line-height:1.5;">
                     <div style="color:#f8fafc; margin-bottom:8px;">
@@ -408,7 +408,7 @@ function setPublicLanguage(langCode, langName, langFlag) {
                         <strong style="color:#fecc56; font-size:13.5px;">${clientEmail}</strong>
                     </div>
                     <div style="color:#cbd5e1; font-size:12px; border-top:1px solid #252e3e; padding-top:8px;">
-                        <strong style="color:#ffffff;">Communications Notice:</strong> Please whitelist <strong style="color:#fecc56;">${contactPrimary}</strong> and <strong style="color:#fecc56;">${contactSecondary}</strong> in your email contacts so your formal assessment reaches your primary inbox without delay.
+                        <strong style="color:#ffffff;">Communications Notice:</strong> Please whitelist <strong style="color:#fecc56;">${contactPrimary}</strong> in your email contacts so responses reach your primary inbox without delay.
                     </div>
                 </div>
                 <button type="button" onclick="document.getElementById('ifw-submission-modal-overlay').remove()" style="background:#fecc56; color:#1f1b1c; border:0; padding:12px 24px; font-weight:bold; font-family:Antonio, sans-serif; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; border-radius:4px; cursor:pointer; width:100%;">
