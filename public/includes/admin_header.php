@@ -566,178 +566,343 @@ if (isset($pdo)) {
             filter: blur(2px) !important;
         }
 
-        /* LIGHT MODE DESIGN SYSTEM COMPATIBILITY */
+        /* ==========================================================================
+           LIGHT MODE DESIGN SYSTEM (COMPREHENSIVE MULTI-PAGE STYLING)
+           ========================================================================== */
+        html.light-mode,
         html.light-mode body,
         body.light-mode {
             background-color: #f1f5f9 !important;
             background-image: none !important;
             color: #0f172a !important;
         }
+
+        /* Text Contrast Rules */
+        html.light-mode .text-light,
+        body.light-mode .text-light,
+        html.light-mode .text-white,
+        body.light-mode .text-white {
+            color: #0f172a !important;
+        }
+
+        html.light-mode .text-muted,
+        body.light-mode .text-muted {
+            color: #64748b !important;
+        }
+
+        html.light-mode .text-secondary,
+        body.light-mode .text-secondary {
+            color: #475569 !important;
+        }
+
+        html.light-mode .text-warning,
+        body.light-mode .text-warning {
+            color: #b45309 !important;
+        }
+
+        html.light-mode h1, html.light-mode h2, html.light-mode h3, html.light-mode h4, html.light-mode h5, html.light-mode h6,
+        body.light-mode h1, body.light-mode h2, body.light-mode h3, body.light-mode h4, body.light-mode h5, body.light-mode h6 {
+            color: #0f172a !important;
+        }
+
+        /* Wrappers & Containers */
         html.light-mode #wrapper,
         body.light-mode #wrapper,
         html.light-mode #wrapper.bg-dark,
-        body.light-mode #wrapper.bg-dark {
+        body.light-mode #wrapper.bg-dark,
+        html.light-mode #wrapper-content,
+        body.light-mode #wrapper-content,
+        html.light-mode .content-wrapper,
+        body.light-mode .content-wrapper,
+        html.light-mode .container-fluid,
+        body.light-mode .container-fluid {
             background-color: #f1f5f9 !important;
+            color: #0f172a !important;
         }
+
+        /* Top Header Navigation */
         html.light-mode .navbar,
         body.light-mode .navbar,
+        html.light-mode #wrapper-header,
+        body.light-mode #wrapper-header,
         html.light-mode #wrapper-header .navbar,
         body.light-mode #wrapper-header .navbar,
         html.light-mode .navbar-dark.bg-dark,
         body.light-mode .navbar-dark.bg-dark {
             background-color: #ffffff !important;
-            border-bottom: 1px solid #cbd5e1 !important;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
         }
+
         html.light-mode .navbar .nav-link,
         body.light-mode .navbar .nav-link {
             color: #334155 !important;
         }
+
+        html.light-mode .navbar .nav-link.text-warning,
+        body.light-mode .navbar .nav-link.text-warning {
+            color: #b45309 !important;
+        }
+
+        /* Sidebar in Light Mode */
+        html.light-mode #wrapper-left,
+        body.light-mode #wrapper-left {
+            background-color: #ffffff !important;
+            border-right: 1px solid #e2e8f0 !important;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.04) !important;
+        }
+
+        html.light-mode .sidebar,
+        body.light-mode .sidebar,
+        html.light-mode .sidebar-header,
+        body.light-mode .sidebar-header {
+            background-color: #ffffff !important;
+        }
+
+        html.light-mode .sidebar-header .user-info h6,
+        body.light-mode .sidebar-header .user-info h6,
+        html.light-mode .sidebar-header .user-info .text-white,
+        body.light-mode .sidebar-header .user-info .text-white {
+            color: #0f172a !important;
+        }
+
+        html.light-mode .sidebar-header .user-info .text-muted,
+        body.light-mode .sidebar-header .user-info .text-muted {
+            color: #64748b !important;
+        }
+
+        html.light-mode .sidebar-nav > li > a,
+        body.light-mode .sidebar-nav > li > a {
+            color: #334155 !important;
+            background: transparent !important;
+        }
+
+        html.light-mode .sidebar-nav > li > a:hover,
+        body.light-mode .sidebar-nav > li > a:hover {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+        }
+
+        html.light-mode .sidebar-nav > li.active > a,
+        body.light-mode .sidebar-nav > li.active > a {
+            background-color: rgba(254, 204, 86, 0.18) !important;
+            color: #9a3412 !important;
+            border-left: 4px solid #fecc56 !important;
+            font-weight: 700 !important;
+        }
+
+        html.light-mode .sidebar-nav .nav-label,
+        body.light-mode .sidebar-nav .nav-label {
+            color: #94a3b8 !important;
+        }
+
+        /* Cards & Content Containers */
         html.light-mode .portal-card,
         body.light-mode .portal-card,
         html.light-mode .card,
-        body.light-mode .card {
+        body.light-mode .card,
+        html.light-mode .card-body,
+        body.light-mode .card-body,
+        html.light-mode .bg-dark,
+        body.light-mode .bg-dark,
+        html.light-mode .bg-secondary,
+        body.light-mode .bg-secondary {
             background-color: #ffffff !important;
-            border-color: #cbd5e1 !important;
+            border-color: #e2e8f0 !important;
             color: #0f172a !important;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.05) !important;
         }
+
         html.light-mode .portal-card-header,
         body.light-mode .portal-card-header,
         html.light-mode .card-header,
         body.light-mode .card-header {
             background-color: #f8fafc !important;
             border-bottom: 1px solid #e2e8f0 !important;
-            color: #b45309 !important;
+            color: #9a3412 !important;
         }
+
+        html.light-mode .portal-card-header h5,
+        body.light-mode .portal-card-header h5,
+        html.light-mode .card-header h5,
+        body.light-mode .card-header h5 {
+            color: #9a3412 !important;
+        }
+
+        /* Stat Cards */
         html.light-mode .stat-card-luxury,
         body.light-mode .stat-card-luxury {
-            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
-            border-color: #cbd5e1 !important;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.06) !important;
+            background: #ffffff !important;
+            border-color: #e2e8f0 !important;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.05) !important;
         }
+
         html.light-mode .stat-card-luxury .stat-value,
         body.light-mode .stat-card-luxury .stat-value {
             color: #0f172a !important;
         }
+
         html.light-mode .stat-card-luxury .stat-label,
         body.light-mode .stat-card-luxury .stat-label {
-            color: #475569 !important;
+            color: #64748b !important;
         }
+
+        /* Tables & Billing Grids */
         html.light-mode .table-portal,
         body.light-mode .table-portal,
         html.light-mode .table,
-        body.light-mode .table {
+        body.light-mode .table,
+        html.light-mode .table-dark,
+        body.light-mode .table-dark,
+        html.light-mode .invoice-table,
+        body.light-mode .invoice-table {
+            background-color: #ffffff !important;
             color: #0f172a !important;
         }
+
         html.light-mode .table-portal thead th,
         body.light-mode .table-portal thead th,
         html.light-mode .table thead th,
-        body.light-mode .table thead th {
-            background-color: #f1f5f9 !important;
+        body.light-mode .table thead th,
+        html.light-mode .table-dark th,
+        body.light-mode .table-dark th,
+        html.light-mode .invoice-table thead th,
+        body.light-mode .invoice-table thead th {
+            background-color: #f8fafc !important;
             color: #9a3412 !important;
-            border-bottom: 2px solid #cbd5e1 !important;
+            border-bottom: 2px solid #e2e8f0 !important;
+            font-weight: 700 !important;
         }
+
         html.light-mode .table-portal tbody tr,
         body.light-mode .table-portal tbody tr,
         html.light-mode .table tbody tr,
-        body.light-mode .table tbody tr {
+        body.light-mode .table tbody tr,
+        html.light-mode .table-dark tbody tr,
+        body.light-mode .table-dark tbody tr,
+        html.light-mode .invoice-table tbody tr,
+        body.light-mode .invoice-table tbody tr {
             background-color: #ffffff !important;
+            border-bottom: 1px solid #f1f5f9 !important;
         }
+
         html.light-mode .table-portal td,
         body.light-mode .table-portal td,
         html.light-mode .table td,
-        body.light-mode .table td {
-            color: #1e293b !important;
-            border-top: 1px solid #e2e8f0 !important;
-        }
-        html.light-mode .invoice-table,
-        body.light-mode .invoice-table,
-        html.light-mode .table-bordered,
-        body.light-mode .table-bordered {
-            background-color: #ffffff !important;
-            color: #0f172a !important;
-            border-color: #cbd5e1 !important;
-        }
-        html.light-mode .invoice-table thead,
-        body.light-mode .invoice-table thead,
-        html.light-mode .table-bordered thead {
-            background-color: #f1f5f9 !important;
-        }
-        html.light-mode .invoice-table th,
-        body.light-mode .invoice-table th,
-        html.light-mode .table-bordered th {
-            background-color: #f1f5f9 !important;
-            color: #9a3412 !important;
-            border-color: #cbd5e1 !important;
-        }
+        body.light-mode .table td,
+        html.light-mode .table-dark td,
+        body.light-mode .table-dark td,
         html.light-mode .invoice-table td,
-        body.light-mode .invoice-table td,
-        html.light-mode .table-bordered td {
-            background-color: #ffffff !important;
+        body.light-mode .invoice-table td {
+            color: #1e293b !important;
+            border-top: 1px solid #f1f5f9 !important;
+        }
+
+        html.light-mode .table-portal td strong,
+        body.light-mode .table-portal td strong,
+        html.light-mode .table-portal td span,
+        body.light-mode .table-portal td span,
+        html.light-mode .table td strong,
+        body.light-mode .table td strong,
+        html.light-mode .table td span,
+        body.light-mode .table td span {
             color: #0f172a !important;
-            border-color: #e2e8f0 !important;
         }
-        html.light-mode .invoice-table tfoot tr,
-        body.light-mode .invoice-table tfoot tr {
-            background-color: #f8fafc !important;
-            color: #0f172a !important;
-            border-color: #cbd5e1 !important;
-        }
-        html.light-mode .invoice-table tfoot td,
-        body.light-mode .invoice-table tfoot td {
-            color: #0f172a !important;
-            border-color: #cbd5e1 !important;
-        }
-        html.light-mode .list-group-item,
-        body.light-mode .list-group-item {
-            background-color: #ffffff !important;
-            color: #0f172a !important;
-            border-color: #e2e8f0 !important;
-        }
-        html.light-mode .modal-content,
-        body.light-mode .modal-content,
-        html.light-mode .modal-content.bg-dark,
-        body.light-mode .modal-content.bg-dark {
-            background-color: #ffffff !important;
-            color: #0f172a !important;
-            border-color: #cbd5e1 !important;
-            box-shadow: 0 12px 36px rgba(0,0,0,0.15) !important;
-        }
-        html.light-mode .modal-header,
-        body.light-mode .modal-header,
-        html.light-mode .modal-footer,
-        body.light-mode .modal-footer {
-            background-color: #f8fafc !important;
-            border-color: #e2e8f0 !important;
-        }
+
+        /* Dropdown Menus (Fixing Invisible Language Options in Light Mode) */
         html.light-mode .dropdown-menu,
         body.light-mode .dropdown-menu,
         html.light-mode .dropdown-menu.bg-dark,
         body.light-mode .dropdown-menu.bg-dark {
             background-color: #ffffff !important;
-            border-color: #cbd5e1 !important;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.12) !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.12) !important;
         }
+
+        html.light-mode .dropdown-header,
+        body.light-mode .dropdown-header {
+            color: #9a3412 !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+        }
+
         html.light-mode .dropdown-item,
-        body.light-mode .dropdown-item {
+        body.light-mode .dropdown-item,
+        html.light-mode .dropdown-item strong,
+        body.light-mode .dropdown-item strong,
+        html.light-mode .dropdown-item span,
+        body.light-mode .dropdown-item span,
+        html.light-mode .dropdown-item small,
+        body.light-mode .dropdown-item small,
+        html.light-mode .lang-opt,
+        body.light-mode .lang-opt,
+        html.light-mode .lang-opt strong,
+        body.light-mode .lang-opt strong,
+        html.light-mode .lang-opt span,
+        body.light-mode .lang-opt span {
             color: #1e293b !important;
         }
+
         html.light-mode .dropdown-item:hover,
+        body.light-mode .dropdown-item:hover strong,
+        body.light-mode .dropdown-item:hover span,
         body.light-mode .dropdown-item:focus {
             background-color: #f1f5f9 !important;
             color: #0f172a !important;
         }
+
+        /* Form Controls & Inputs */
         html.light-mode .form-control,
-        body.light-mode .form-control {
+        body.light-mode .form-control,
+        html.light-mode select,
+        body.light-mode select,
+        html.light-mode textarea,
+        body.light-mode textarea {
             background-color: #ffffff !important;
             color: #0f172a !important;
             border: 1px solid #cbd5e1 !important;
         }
-        html.light-mode .text-muted,
-        body.light-mode .text-muted {
+
+        html.light-mode select option,
+        body.light-mode select option {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+        }
+
+        /* Chat Page in Light Mode */
+        html.light-mode #chat-messages,
+        body.light-mode #chat-messages {
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+        }
+
+        html.light-mode .msg-admin,
+        body.light-mode .msg-admin {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+        }
+
+        html.light-mode .msg-admin .msg-time,
+        body.light-mode .msg-admin .msg-time {
             color: #64748b !important;
         }
+
+        html.light-mode .chat-input-bar,
+        body.light-mode .chat-input-bar,
+        html.light-mode .chat-top-row,
+        body.light-mode .chat-top-row {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+        }
+
+        html.light-mode .chat-input-bar textarea,
+        body.light-mode .chat-input-bar textarea {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+
         @media (max-width: 991px) {
             html.light-mode .table-portal tbody tr,
             body.light-mode .table-portal tbody tr,
@@ -796,41 +961,41 @@ if (isset($pdo)) {
                                 <span class="badge badge-secondary" style="font-size:9px;">Neural AI</span>
                             </div>
                             <div class="dropdown-divider border-secondary my-1"></div>
-                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('en', 'English', '🇺🇸');">
-                                <span class="mr-2">🇺🇸</span> <strong class="text-white">English</strong> <small class="text-muted ml-auto">EN</small>
+                            <a class="dropdown-item py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('en', 'English', '🇺🇸');">
+                                <span class="mr-2">🇺🇸</span> <strong>English</strong> <small class="text-muted ml-auto">EN</small>
                             </a>
-                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('es', 'Español', '🇪🇸');">
-                                <span class="mr-2">🇪🇸</span> <span class="text-white">Español</span> <small class="text-muted ml-auto">ES</small>
+                            <a class="dropdown-item py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('es', 'Español', '🇪🇸');">
+                                <span class="mr-2">🇪🇸</span> <span>Español</span> <small class="text-muted ml-auto">ES</small>
                             </a>
-                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('fr', 'Français', '🇫🇷');">
-                                <span class="mr-2">🇫🇷</span> <span class="text-white">Français</span> <small class="text-muted ml-auto">FR</small>
+                            <a class="dropdown-item py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('fr', 'Français', '🇫🇷');">
+                                <span class="mr-2">🇫🇷</span> <span>Français</span> <small class="text-muted ml-auto">FR</small>
                             </a>
-                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('de', 'Deutsch', '🇩🇪');">
-                                <span class="mr-2">🇩🇪</span> <span class="text-white">Deutsch</span> <small class="text-muted ml-auto">DE</small>
+                            <a class="dropdown-item py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('de', 'Deutsch', '🇩🇪');">
+                                <span class="mr-2">🇩🇪</span> <span>Deutsch</span> <small class="text-muted ml-auto">DE</small>
                             </a>
-                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('it', 'Italiano', '🇮🇹');">
-                                <span class="mr-2">🇮🇹</span> <span class="text-white">Italiano</span> <small class="text-muted ml-auto">IT</small>
+                            <a class="dropdown-item py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('it', 'Italiano', '🇮🇹');">
+                                <span class="mr-2">🇮🇹</span> <span>Italiano</span> <small class="text-muted ml-auto">IT</small>
                             </a>
-                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('pt', 'Português', '🇵🇹');">
-                                <span class="mr-2">🇵🇹</span> <span class="text-white">Português</span> <small class="text-muted ml-auto">PT</small>
+                            <a class="dropdown-item py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('pt', 'Português', '🇵🇹');">
+                                <span class="mr-2">🇵🇹</span> <span>Português</span> <small class="text-muted ml-auto">PT</small>
                             </a>
-                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('ar', 'العربية', '🇸🇦');">
-                                <span class="mr-2">🇸🇦</span> <span class="text-white">العربية</span> <small class="text-muted ml-auto">AR</small>
+                            <a class="dropdown-item py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('ar', 'العربية', '🇸🇦');">
+                                <span class="mr-2">🇸🇦</span> <span>العربية</span> <small class="text-muted ml-auto">AR</small>
                             </a>
-                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('zh-CN', '中文 (简体)', '🇨🇳');">
-                                <span class="mr-2">🇨🇳</span> <span class="text-white">中文</span> <small class="text-muted ml-auto">ZH</small>
+                            <a class="dropdown-item py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('zh-CN', '中文 (简体)', '🇨🇳');">
+                                <span class="mr-2">🇨🇳</span> <span>中文</span> <small class="text-muted ml-auto">ZH</small>
                             </a>
-                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('ru', 'Русский', '🇷🇺');">
-                                <span class="mr-2">🇷🇺</span> <span class="text-white">Русский</span> <small class="text-muted ml-auto">RU</small>
+                            <a class="dropdown-item py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('ru', 'Русский', '🇷🇺');">
+                                <span class="mr-2">🇷🇺</span> <span>Русский</span> <small class="text-muted ml-auto">RU</small>
                             </a>
-                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('nl', 'Nederlands', '🇳🇱');">
-                                <span class="mr-2">🇳🇱</span> <span class="text-white">Nederlands</span> <small class="text-muted ml-auto">NL</small>
+                            <a class="dropdown-item py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('nl', 'Nederlands', '🇳🇱');">
+                                <span class="mr-2">🇳🇱</span> <span>Nederlands</span> <small class="text-muted ml-auto">NL</small>
                             </a>
-                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('ja', '日本語', '🇯🇵');">
-                                <span class="mr-2">🇯🇵</span> <span class="text-white">日本語</span> <small class="text-muted ml-auto">JA</small>
+                            <a class="dropdown-item py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('ja', '日本語', '🇯🇵');">
+                                <span class="mr-2">🇯🇵</span> <span>日本語</span> <small class="text-muted ml-auto">JA</small>
                             </a>
-                            <a class="dropdown-item text-white py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('tr', 'Türkçe', '🇹🇷');">
-                                <span class="mr-2">🇹🇷</span> <span class="text-white">Türkçe</span> <small class="text-muted ml-auto">TR</small>
+                            <a class="dropdown-item py-1 px-2 d-flex align-items-center rounded lang-opt" href="javascript:void(0);" onclick="setPortalLanguage('tr', 'Türkçe', '🇹🇷');">
+                                <span class="mr-2">🇹🇷</span> <span>Türkçe</span> <small class="text-muted ml-auto">TR</small>
                             </a>
                         </div>
                     </li>

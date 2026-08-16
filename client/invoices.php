@@ -555,7 +555,7 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
     <div class="portal-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
             <h5 class="mb-0 font-weight-bold text-warning"><i class="fas fa-history mr-2"></i>Payment Verification History</h5>
-            <small class="text-white font-weight-500" style="color: #ffffff !important; opacity: 0.9;">Real-time status of your submitted wire receipts and cryptocurrency transactions.</small>
+            <small class="text-muted">Real-time status of your submitted wire receipts and cryptocurrency transactions.</small>
         </div>
         <span class="badge badge-warning text-dark font-weight-bold px-3 py-1"><?= count($proofs) ?> Submissions</span>
     </div>
@@ -563,8 +563,8 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
     <?php if (empty($proofs)): ?>
         <div class="card-body text-center py-5">
             <i class="fas fa-receipt fa-3x text-warning mb-3 d-block" style="opacity: 0.7;"></i>
-            <h6 class="text-white font-weight-bold">No Payments Submitted Yet</h6>
-            <p class="text-white small" style="opacity: 0.85;">When you submit a payment receipt or TXID proof, its verification tracking will appear here.</p>
+            <h6 class="font-weight-bold">No Payments Submitted Yet</h6>
+            <p class="text-muted small">When you submit a payment receipt or TXID proof, its verification tracking will appear here.</p>
         </div>
     <?php else: ?>
         <div class="table-portal-wrap">

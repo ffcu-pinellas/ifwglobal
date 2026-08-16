@@ -53,7 +53,7 @@ if (isset($pdo) && $user_role === 'client') {
 ?>
 <style>
     /* ============================================================
-       FIXED SIDEBAR POSITIONING â€” Kills all OverlayScrollbars glue
+       FIXED SIDEBAR POSITIONING
        ============================================================ */
     #wrapper-left {
         position: fixed !important;
@@ -62,8 +62,8 @@ if (isset($pdo) && $user_role === 'client') {
         width: 250px !important;
         height: 100vh !important;
         z-index: 1040 !important;
-        background-color: #1f1b1c !important;
-        border-right: 1px solid rgba(254, 204, 86, 0.2) !important;
+        background-color: #1f1b1c;
+        border-right: 1px solid rgba(254, 204, 86, 0.2);
         overflow-y: auto !important;
         overflow-x: hidden !important;
         display: flex !important;
@@ -74,13 +74,12 @@ if (isset($pdo) && $user_role === 'client') {
         display: flex !important;
         flex-direction: column !important;
         height: auto !important;
-        background-color: #1f1b1c !important;
+        background-color: #1f1b1c;
     }
     .sidebar-container {
         flex: 1 !important;
         display: flex !important;
         flex-direction: column !important;
-        /* Neutralize OverlayScrollbars injected transforms */
         transform: none !important;
         position: static !important;
         height: auto !important;
@@ -108,7 +107,21 @@ if (isset($pdo) && $user_role === 'client') {
         position: sticky !important;
         top: 0 !important;
         z-index: 10 !important;
-        background-color: #1f1b1c !important;
+        background-color: #1f1b1c;
+    }
+
+    /* Light Mode Sidebar Overrides */
+    html.light-mode #wrapper-left,
+    body.light-mode #wrapper-left {
+        background-color: #ffffff !important;
+        border-right: 1px solid #e2e8f0 !important;
+        box-shadow: 2px 0 12px rgba(0,0,0,0.04) !important;
+    }
+    html.light-mode .sidebar,
+    body.light-mode .sidebar,
+    html.light-mode .sidebar-header,
+    body.light-mode .sidebar-header {
+        background-color: #ffffff !important;
     }
 
     /* KILL ALL OVERLAYSCROLLBARS INJECTED ELEMENTS */
@@ -143,49 +156,58 @@ if (isset($pdo) && $user_role === 'client') {
         visibility: hidden !important;
     }
 
-    /* GLOBAL CONTRAST FIXES FOR FORMS, TABLES, AND INPUTS */
-    .form-control, select, textarea, input[type="text"], input[type="email"], input[type="password"], input[type="number"] {
+    /* SCOPED CONTRAST FOR DARK MODE (DO NOT OVERRIDE LIGHT MODE) */
+    body:not(.light-mode) .form-control, 
+    body:not(.light-mode) select, 
+    body:not(.light-mode) textarea, 
+    body:not(.light-mode) input[type="text"], 
+    body:not(.light-mode) input[type="email"], 
+    body:not(.light-mode) input[type="password"], 
+    body:not(.light-mode) input[type="number"] {
         background-color: #2b2627 !important;
         color: #ffffff !important;
         border: 1px solid #444 !important;
     }
-    .form-control:focus, select:focus, textarea:focus {
+    body:not(.light-mode) .form-control:focus, 
+    body:not(.light-mode) select:focus, 
+    body:not(.light-mode) textarea:focus {
         background-color: #363031 !important;
         color: #ffffff !important;
         border-color: #fecc56 !important;
         box-shadow: 0 0 5px rgba(254,204,86,0.3) !important;
     }
-    select option {
+    body:not(.light-mode) select option {
         background-color: #1f1b1c !important;
         color: #ffffff !important;
     }
-    .table-dark {
+    body:not(.light-mode) .table-dark {
         color: #ffffff !important;
         background-color: #1f1b1c !important;
     }
-    .table-dark th {
+    body:not(.light-mode) .table-dark th {
         color: #fecc56 !important;
         border-bottom: 2px solid rgba(254,204,86,0.3) !important;
     }
-    .table-dark td {
+    body:not(.light-mode) .table-dark td {
         border-color: #333 !important;
         color: #e0e0e0 !important;
     }
-    .card-header {
+    body:not(.light-mode) .card-header {
         background-color: #2a2526 !important;
         color: #fecc56 !important;
         border-bottom: 1px solid #444 !important;
     }
-    .card-body {
+    body:not(.light-mode) .card-body {
         background-color: #1f1b1c !important;
         color: #ffffff !important;
     }
-    .modal-content {
+    body:not(.light-mode) .modal-content {
         background-color: #1f1b1c !important;
         color: #ffffff !important;
         border: 1px solid #fecc56 !important;
     }
-    .modal-header, .modal-footer {
+    body:not(.light-mode) .modal-header, 
+    body:not(.light-mode) .modal-footer {
         border-color: #333 !important;
     }
 

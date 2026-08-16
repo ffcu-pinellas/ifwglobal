@@ -1,7 +1,12 @@
 <?php
 // client/profile.php
-require_once '../config.php';
-require_once '../includes/functions.php';
+$dir = __DIR__;
+while (!file_exists($dir . '/config.php') && $dir !== dirname($dir)) {
+    $dir = dirname($dir);
+}
+require_once $dir . '/config.php';
+require_once $dir . '/includes/functions.php';
+require_once $dir . '/includes/currency_helper.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -60,8 +65,9 @@ $active_currency = get_client_currency($pdo, $client_id);
 $avail_currencies = get_available_currencies();
 $curr_meta = $avail_currencies[$active_currency] ?? $avail_currencies['USD'];
 
-require_once '../includes/admin_header.php';
-require_once '../includes/admin_sidebar.php';
+require_once $dir . '/includes/admin_header.php';
+require_once $dir . '/includes/admin_sidebar.php';
+$portal_avatar_url = $portal_avatar_url ?? get_portal_avatar_url($pdo, 'client', $client_id);
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
@@ -266,4 +272,4 @@ function syncProfilePrivacyUI() {
 document.addEventListener('DOMContentLoaded', syncProfilePrivacyUI);
 </script>
 
-<?php require_once '../includes/admin_footer.php'; ?>
+<?php require_once $dir . '/includes/admin_footer.php'; ?>

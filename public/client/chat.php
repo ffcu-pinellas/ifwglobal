@@ -84,6 +84,38 @@ require_once $dir . '/includes/admin_sidebar.php';
 .msg-client .msg-sender-name { color: #5a4200; text-align: right; }
 .msg-admin .msg-sender-name { color: #fecc56; text-align: left; }
 
+/* Light Mode Chat Overrides */
+html.light-mode #chat-messages,
+body.light-mode #chat-messages {
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+html.light-mode .msg-admin,
+body.light-mode .msg-admin {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+html.light-mode .msg-admin .msg-sender-name,
+body.light-mode .msg-admin .msg-sender-name {
+    color: #b45309 !important;
+}
+html.light-mode .msg-admin .msg-time,
+body.light-mode .msg-admin .msg-time {
+    color: #64748b !important;
+}
+html.light-mode .client-chat-card,
+body.light-mode .client-chat-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+html.light-mode .chat-top-row,
+body.light-mode .chat-top-row {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
 @media (max-width: 768px) {
     #wrapper-content, .container-fluid, .content-wrapper, #content {
         padding-left: 0 !important;
