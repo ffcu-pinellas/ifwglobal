@@ -614,8 +614,7 @@ body.light-mode .client-chat-iframe {
                         <script>
                         function isLightActive() {
                             return document.documentElement.classList.contains('light-mode') || 
-                                   document.body.classList.contains('light-mode') || 
-                                   (localStorage.getItem('ifw_portal_theme') === 'light');
+                                   document.body.classList.contains('light-mode');
                         }
 
                         window.chatwootSettings = {
@@ -626,8 +625,8 @@ body.light-mode .client-chat-iframe {
                             darkMode: isLightActive() ? 'light' : 'dark'
                         };
 
-                        function applyChatwootTheme(theme) {
-                            var isLight = (theme === 'light' || (theme !== 'dark' && isLightActive()));
+                        function applyChatwootTheme(forcedTheme) {
+                            var isLight = (forcedTheme === 'light') ? true : ((forcedTheme === 'dark') ? false : isLightActive());
                             var targetTheme = isLight ? 'light' : 'dark';
                             
                             if (window.chatwootSettings) {
@@ -635,6 +634,11 @@ body.light-mode .client-chat-iframe {
                             }
                             
                             if (window.$chatwoot) {
+                                try {
+                                    if (typeof window.$chatwoot.setDarkMode === 'function') {
+                                        window.$chatwoot.setDarkMode(targetTheme);
+                                    }
+                                } catch(e) {}
                                 try {
                                     if (typeof window.$chatwoot.setTheme === 'function') {
                                         window.$chatwoot.setTheme(targetTheme);
@@ -649,19 +653,42 @@ body.light-mode .client-chat-iframe {
                             
                             var mount = document.getElementById('chatwoot-mount-frame');
                             if (mount) {
+                                mount.style.setProperty('background-color', isLight ? '#ffffff' : '#000000', 'important');
                                 mount.style.setProperty('background', isLight ? '#ffffff' : '#000000', 'important');
                             }
                             var holder = document.querySelector('.woot-widget-holder');
                             if (holder) {
+                                holder.style.setProperty('background-color', isLight ? '#ffffff' : '#000000', 'important');
                                 holder.style.setProperty('background', isLight ? '#ffffff' : '#000000', 'important');
                             }
                             var iframe = document.querySelector('.woot-widget-holder iframe') || document.getElementById('chatwoot_live_chat_widget');
                             if (iframe) {
+                                iframe.style.setProperty('background-color', isLight ? '#ffffff' : '#000000', 'important');
                                 iframe.style.setProperty('background', isLight ? '#ffffff' : '#000000', 'important');
+                                
                                 try {
+                                    iframe.contentWindow.postMessage(JSON.stringify({ event: 'setDarkMode', darkMode: targetTheme }), '*');
                                     iframe.contentWindow.postMessage(JSON.stringify({ event: 'setTheme', data: { theme: targetTheme } }), '*');
+                                    iframe.contentWindow.postMessage({ event: 'setDarkMode', darkMode: targetTheme }, '*');
                                     iframe.contentWindow.postMessage({ event: 'set-theme', theme: targetTheme }, '*');
+                                    iframe.contentWindow.postMessage({ type: 'chatwoot:theme', theme: targetTheme }, '*');
+                                    iframe.contentWindow.postMessage({ event: 'config:set', darkMode: targetTheme }, '*');
                                 } catch(e) {}
+
+                                if (iframe.src) {
+                                    try {
+                                        var curSrc = iframe.src;
+                                        var newSrc = curSrc;
+                                        if (newSrc.indexOf('darkMode=') !== -1) {
+                                            newSrc = newSrc.replace(/darkMode=(light|dark|auto)/i, 'darkMode=' + targetTheme);
+                                        } else {
+                                            newSrc += (newSrc.indexOf('?') !== -1 ? '&' : '?') + 'darkMode=' + targetTheme;
+                                        }
+                                        if (newSrc !== curSrc) {
+                                            iframe.src = newSrc;
+                                        }
+                                    } catch(e) {}
+                                }
                             }
                         }
 
@@ -700,7 +727,7 @@ body.light-mode .client-chat-iframe {
                                 holder.style.setProperty('z-index', '5', 'important');
                                 holder.style.setProperty('background', isLight ? '#ffffff' : '#000000', 'important');
                                 
-                                var iframe = holder.querySelector('iframe');
+                                var iframe = holder.querySelector('iframe') || document.getElementById('chatwoot_live_chat_widget');
                                 if (iframe) {
                                     iframe.style.setProperty('position', 'absolute', 'important');
                                     iframe.style.setProperty('top', '0', 'important');
