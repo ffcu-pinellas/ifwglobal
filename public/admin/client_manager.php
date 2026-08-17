@@ -513,18 +513,9 @@ require_once '../includes/admin_sidebar.php';
                         <!-- Email Container -->
                         <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; border-top: 4px solid #fecc56; font-family: Arial, sans-serif; color: #1e293b;">
                             <!-- Email Header with Logo -->
-                            <div style="background: #111827; padding: 20px 16px; text-align: center; border-bottom: 2px solid #fecc56;">
-                                <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
-                                    <tr>
-                                        <td style="vertical-align: middle; padding-right: 10px;">
-                                            <div style="width: 32px; height: 32px; background-color: #fecc56; border-radius: 6px; text-align: center; line-height: 32px; font-size: 18px; font-weight: bold; color: #111827;">🛡️</div>
-                                        </td>
-                                        <td style="vertical-align: middle; text-align: left;">
-                                            <div style="color: #fecc56; font-size: 18px; font-weight: 900; letter-spacing: 1.5px; font-family: Arial, sans-serif; text-transform: uppercase; line-height: 1.1;">IFW GLOBAL</div>
-                                            <div style="color: #cbd5e1; font-size: 8.5px; font-weight: bold; letter-spacing: 1.2px; text-transform: uppercase;">Private Intelligence &amp; Asset Recovery</div>
-                                        </td>
-                                    </tr>
-                                </table>
+                            <div style="background: #111827; padding: 26px 20px; text-align: center; border-bottom: 2px solid #fecc56;">
+                                <img src="/media/logos/logo.svg" alt="IFW Global" width="180" style="max-height: 52px; width: auto; height: auto; display: block; margin: 0 auto 8px auto;" />
+                                <div style="color: #cbd5e1; font-size: 10px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase;">Private Intelligence &amp; Asset Recovery</div>
                             </div>
                             
                             <!-- Email Content Body -->
