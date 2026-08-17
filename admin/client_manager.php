@@ -45,19 +45,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
             $raw_password = bin2hex(random_bytes(4));
             $hashed = password_hash($raw_password, PASSWORD_DEFAULT);
             $client_id = (int)$_POST['client_id'];
+            $default_pin = '1234';
+            $hashed_pin = password_hash($default_pin, PASSWORD_DEFAULT);
             
-            $stmt = $pdo->prepare("UPDATE IFW_clients SET password_hash = ? WHERE id = ?");
-            $stmt->execute([$hashed, $client_id]);
+            $stmt = $pdo->prepare("UPDATE IFW_clients SET password_hash = ?, pin_hash = COALESCE(pin_hash, ?), is_temp_password = 1, is_first_login = 1 WHERE id = ?");
+            $stmt->execute([$hashed, $hashed_pin, $client_id]);
             log_audit_action($pdo, $admin_id, 'INVITE_CLIENT', "Generated portal credentials for client #$client_id");
             
-            $stmt = $pdo->prepare("SELECT first_name, email FROM IFW_clients WHERE id = ?");
+            $stmt = $pdo->prepare("SELECT first_name, last_name, email FROM IFW_clients WHERE id = ?");
             $stmt->execute([$client_id]);
             $client = $stmt->fetch();
             
             if ($client && $client['email']) {
                 $portal_url = rtrim(BASE_URL, '/') . '/client/login.php';
-                $client_name = htmlspecialchars($client['first_name'] ?? 'Client');
+                $client_name = htmlspecialchars(trim(($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? '')) ?: 'Client');
                 $client_email = htmlspecialchars($client['email'] ?? '');
+                $client_user_id = sprintf('#IFW-%05d', $client_id);
                 
                 $html_body = "
                 <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;'>
@@ -73,24 +76,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                             <h4 style='margin: 0 0 12px 0; color: #1e293b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;'>Your Portal Login Credentials</h4>
                             <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
                                 <tr>
-                                    <td style='padding: 6px 0; color: #64748b; width: 150px;'><strong>Username / Email:</strong></td>
+                                    <td style='padding: 6px 0; color: #64748b; width: 160px;'><strong>Client / User ID:</strong></td>
+                                    <td style='padding: 6px 0; color: #0f172a; font-weight: bold;'>{$client_user_id}</td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 6px 0; color: #64748b;'><strong>Username / Email:</strong></td>
                                     <td style='padding: 6px 0; color: #0f172a; font-weight: bold;'>{$client_email}</td>
                                 </tr>
                                 <tr>
                                     <td style='padding: 6px 0; color: #64748b;'><strong>Temporary Password:</strong></td>
                                     <td style='padding: 6px 0;'><span style='background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 4px; display: inline-block;'>{$raw_password}</span></td>
                                 </tr>
+                                <tr>
+                                    <td style='padding: 6px 0; color: #64748b;'><strong>Default Security PIN:</strong></td>
+                                    <td style='padding: 6px 0;'><span style='background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 4px; display: inline-block;'>{$default_pin}</span></td>
+                                </tr>
                             </table>
                         </div>
                         
                         <div style='text-align: center; margin: 30px 0;'>
                             <a href='{$portal_url}' style='background: #fecc56; color: #1f1b1c; text-decoration: none; font-weight: bold; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 32px; border-radius: 4px; display: inline-block; box-shadow: 0 4px 12px rgba(254, 204, 86, 0.4);'>
-                                LOGIN TO CLIENT PORTAL
+                                LOGIN
                             </a>
                         </div>
                         
                         <div style='background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 12px 16px; margin: 20px 0; font-size: 12px; color: #92400e;'>
-                            <strong>Security Notice:</strong> Upon your first login, you will be prompted to set up your 4-digit Security PIN and update your permanent password. Do not share your login credentials with anyone.
+                            <strong>Security Notice:</strong> Upon your first login, a security wizard will guide you to update your permanent password and set up your private 4-digit Security PIN (replacing default <code>1234</code>). Do not share your login credentials with anyone.
                         </div>
                         
                         <p style='color: #64748b; font-size: 12px; margin-bottom: 0;'>
@@ -104,8 +115,113 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                 ";
                 send_html_email($client['email'], "Your IFW Global Portal Access", $html_body);
             }
-            header("Location: client_manager.php?invited=" . $client_id . "&pwd=" . urlencode($raw_password));
+            header("Location: client_manager.php?invited=" . $client_id . "&pwd=" . urlencode($raw_password) . "&pin=" . urlencode($default_pin));
             exit;
+        } elseif ($_POST['action'] == 'send_custom_welcome_email' && !$is_agent) {
+            $client_id = (int)$_POST['client_id'];
+            $subject = trim($_POST['email_subject'] ?? 'Welcome to IFW Global — Confidential Case Portal Access');
+            $custom_note = trim($_POST['custom_note'] ?? '');
+            $include_creds = !empty($_POST['include_credentials']);
+            
+            $stmt = $pdo->prepare("SELECT * FROM IFW_clients WHERE id = ?");
+            $stmt->execute([$client_id]);
+            $client = $stmt->fetch();
+            
+            if ($client && $client['email']) {
+                $raw_password = '';
+                $default_pin = '1234';
+                if ($include_creds) {
+                    $raw_password = bin2hex(random_bytes(4));
+                    $hashed = password_hash($raw_password, PASSWORD_DEFAULT);
+                    $hashed_pin = password_hash($default_pin, PASSWORD_DEFAULT);
+                    $stmt = $pdo->prepare("UPDATE IFW_clients SET password_hash = ?, pin_hash = ?, is_temp_password = 1, is_first_login = 1 WHERE id = ?");
+                    $stmt->execute([$hashed, $hashed_pin, $client_id]);
+                }
+                
+                $portal_url = rtrim(BASE_URL, '/') . '/client/login.php';
+                $client_name = htmlspecialchars(trim(($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? '')) ?: 'Client');
+                $client_email = htmlspecialchars($client['email'] ?? '');
+                $client_ref_id = sprintf('#IFW-%05d', $client['id']);
+                
+                $creds_html = '';
+                if ($include_creds) {
+                    $creds_html = "
+                    <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #fecc56; border-radius: 6px; padding: 18px 20px; margin: 24px 0;'>
+                        <h4 style='margin: 0 0 12px 0; color: #1e293b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;'>Your Portal Login Credentials</h4>
+                        <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
+                            <tr>
+                                <td style='padding: 6px 0; color: #64748b; width: 160px;'><strong>Client / User ID:</strong></td>
+                                <td style='padding: 6px 0; color: #0f172a; font-weight: bold;'>{$client_ref_id}</td>
+                            </tr>
+                            <tr>
+                                <td style='padding: 6px 0; color: #64748b;'><strong>Username / Email:</strong></td>
+                                <td style='padding: 6px 0; color: #0f172a; font-weight: bold;'>{$client_email}</td>
+                            </tr>
+                            <tr>
+                                <td style='padding: 6px 0; color: #64748b;'><strong>Temporary Password:</strong></td>
+                                <td style='padding: 6px 0;'><span style='background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 4px; display: inline-block;'>{$raw_password}</span></td>
+                            </tr>
+                            <tr>
+                                <td style='padding: 6px 0; color: #64748b;'><strong>Default Security PIN:</strong></td>
+                                <td style='padding: 6px 0;'><span style='background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 4px; display: inline-block;'>{$default_pin}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div style='text-align: center; margin: 30px 0;'>
+                        <a href='{$portal_url}' style='background: #fecc56; color: #1f1b1c; text-decoration: none; font-weight: bold; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 32px; border-radius: 4px; display: inline-block; box-shadow: 0 4px 12px rgba(254, 204, 86, 0.4);'>
+                            LOGIN TO CLIENT PORTAL
+                        </a>
+                    </div>
+                    
+                    <div style='background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 12px 16px; margin: 20px 0; font-size: 12px; color: #92400e;'>
+                        <strong>Security Notice:</strong> Upon your first login, a security setup wizard will guide you to set your permanent password and choose your private 4-digit Security PIN (replacing default <code>1234</code>).
+                    </div>
+                    ";
+                }
+                
+                $custom_note_html = '';
+                if (!empty($custom_note)) {
+                    $custom_note_html = "
+                    <div style='background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 4px; padding: 14px 18px; margin: 20px 0; font-size: 14px; color: #1e3a8a;'>
+                        <strong>Investigator Case Briefing:</strong><br>
+                        " . nl2br(htmlspecialchars($custom_note)) . "
+                    </div>
+                    ";
+                }
+                
+                $html_body = "
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;'>
+                    <div style='background: #1f1b1c; padding: 24px; text-align: center; border-bottom: 3px solid #fecc56;'>
+                        <h2 style='color: #fecc56; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px;'>IFW Global Intelligence</h2>
+                        <p style='color: #cbd5e1; margin: 6px 0 0 0; font-size: 13px;'>Confidential Case Dossier &amp; Asset Recovery Command</p>
+                    </div>
+                    <div style='padding: 24px 28px; color: #334155; font-size: 14px; line-height: 1.6;'>
+                        <p style='margin-top: 0;'>Dear <strong>{$client_name}</strong>,</p>
+                        <p>Welcome to <strong>IFW Global</strong>. Your confidential case dossier has been formally opened with our cyber forensics and international asset recovery team under Case Reference <strong>{$client_ref_id}</strong>.</p>
+                        
+                        {$custom_note_html}
+                        
+                        <p>You can access our 256-bit encrypted Client Portal 24/7 to track live blockchain telemetry, inspect subpoena filings, e-sign legal documents, and communicate directly with your lead investigator.</p>
+                        
+                        {$creds_html}
+                        
+                        <p style='color: #64748b; font-size: 12px; margin-bottom: 0;'>
+                            Need urgent assistance? Reply directly to this email or reach our 24/7 Operations Desk at <a href='mailto:investigations@ifwglobalrecovery.site' style='color: #d97706;'>investigations@ifwglobalrecovery.site</a>.
+                        </p>
+                    </div>
+                    <div style='background: #f1f5f9; padding: 14px 28px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #e2e8f0;'>
+                        &copy; " . date('Y') . " IFW Global Intelligence. All rights reserved. 256-Bit Encrypted Portal.
+                    </div>
+                </div>
+                ";
+                
+                send_html_email($client['email'], $subject, $html_body);
+                log_audit_action($pdo, $admin_id, 'SEND_WELCOME_EMAIL', "Sent custom welcome email & credentials to client #$client_id ({$client['email']})");
+                
+                header("Location: client_manager.php?welcome_sent=1&cid=" . $client_id . ($include_creds ? "&pwd=" . urlencode($raw_password) . "&pin=" . urlencode($default_pin) : ""));
+                exit;
+            }
         } elseif ($_POST['action'] == 'update_status') {
             $status = in_array($_POST['status'], ['Received', 'Investigating', 'Evidence Gathered', 'Legal Action', 'Recovery']) ? $_POST['status'] : 'Received';
             $client_id = (int)$_POST['client_id'];
@@ -301,6 +417,17 @@ require_once '../includes/admin_sidebar.php';
                                         </a>
                                         
                                         <?php if (!$is_agent): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-warning font-weight-bold px-2" title="Preview & Send Custom Welcome Email" onclick="openWelcomeEmailModal(<?= htmlspecialchars(json_encode([
+                                                'id' => $client['id'],
+                                                'ref_id' => sprintf('#IFW-%05d', $client['id']),
+                                                'name' => trim($client['first_name'] . ' ' . $client['last_name']),
+                                                'email' => $client['email'],
+                                                'phone' => $client['phone'] ?? '',
+                                                'agent_name' => $client['agent_name'] ?? 'Senior Cyber Investigator'
+                                            ])) ?>)">
+                                                <i class="fas fa-paper-plane"></i><span class="d-none d-xl-inline ml-1">Email</span>
+                                            </button>
+
                                             <form method="POST" class="d-inline mb-0" onsubmit="return confirm('Generate a new portal login password for <?= htmlspecialchars($client['first_name']) ?>?');">
                                                 <input type="hidden" name="action" value="invite_client">
                                                 <input type="hidden" name="client_id" value="<?= $client['id'] ?>">
@@ -329,6 +456,159 @@ require_once '../includes/admin_sidebar.php';
 </div>
 
 <?php if (!$is_agent): ?>
+<!-- PREVIEW & SEND WELCOME EMAIL MODAL -->
+<div class="modal fade" id="welcomeEmailModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content bg-dark text-white border-warning shadow-24" style="border-radius: 14px; overflow: hidden; border: 2px solid #fecc56;">
+      <div class="modal-header border-secondary py-3 px-4 d-flex justify-content-between align-items-center" style="background: #11151e;">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-envelope-open-text text-warning fa-lg mr-3"></i>
+            <div>
+                <h5 class="modal-title text-warning font-weight-bold mb-0">Send Official Welcome Email &amp; Portal Credentials</h5>
+                <small class="text-muted">Live visual preview with IFW Global official logo and cryptographic security credentials.</small>
+            </div>
+        </div>
+        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+      </div>
+      
+      <form method="POST" id="welcomeEmailForm" onsubmit="document.getElementById('sendWelcomeBtn').innerHTML='<i class=\'fas fa-spinner fa-spin mr-2\'></i>Dispatching Email...'; document.getElementById('sendWelcomeBtn').disabled=true;">
+        <input type="hidden" name="action" value="send_custom_welcome_email">
+        <input type="hidden" name="client_id" id="modalClientId">
+        
+        <div class="modal-body p-4">
+            <div class="row">
+                <!-- Left Column: Form Controls -->
+                <div class="col-lg-5 mb-4 mb-lg-0">
+                    <div class="p-3 rounded border border-secondary mb-3" style="background: #1a202c;">
+                        <h6 class="text-warning font-weight-bold mb-3"><i class="fas fa-user mr-2"></i>Recipient Details</h6>
+                        <div class="mb-2 d-flex justify-content-between small">
+                            <span class="text-muted">Client Name:</span>
+                            <strong class="text-white" id="modalClientName">John Doe</strong>
+                        </div>
+                        <div class="mb-2 d-flex justify-content-between small">
+                            <span class="text-muted">Recipient Email:</span>
+                            <strong class="text-warning" id="modalClientEmail">client@example.com</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span class="text-muted">Case Reference:</span>
+                            <span class="badge badge-secondary font-weight-bold" id="modalClientRef">#IFW-00000</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-white small"><i class="fas fa-heading mr-1 text-warning"></i> Email Subject</label>
+                        <input type="text" name="email_subject" id="modalEmailSubject" class="form-control bg-dark text-white border-secondary" value="Welcome to IFW Global — Confidential Case Portal Access" required oninput="updateLiveEmailPreview()">
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-white small"><i class="fas fa-pen-nib mr-1 text-warning"></i> Optional Investigator Case Note</label>
+                        <textarea name="custom_note" id="modalCustomNote" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="e.g. Our cyber intelligence division has been assigned to your case and initiated preliminary asset tracking." oninput="updateLiveEmailPreview()"></textarea>
+                        <small class="text-muted">Included as a highlighted briefing card inside the email.</small>
+                    </div>
+
+                    <div class="custom-control custom-checkbox mb-3 p-2 rounded" style="background: rgba(254, 204, 86, 0.08); border: 1px solid rgba(254, 204, 86, 0.2);">
+                        <input type="checkbox" class="custom-control-input" id="includeCredsCheckbox" name="include_credentials" value="1" checked onchange="updateLiveEmailPreview()">
+                        <label class="custom-control-label text-warning font-weight-bold small" for="includeCredsCheckbox">
+                            Generate &amp; Attach Portal Credentials (ID, Password, Default PIN 1234)
+                        </label>
+                        <small class="text-light d-block mt-1" style="font-size: 11px;">Generates temporary credentials and flags the profile for mandatory first-login password &amp; PIN setup.</small>
+                    </div>
+
+                    <div class="alert alert-info py-2 px-3 small mb-0">
+                        <i class="fas fa-info-circle mr-1"></i> The recipient will receive this 256-bit encrypted notification from <strong>notifications@ifwglobalrecovery.site</strong>.
+                    </div>
+                </div>
+
+                <!-- Right Column: Live Email Preview -->
+                <div class="col-lg-7">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="font-weight-bold text-warning small"><i class="fas fa-desktop mr-1"></i> Live Visual Email Preview</span>
+                        <span class="badge badge-success" style="font-size: 10px;"><i class="fas fa-eye mr-1"></i> Exact Client View</span>
+                    </div>
+
+                    <!-- Visual Email Canvas Container -->
+                    <div id="emailPreviewCanvas" class="rounded border border-secondary p-3 shadow-inner" style="background: #0b0e14; max-height: 480px; overflow-y: auto;">
+                        <!-- Email Container -->
+                        <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; border-top: 4px solid #fecc56; font-family: Arial, sans-serif; color: #1e293b;">
+                            <!-- Email Header with Logo -->
+                            <div style="background: #111827; padding: 20px 16px; text-align: center; border-bottom: 2px solid #fecc56;">
+                                <img src="/media/logos/logo.svg" alt="IFW Global" style="max-height: 38px; display: block; margin: 0 auto 6px auto;" onerror="this.style.display='none'; document.getElementById('previewFallbackLogo').style.display='block';">
+                                <div id="previewFallbackLogo" style="display:none; color:#fecc56; font-weight:bold; font-size:18px; letter-spacing:1px;">IFW GLOBAL</div>
+                                <div style="color: #cbd5e1; font-size: 9px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase;">Private Intelligence &amp; Asset Recovery</div>
+                            </div>
+                            
+                            <!-- Email Content Body -->
+                            <div style="padding: 22px 20px; font-size: 13px; line-height: 1.6; color: #334155;">
+                                <p style="margin-top: 0; font-size: 14px;">Dear <strong id="previewClientName" style="color: #0f172a;">Client</strong>,</p>
+                                <p style="margin-bottom: 14px;">Welcome to <strong>IFW Global</strong>. Your confidential case dossier has been formally opened with our cyber forensics and international asset recovery team under Case Reference <strong id="previewCaseRef" style="color: #d97706;">#IFW-00000</strong>.</p>
+                                
+                                <div id="previewCustomNoteBlock" style="background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 4px; padding: 10px 14px; margin: 14px 0; font-size: 12.5px; color: #1e3a8a; display: none;">
+                                    <strong>Investigator Case Briefing:</strong><br>
+                                    <span id="previewCustomNoteText"></span>
+                                </div>
+                                
+                                <p style="margin-bottom: 14px;">You can access our 256-bit encrypted Client Portal 24/7 to track live blockchain telemetry, inspect subpoena filings, e-sign legal documents, and communicate directly with your lead investigator.</p>
+                                
+                                <!-- Credentials Box -->
+                                <div id="previewCredsBlock" style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #fecc56; border-radius: 6px; padding: 14px 16px; margin: 16px 0;">
+                                    <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: bold;">Your Portal Login Credentials</h4>
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+                                        <tr>
+                                            <td style="padding: 4px 0; color: #64748b; width: 140px;"><strong>Client / User ID:</strong></td>
+                                            <td style="padding: 4px 0; color: #0f172a; font-weight: bold;" id="previewUserId">#IFW-00000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 4px 0; color: #64748b;"><strong>Username / Email:</strong></td>
+                                            <td style="padding: 4px 0; color: #0f172a; font-weight: bold;" id="previewEmail">client@example.com</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 4px 0; color: #64748b;"><strong>Temporary Password:</strong></td>
+                                            <td style="padding: 4px 0;"><span style="background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 13px; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block;">•••••••• (Auto-generated)</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 4px 0; color: #64748b;"><strong>Default Security PIN:</strong></td>
+                                            <td style="padding: 4px 0;"><span style="background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 13px; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block;">1234</span></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <!-- CTA Button -->
+                                <div style="text-align: center; margin: 20px 0;">
+                                    <span style="background: #fecc56; color: #1f1b1c; text-decoration: none; font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 28px; border-radius: 4px; display: inline-block; box-shadow: 0 4px 12px rgba(254, 204, 86, 0.4);">
+                                        LOGIN TO CLIENT PORTAL
+                                    </span>
+                                </div>
+                                
+                                <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 10px 12px; margin: 14px 0; font-size: 11.5px; color: #92400e;">
+                                    <strong>Security Notice:</strong> Upon your first login, a security setup wizard will guide you to update your permanent password and set up your private 4-digit Security PIN (replacing default <code>1234</code>).
+                                </div>
+                                
+                                <p style="color: #64748b; font-size: 11px; margin-bottom: 0;">
+                                    Need assistance? Reply directly to this email or reach our 24/7 Operations Desk at <span style="color: #d97706;">investigations@ifwglobalrecovery.site</span>.
+                                </p>
+                            </div>
+                            
+                            <!-- Email Footer -->
+                            <div style="background: #f1f5f9; padding: 12px 20px; text-align: center; color: #94a3b8; font-size: 10px; border-top: 1px solid #e2e8f0;">
+                                &copy; <?= date('Y') ?> IFW Global Intelligence. All rights reserved. 256-Bit Encrypted Portal.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal-footer border-secondary py-3 px-4 d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary font-weight-bold px-4" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4 shadow" id="sendWelcomeBtn">
+                <i class="fas fa-paper-plane mr-2"></i> Send Welcome Email Now
+            </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Add Client Modal -->
 <div class="modal fade" id="addClientModal" tabindex="-1">
   <div class="modal-dialog">
@@ -387,6 +667,44 @@ require_once '../includes/admin_sidebar.php';
 <?php endif; ?>
 
 <script>
+var activeWelcomeClient = null;
+
+function openWelcomeEmailModal(clientData) {
+    activeWelcomeClient = clientData;
+    document.getElementById('modalClientId').value = clientData.id;
+    document.getElementById('modalClientName').textContent = clientData.name || 'Client';
+    document.getElementById('modalClientEmail').textContent = clientData.email || '';
+    document.getElementById('modalClientRef').textContent = clientData.ref_id || ('#IFW-' + clientData.id);
+    
+    document.getElementById('previewClientName').textContent = clientData.name || 'Client';
+    document.getElementById('previewEmail').textContent = clientData.email || '';
+    document.getElementById('previewUserId').textContent = clientData.ref_id || ('#IFW-' + clientData.id);
+    document.getElementById('previewCaseRef').textContent = clientData.ref_id || ('#IFW-' + clientData.id);
+    
+    updateLiveEmailPreview();
+    $('#welcomeEmailModal').modal('show');
+}
+
+function updateLiveEmailPreview() {
+    var note = document.getElementById('modalCustomNote').value.trim();
+    var noteBlock = document.getElementById('previewCustomNoteBlock');
+    var noteText = document.getElementById('previewCustomNoteText');
+    if (note) {
+        noteText.textContent = note;
+        noteBlock.style.display = 'block';
+    } else {
+        noteBlock.style.display = 'none';
+    }
+    
+    var credsChecked = document.getElementById('includeCredsCheckbox').checked;
+    var credsBlock = document.getElementById('previewCredsBlock');
+    if (credsChecked) {
+        credsBlock.style.display = 'block';
+    } else {
+        credsBlock.style.display = 'none';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const leadSelect = document.getElementById('leadSelect');
     if (leadSelect) {
