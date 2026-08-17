@@ -846,12 +846,30 @@ $case_show_fund_flow = isset($latest_case['show_flow_visualizer']) ? ((int)$late
 $show_lifecycle = (get_setting($pdo, 'show_lifecycle_tracker', '1') == '1') && $case_show_lifecycle;
 $show_fund_flow = (get_setting($pdo, 'show_fund_flow_visualizer', '1') == '1') && $case_show_fund_flow;
 
-// Dynamic Case-Specific Stage Titles
+// Dynamic Case-Specific Stage Titles & Telemetry (Fully configurable from Admin)
 $st1 = !empty($latest_case['stage_1_title']) ? $latest_case['stage_1_title'] : '1. Case Intake & Dossier';
 $st2 = !empty($latest_case['stage_2_title']) ? $latest_case['stage_2_title'] : '2. Blockchain & Asset Tracing';
 $st3 = !empty($latest_case['stage_3_title']) ? $latest_case['stage_3_title'] : '3. Evidence & Subpoena Filing';
 $st4 = !empty($latest_case['stage_4_title']) ? $latest_case['stage_4_title'] : '4. Asset Freezing & Injunction';
 $st5 = !empty($latest_case['stage_5_title']) ? $latest_case['stage_5_title'] : '5. Repatriation & Settlement';
+
+$sd1 = !empty($latest_case['stage_1_desc']) ? $latest_case['stage_1_desc'] : "Initial dossier registration, victim statement logging, claim valuation, and KYC regulatory identification under international anti-money laundering (AML) frameworks.";
+$sd2 = !empty($latest_case['stage_2_desc']) ? $latest_case['stage_2_desc'] : "Advanced heuristics and node cluster mapping tracking stolen assets across multi-chain hops, decentralized bridges, centralized exchanges (CEX), and peer-to-peer liquidity pools.";
+$sd3 = !empty($latest_case['stage_3_desc']) ? $latest_case['stage_3_desc'] : "Compiling verified chain of custody evidence, forensic audit certificates, and issuing formal legal subpoenas to receiving exchanges and financial custodians.";
+$sd4 = !empty($latest_case['stage_4_desc']) ? $latest_case['stage_4_desc'] : "Serving Mareva injunctions and judicial asset-freezing orders to lock fraudulent custodial wallets and hold rogue exchange accounts in strict escrow custody.";
+$sd5 = !empty($latest_case['stage_5_desc']) ? $latest_case['stage_5_desc'] : "Formal liquidation, escrow release verification, and direct digital or bank settlement release into verified client beneficiary accounts.";
+
+$sp1 = !empty($latest_case['stage_1_protocol']) ? $latest_case['stage_1_protocol'] : "KYC-AML / 256-Bit Cryptographic Vault";
+$sp2 = !empty($latest_case['stage_2_protocol']) ? $latest_case['stage_2_protocol'] : "On-Chain Heuristic Node Tracking (ETH/BTC/TRC20)";
+$sp3 = !empty($latest_case['stage_3_protocol']) ? $latest_case['stage_3_protocol'] : "ISO/IEC 27037 Digital Forensics Admissibility";
+$sp4 = !empty($latest_case['stage_4_protocol']) ? $latest_case['stage_4_protocol'] : "Judicial Asset Freezing Order &amp; Custodial Escrow Lock";
+$sp5 = !empty($latest_case['stage_5_protocol']) ? $latest_case['stage_5_protocol'] : "Multi-Signature Escrow Disbursement (USDT/EUR/USD)";
+
+$sj1 = !empty($latest_case['stage_1_jurisdiction']) ? $latest_case['stage_1_jurisdiction'] : "International Cross-Border Asset Recovery Desk";
+$sj2 = !empty($latest_case['stage_2_jurisdiction']) ? $latest_case['stage_2_jurisdiction'] : "International Cyber Forensics Intelligence Network";
+$sj3 = !empty($latest_case['stage_3_jurisdiction']) ? $latest_case['stage_3_jurisdiction'] : "United States Federal Court / High Court of Justice / Inter-State Injunctions";
+$sj4 = !empty($latest_case['stage_4_jurisdiction']) ? $latest_case['stage_4_jurisdiction'] : "Financial Conduct Authority / SEC / Interpol Taskforce";
+$sj5 = !empty($latest_case['stage_5_jurisdiction']) ? $latest_case['stage_5_jurisdiction'] : "Client Registered Settlement Account";
 
 $case_ref_display = !empty($latest_case['case_number']) ? $latest_case['case_number'] : sprintf('#IFW-%05d', $client_id);
 $case_title_display = !empty($latest_case['title']) ? $latest_case['title'] : 'Confidential Asset Intelligence & Recovery Dossier';
@@ -904,22 +922,22 @@ $case_title_display = !empty($latest_case['title']) ? $latest_case['title'] : 'C
         <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
             <div class="d-flex align-items-center">
                 <span class="badge badge-warning text-dark font-weight-bold mr-2" id="telemetryPhaseBadge" style="font-size:11px;">PHASE <?= $case_stage_step ?> ACTIVE</span>
-                <strong class="text-white" id="telemetryPhaseTitle"><?= htmlspecialchars($st2) ?></strong>
+                <strong class="text-white" id="telemetryPhaseTitle"><?= htmlspecialchars(${'st'.$case_stage_step}) ?></strong>
             </div>
             <span class="badge badge-secondary small" id="telemetryStatusBadge"><i class="fas fa-shield-alt mr-1"></i>Operational Status: In Progress</span>
         </div>
         <p class="text-light small mb-3" id="telemetryPhaseDesc" style="line-height: 1.6;">
-            Forensic cross-ledger analysis is mapping fraudulent wallet clusters, exchange entrypoints, and high-frequency mixer transactions across primary blockchain layers.
+            <?= htmlspecialchars(${'sd'.$case_stage_step}) ?>
         </p>
 
         <div class="row text-muted small g-2 mb-2" id="telemetryMetricsRow">
             <div class="col-sm-4 mb-2 mb-sm-0">
                 <span class="d-block text-muted" style="font-size: 11px;">Cryptographic Protocol:</span>
-                <code class="text-warning" id="telemetryProtocol">ETH / BTC / USDT Ledger Trace</code>
+                <code class="text-warning" id="telemetryProtocol"><?= htmlspecialchars(${'sp'.$case_stage_step}) ?></code>
             </div>
             <div class="col-sm-4 mb-2 mb-sm-0">
                 <span class="d-block text-muted" style="font-size: 11px;">Jurisdiction Authority:</span>
-                <strong class="text-white" id="telemetryJurisdiction">Global Cyber Command / INTERPOL ICPO</strong>
+                <strong class="text-white" id="telemetryJurisdiction"><?= htmlspecialchars(${'sj'.$case_stage_step}) ?></strong>
             </div>
             <div class="col-sm-4">
                 <span class="d-block text-muted" style="font-size: 11px;">Lead Investigator Desk:</span>
@@ -942,42 +960,42 @@ var milestoneTelemetryData = {
     1: {
         badge: "PHASE 1: INTAKE & IDENTITY VERIFICATION",
         title: "<?= addslashes(htmlspecialchars($st1)) ?>",
-        desc: "Initial dossier registration, victim statement logging, claim valuation, and KYC regulatory identification under international anti-money laundering (AML) frameworks.",
+        desc: "<?= addslashes(htmlspecialchars($sd1)) ?>",
         status: currentCaseStep > 1 ? '<i class="fas fa-check-circle text-success mr-1"></i>Completed &amp; Sealed' : '<i class="fas fa-spinner fa-spin text-warning mr-1"></i>Active In Processing',
-        protocol: "KYC-AML / 256-Bit Cryptographic Vault",
-        jurisdiction: "International Cross-Border Asset Recovery Desk"
+        protocol: "<?= addslashes(htmlspecialchars($sp1)) ?>",
+        jurisdiction: "<?= addslashes(htmlspecialchars($sj1)) ?>"
     },
     2: {
         badge: "PHASE 2: CRYPTOGRAPHIC & BLOCKCHAIN TRACING",
         title: "<?= addslashes(htmlspecialchars($st2)) ?>",
-        desc: "Advanced heuristics and node cluster mapping tracking stolen assets across multi-chain hops, decentralized bridges, centralized exchanges (CEX), and peer-to-peer liquidity pools.",
+        desc: "<?= addslashes(htmlspecialchars($sd2)) ?>",
         status: currentCaseStep > 2 ? '<i class="fas fa-check-circle text-success mr-1"></i>Completed' : (currentCaseStep === 2 ? '<i class="fas fa-spinner fa-spin text-warning mr-1"></i>Active Forensic Telemetry' : '<i class="fas fa-clock text-muted mr-1"></i>Scheduled Deployment'),
-        protocol: "On-Chain Heuristic Node Tracking (ETH/BTC/TRC20)",
-        jurisdiction: "International Cyber Forensics Intelligence Network"
+        protocol: "<?= addslashes(htmlspecialchars($sp2)) ?>",
+        jurisdiction: "<?= addslashes(htmlspecialchars($sj2)) ?>"
     },
     3: {
         badge: "PHASE 3: EVIDENCE DOSSIER & SUBPOENA FILINGS",
         title: "<?= addslashes(htmlspecialchars($st3)) ?>",
-        desc: "Compiling verified chain of custody evidence, forensic audit certificates, and issuing formal legal subpoenas to receiving exchanges and financial custodians.",
+        desc: "<?= addslashes(htmlspecialchars($sd3)) ?>",
         status: currentCaseStep > 3 ? '<i class="fas fa-check-circle text-success mr-1"></i>Completed' : (currentCaseStep === 3 ? '<i class="fas fa-spinner fa-spin text-warning mr-1"></i>Active Court Filings' : '<i class="fas fa-clock text-muted mr-1"></i>Pending Phase 2 Seal'),
-        protocol: "ISO/IEC 27037 Digital Forensics Admissibility",
-        jurisdiction: "United States Federal Court / High Court of Justice / Inter-State Injunctions"
+        protocol: "<?= addslashes(htmlspecialchars($sp3)) ?>",
+        jurisdiction: "<?= addslashes(htmlspecialchars($sj3)) ?>"
     },
     4: {
         badge: "PHASE 4: ASSET FREEZING & INJUNCTIONS",
         title: "<?= addslashes(htmlspecialchars($st4)) ?>",
-        desc: "Serving Mareva injunctions and judicial asset-freezing orders to lock fraudulent custodial wallets and hold rogue exchange accounts in strict escrow custody.",
+        desc: "<?= addslashes(htmlspecialchars($sd4)) ?>",
         status: currentCaseStep > 4 ? '<i class="fas fa-check-circle text-success mr-1"></i>Completed' : (currentCaseStep === 4 ? '<i class="fas fa-spinner fa-spin text-warning mr-1"></i>Active Injunctions Enforced' : '<i class="fas fa-clock text-muted mr-1"></i>Awaiting Judicial Hearing'),
-        protocol: "Judicial Asset Freezing Order &amp; Custodial Escrow Lock",
-        jurisdiction: "Financial Conduct Authority / SEC / Interpol Taskforce"
+        protocol: "<?= addslashes(htmlspecialchars($sp4)) ?>",
+        jurisdiction: "<?= addslashes(htmlspecialchars($sj4)) ?>"
     },
     5: {
         badge: "PHASE 5: REPATRIATION & SETTLEMENT",
         title: "<?= addslashes(htmlspecialchars($st5)) ?>",
-        desc: "Formal liquidation, escrow release verification, and direct digital or bank settlement release into verified client beneficiary accounts.",
+        desc: "<?= addslashes(htmlspecialchars($sd5)) ?>",
         status: currentCaseStep === 5 ? '<i class="fas fa-check-circle text-success mr-1"></i>Repatriation In Progress' : '<i class="fas fa-clock text-muted mr-1"></i>Final Stage of Recovery',
-        protocol: "Multi-Signature Escrow Disbursement (USDT/EUR/USD)",
-        jurisdiction: "Client Registered Settlement Account"
+        protocol: "<?= addslashes(htmlspecialchars($sp5)) ?>",
+        jurisdiction: "<?= addslashes(htmlspecialchars($sj5)) ?>"
     }
 };
 

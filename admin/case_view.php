@@ -47,6 +47,25 @@ try {
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_3_title VARCHAR(255) NULL");
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_4_title VARCHAR(255) NULL");
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_5_title VARCHAR(255) NULL");
+    
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_1_desc TEXT NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_2_desc TEXT NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_3_desc TEXT NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_4_desc TEXT NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_5_desc TEXT NULL");
+
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_1_protocol VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_2_protocol VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_3_protocol VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_4_protocol VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_5_protocol VARCHAR(255) NULL");
+
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_1_jurisdiction VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_2_jurisdiction VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_3_jurisdiction VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_4_jurisdiction VARCHAR(255) NULL");
+    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_5_jurisdiction VARCHAR(255) NULL");
+
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS flow_node_1 VARCHAR(255) NULL");
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS flow_node_2 VARCHAR(255) NULL");
     $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS flow_node_3 VARCHAR(255) NULL");
@@ -98,6 +117,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $stage_4_title = trim($_POST['stage_4_title'] ?? '');
     $stage_5_title = trim($_POST['stage_5_title'] ?? '');
 
+    $stage_1_desc = trim($_POST['stage_1_desc'] ?? '');
+    $stage_2_desc = trim($_POST['stage_2_desc'] ?? '');
+    $stage_3_desc = trim($_POST['stage_3_desc'] ?? '');
+    $stage_4_desc = trim($_POST['stage_4_desc'] ?? '');
+    $stage_5_desc = trim($_POST['stage_5_desc'] ?? '');
+
+    $stage_1_protocol = trim($_POST['stage_1_protocol'] ?? '');
+    $stage_2_protocol = trim($_POST['stage_2_protocol'] ?? '');
+    $stage_3_protocol = trim($_POST['stage_3_protocol'] ?? '');
+    $stage_4_protocol = trim($_POST['stage_4_protocol'] ?? '');
+    $stage_5_protocol = trim($_POST['stage_5_protocol'] ?? '');
+
+    $stage_1_jurisdiction = trim($_POST['stage_1_jurisdiction'] ?? '');
+    $stage_2_jurisdiction = trim($_POST['stage_2_jurisdiction'] ?? '');
+    $stage_3_jurisdiction = trim($_POST['stage_3_jurisdiction'] ?? '');
+    $stage_4_jurisdiction = trim($_POST['stage_4_jurisdiction'] ?? '');
+    $stage_5_jurisdiction = trim($_POST['stage_5_jurisdiction'] ?? '');
+
     $flow_node_1 = trim($_POST['flow_node_1'] ?? '');
     $flow_node_2 = trim($_POST['flow_node_2'] ?? '');
     $flow_node_3 = trim($_POST['flow_node_3'] ?? '');
@@ -109,8 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $show_settlement_escrow = isset($_POST['show_settlement_escrow']) ? (int)$_POST['show_settlement_escrow'] : 0;
     $show_recovery_map = isset($_POST['show_recovery_map']) ? (int)$_POST['show_recovery_map'] : 0;
 
-    $stmt = $pdo->prepare("UPDATE IFW_cases SET status = ?, lifecycle_stage = ?, progress_percent = ?, amount_lost = ?, amount_recovered = ?, stage_1_title = ?, stage_2_title = ?, stage_3_title = ?, stage_4_title = ?, stage_5_title = ?, flow_node_1 = ?, flow_node_2 = ?, flow_node_3 = ?, flow_node_4 = ?, show_lifecycle_bar = ?, show_flow_visualizer = ?, show_blockchain_watcher = ?, show_settlement_escrow = ?, show_recovery_map = ? WHERE id = ?");
-    $stmt->execute([$new_status, $stage, $stage_percent, $amount_lost, $amount_recovered, $stage_1_title, $stage_2_title, $stage_3_title, $stage_4_title, $stage_5_title, $flow_node_1, $flow_node_2, $flow_node_3, $flow_node_4, $show_lifecycle_bar, $show_flow_visualizer, $show_blockchain_watcher, $show_settlement_escrow, $show_recovery_map, $case_id]);
+    $stmt = $pdo->prepare("UPDATE IFW_cases SET status = ?, lifecycle_stage = ?, progress_percent = ?, amount_lost = ?, amount_recovered = ?, stage_1_title = ?, stage_2_title = ?, stage_3_title = ?, stage_4_title = ?, stage_5_title = ?, stage_1_desc = ?, stage_2_desc = ?, stage_3_desc = ?, stage_4_desc = ?, stage_5_desc = ?, stage_1_protocol = ?, stage_2_protocol = ?, stage_3_protocol = ?, stage_4_protocol = ?, stage_5_protocol = ?, stage_1_jurisdiction = ?, stage_2_jurisdiction = ?, stage_3_jurisdiction = ?, stage_4_jurisdiction = ?, stage_5_jurisdiction = ?, flow_node_1 = ?, flow_node_2 = ?, flow_node_3 = ?, flow_node_4 = ?, show_lifecycle_bar = ?, show_flow_visualizer = ?, show_blockchain_watcher = ?, show_settlement_escrow = ?, show_recovery_map = ? WHERE id = ?");
+    $stmt->execute([$new_status, $stage, $stage_percent, $amount_lost, $amount_recovered, $stage_1_title, $stage_2_title, $stage_3_title, $stage_4_title, $stage_5_title, $stage_1_desc, $stage_2_desc, $stage_3_desc, $stage_4_desc, $stage_5_desc, $stage_1_protocol, $stage_2_protocol, $stage_3_protocol, $stage_4_protocol, $stage_5_protocol, $stage_1_jurisdiction, $stage_2_jurisdiction, $stage_3_jurisdiction, $stage_4_jurisdiction, $stage_5_jurisdiction, $flow_node_1, $flow_node_2, $flow_node_3, $flow_node_4, $show_lifecycle_bar, $show_flow_visualizer, $show_blockchain_watcher, $show_settlement_escrow, $show_recovery_map, $case_id]);
     
     // Also sync settlement table is_enabled
     try {
@@ -681,7 +718,28 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
                                     </div>
                                 </div>
 
-                                <h6 class="text-warning font-weight-bold small text-uppercase mb-2"><i class="fas fa-network-wired mr-1"></i>4 Fund Flow Diagram Nodes</h6>
+                                <h6 class="text-warning font-weight-bold small text-uppercase mb-2 mt-3"><i class="fas fa-satellite mr-1"></i>Stage 1-5 Custom Forensic Telemetry, Descriptions &amp; Authorities (Client View)</h6>
+                                <?php for ($s_idx = 1; $s_idx <= 5; $s_idx++): ?>
+                                    <div class="p-2 mb-3 rounded border border-secondary" style="background:#0b0e14;">
+                                        <span class="badge badge-warning text-dark font-weight-bold mb-2">Stage <?= $s_idx ?> Telemetry Details</span>
+                                        <div class="row">
+                                            <div class="col-md-12 mb-2">
+                                                <label class="small text-muted">Operational Briefing / Description (Client View)</label>
+                                                <textarea name="stage_<?= $s_idx ?>_desc" class="form-control form-control-sm bg-dark text-white border-secondary" rows="2" placeholder="Briefing text shown to client when clicking Stage <?= $s_idx ?>"><?= htmlspecialchars($case['stage_'.$s_idx.'_desc'] ?? '') ?></textarea>
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="small text-muted">Cryptographic Protocol / Ledger Focus</label>
+                                                <input type="text" name="stage_<?= $s_idx ?>_protocol" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['stage_'.$s_idx.'_protocol'] ?? '') ?>" placeholder="e.g. On-Chain Heuristic Node Tracking (ETH/BTC/TRC20)">
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="small text-muted">Jurisdiction Authority / Legal Filing</label>
+                                                <input type="text" name="stage_<?= $s_idx ?>_jurisdiction" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['stage_'.$s_idx.'_jurisdiction'] ?? '') ?>" placeholder="e.g. US Federal Court / INTERPOL ICPO Taskforce">
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endfor; ?>
+
+                                <h6 class="text-warning font-weight-bold small text-uppercase mb-2 mt-3"><i class="fas fa-network-wired mr-1"></i>4 Fund Flow Diagram Nodes</h6>
                                 <div class="row">
                                     <div class="col-md-6 mb-2">
                                         <label class="small text-muted">Node 1</label>
