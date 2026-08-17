@@ -23,6 +23,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'meta_title', 'meta_description', 'meta_keywords', 'maintenance_mode',
         'chat_provider', 'chatwoot_website_token', 'chatwoot_base_url', 'chatwoot_account_id', 'chatwoot_hmac_key', 'tawkto_property_id', 'custom_chat_code', 'logo_url',
         'show_lifecycle_tracker', 'show_fund_flow_visualizer',
+        'default_stage_1_title', 'default_stage_2_title', 'default_stage_3_title', 'default_stage_4_title', 'default_stage_5_title',
+        'default_stage_1_desc', 'default_stage_2_desc', 'default_stage_3_desc', 'default_stage_4_desc', 'default_stage_5_desc',
+        'default_stage_1_protocol', 'default_stage_2_protocol', 'default_stage_3_protocol', 'default_stage_4_protocol', 'default_stage_5_protocol',
+        'default_stage_1_jurisdiction', 'default_stage_2_jurisdiction', 'default_stage_3_jurisdiction', 'default_stage_4_jurisdiction', 'default_stage_5_jurisdiction',
         'telegram_bot_token', 'telegram_chat_id'
     ];
     
@@ -80,8 +84,8 @@ require_once '../includes/admin_sidebar.php';
                     <div class="form-group mb-4">
                         <label class="font-weight-bold text-warning fs-5">Active Chat Provider</label>
                         <select name="chat_provider" class="form-control bg-secondary text-white border-0 form-control-lg font-weight-bold">
-                            <option value="internal" <?php echo ($s['chat_provider'] ?? 'internal') === 'internal' ? 'selected' : ''; ?>>Internal Secure Portal Chat (Recommended — Professional, Integrated &amp; 100% Whitelabel)</option>
-                            <option value="chatwoot" <?php echo ($s['chat_provider'] ?? '') === 'chatwoot' ? 'selected' : ''; ?>>Chatwoot Multi-Agent CRM Widget</option>
+                            <option value="chatwoot" <?php echo ($s['chat_provider'] ?? 'chatwoot') === 'chatwoot' ? 'selected' : ''; ?>>Chatwoot (Recommended - Multi-Agent Case Routing &amp; Permanent History)</option>
+                            <option value="internal" <?php echo ($s['chat_provider'] ?? '') === 'internal' ? 'selected' : ''; ?>>Internal Secure Database Chat (Client / Agent / Investigator)</option>
                             <option value="tawkto" <?php echo ($s['chat_provider'] ?? '') === 'tawkto' ? 'selected' : ''; ?>>Tawk.to Live Chat Widget</option>
                             <option value="custom" <?php echo ($s['chat_provider'] ?? '') === 'custom' ? 'selected' : ''; ?>>Custom Third-Party Embed Snippet</option>
                         </select>
@@ -320,7 +324,7 @@ require_once '../includes/admin_sidebar.php';
                                 <option value="1" <?php echo ($s['show_lifecycle_tracker'] ?? '1') == '1' ? 'selected' : ''; ?>>Enabled (Show 5-Stage Recovery Lifecycle on Client Portal)</option>
                                 <option value="0" <?php echo ($s['show_lifecycle_tracker'] ?? '1') == '0' ? 'selected' : ''; ?>>Disabled (Hide Lifecycle Bar)</option>
                             </select>
-                            <small class="text-muted">Managed and updated per case in the Admin Recovery Cases section.</small>
+                            <small class="text-muted">Managed globally here or overridden per case in Admin &rarr; Cases.</small>
                         </div>
                         <div class="col-md-6 form-group mb-3">
                             <label class="font-weight-bold text-light">2. Forensic Fund Tracing & Asset Recovery Flow</label>
@@ -329,6 +333,72 @@ require_once '../includes/admin_sidebar.php';
                                 <option value="0" <?php echo ($s['show_fund_flow_visualizer'] ?? '1') == '0' ? 'selected' : ''; ?>>Disabled (Hide Flow Diagram)</option>
                             </select>
                             <small class="text-muted">Displays the 4-step fund interception and repatriation flow to clients.</small>
+                        </div>
+                    </div>
+
+                    <!-- GLOBAL 5-STAGE RECOVERY TELEMETRY TEMPLATES (EXPANDABLE) -->
+                    <div class="mt-3">
+                        <button class="btn btn-outline-warning btn-sm font-weight-bold w-100 text-left py-2" type="button" data-toggle="collapse" data-target="#globalStagesCollapse">
+                            <i class="fas fa-sliders-h mr-2"></i>Configure Global Default 5-Stage Titles, Briefings, Protocols &amp; Jurisdictions (Click to Expand)
+                        </button>
+                        <div class="collapse mt-3" id="globalStagesCollapse">
+                            <div class="p-3 border border-secondary rounded" style="background:#11151e;">
+                                <p class="text-muted small mb-3">These global defaults will apply automatically to all client portals unless specifically customized on an individual case dossier in Admin &rarr; Cases.</p>
+                                
+                                <?php
+                                $def_titles = [
+                                    1 => '1. Case Intake & Dossier',
+                                    2 => '2. Blockchain & Asset Tracing',
+                                    3 => '3. Evidence & Subpoena Filing',
+                                    4 => '4. Asset Freezing & Injunction',
+                                    5 => '5. Repatriation & Settlement'
+                                ];
+                                $def_descs = [
+                                    1 => 'Initial dossier registration, victim statement logging, claim valuation, and KYC regulatory identification under international anti-money laundering (AML) frameworks.',
+                                    2 => 'Advanced heuristics and node cluster mapping tracking stolen assets across multi-chain hops, decentralized bridges, centralized exchanges (CEX), and peer-to-peer liquidity pools.',
+                                    3 => 'Compiling verified chain of custody evidence, forensic audit certificates, and issuing formal legal subpoenas to receiving exchanges and financial custodians.',
+                                    4 => 'Serving Mareva injunctions and judicial asset-freezing orders to lock fraudulent custodial wallets and hold rogue exchange accounts in strict escrow custody.',
+                                    5 => 'Formal liquidation, escrow release verification, and direct digital or bank settlement release into verified client beneficiary accounts.'
+                                ];
+                                $def_protos = [
+                                    1 => 'KYC-AML / 256-Bit Cryptographic Vault',
+                                    2 => 'On-Chain Heuristic Node Tracking (ETH/BTC/TRC20)',
+                                    3 => 'ISO/IEC 27037 Digital Forensics Admissibility',
+                                    4 => 'Judicial Asset Freezing Order & Custodial Escrow Lock',
+                                    5 => 'Multi-Signature Escrow Disbursement (USDT/EUR/USD)'
+                                ];
+                                $def_juris = [
+                                    1 => 'International Cross-Border Asset Recovery Desk',
+                                    2 => 'International Cyber Forensics Intelligence Network',
+                                    3 => 'United States Federal Court / High Court of Justice / Inter-State Injunctions',
+                                    4 => 'Financial Conduct Authority / SEC / Interpol Taskforce',
+                                    5 => 'Client Registered Settlement Account'
+                                ];
+                                for ($idx = 1; $idx <= 5; $idx++):
+                                ?>
+                                    <div class="p-3 mb-3 rounded border border-secondary" style="background:#0b0e14;">
+                                        <h6 class="text-warning font-weight-bold small text-uppercase mb-2"><i class="fas fa-layer-group mr-1"></i>Stage <?= $idx ?> Default Template</h6>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-2">
+                                                <label class="small text-muted font-weight-bold">Stage <?= $idx ?> Title</label>
+                                                <input type="text" name="default_stage_<?= $idx ?>_title" class="form-control form-control-sm bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['default_stage_'.$idx.'_title'] ?? $def_titles[$idx]); ?>">
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="small text-muted font-weight-bold">Cryptographic Protocol</label>
+                                                <input type="text" name="default_stage_<?= $idx ?>_protocol" class="form-control form-control-sm bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['default_stage_'.$idx.'_protocol'] ?? $def_protos[$idx]); ?>">
+                                            </div>
+                                            <div class="col-md-12 mb-2">
+                                                <label class="small text-muted font-weight-bold">Operational Briefing / Description</label>
+                                                <textarea name="default_stage_<?= $idx ?>_desc" class="form-control form-control-sm bg-secondary text-white border-0" rows="2"><?php echo htmlspecialchars($s['default_stage_'.$idx.'_desc'] ?? $def_descs[$idx]); ?></textarea>
+                                            </div>
+                                            <div class="col-md-12 mb-1">
+                                                <label class="small text-muted font-weight-bold">Jurisdiction Authority</label>
+                                                <input type="text" name="default_stage_<?= $idx ?>_jurisdiction" class="form-control form-control-sm bg-secondary text-white border-0" value="<?php echo htmlspecialchars($s['default_stage_'.$idx.'_jurisdiction'] ?? $def_juris[$idx]); ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
                         </div>
                     </div>
                 </div>

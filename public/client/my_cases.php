@@ -104,6 +104,37 @@ require_once $dir . '/includes/admin_sidebar.php';
 .case-meta-row { padding:8px 0; border-bottom:1px solid #f0f0f0; }
 .case-meta-row:last-child { border-bottom:none; }
 
+html.light-mode .case-sidebar-item,
+body.light-mode .case-sidebar-item {
+    color: #334155 !important;
+    background: #f8fafc;
+}
+html.light-mode .case-sidebar-item .text-dark,
+body.light-mode .case-sidebar-item .text-dark {
+    color: #0f172a !important;
+}
+html.light-mode .case-sidebar-item:hover,
+html.light-mode .case-sidebar-item.active,
+body.light-mode .case-sidebar-item:hover,
+body.light-mode .case-sidebar-item.active {
+    background: #fffbeb !important;
+    color: #b45309 !important;
+    border-left-color: #f59e0b !important;
+}
+html.light-mode .timeline-item .card,
+body.light-mode .timeline-item .card {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+html.light-mode .timeline-item .card h6,
+body.light-mode .timeline-item .card h6 {
+    color: #b45309 !important;
+}
+html.light-mode .timeline-item .card p,
+body.light-mode .timeline-item .card p {
+    color: #334155 !important;
+}
+
 .table-portal-wrap {
     width: 100% !important;
     max-width: 100% !important;
