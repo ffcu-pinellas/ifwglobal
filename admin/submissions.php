@@ -86,6 +86,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                 $client_email = htmlspecialchars($email);
                 $client_ref_id = sprintf('#IFW-%05d', $client_id);
                 
+                $email_intro = trim($_POST['email_intro'] ?? '');
+                $email_portal_msg = trim($_POST['email_portal_msg'] ?? '');
+                
+                if (empty($email_intro)) {
+                    $email_intro = "Thank you for reaching out to IFW Global. Your case enquiry has been processed, and a confidential file has been formally registered under Reference {$client_ref_id}.";
+                }
+                if (empty($email_portal_msg)) {
+                    $email_portal_msg = "You can access our 256-bit encrypted Client Portal 24/7 to keep track of the investigation progress, inspect court filings, e-sign legal documents, and communicate directly with your lead investigator.";
+                }
+                
                 $creds_html = '';
                 if ($include_creds) {
                     $creds_html = "
@@ -93,20 +103,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                         <h4 style='margin: 0 0 12px 0; color: #1e293b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;'>Your Portal Login Credentials</h4>
                         <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
                             <tr>
-                                <td style='padding: 6px 0; color: #64748b; width: 160px;'><strong>User ID:</strong></td>
-                                <td style='padding: 6px 0; color: #0f172a; font-weight: bold;'>{$client_ref_id}</td>
-                            </tr>
-                            <tr>
-                                <td style='padding: 6px 0; color: #64748b;'><strong>Username / Email:</strong></td>
+                                <td style='padding: 6px 0; color: #64748b; width: 160px;'><strong>Username / Email:</strong></td>
                                 <td style='padding: 6px 0; color: #0f172a; font-weight: bold;'>{$client_email}</td>
                             </tr>
                             <tr>
                                 <td style='padding: 6px 0; color: #64748b;'><strong>Temporary Password:</strong></td>
                                 <td style='padding: 6px 0;'><span style='background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 4px; display: inline-block;'>{$raw_password}</span></td>
-                            </tr>
-                            <tr>
-                                <td style='padding: 6px 0; color: #64748b;'><strong>Default Security PIN:</strong></td>
-                                <td style='padding: 6px 0;'><span style='background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 4px; display: inline-block;'>{$default_pin}</span></td>
                             </tr>
                         </table>
                     </div>
@@ -118,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                     </div>
                     
                     <div style='background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 12px 16px; margin: 20px 0; font-size: 12px; color: #92400e;'>
-                        <strong>Security Notice:</strong> Upon your first login, a security setup wizard will guide you to update your permanent password and configure your private 4-digit Security PIN (replacing default <code>1234</code>).
+                        <strong>Security Notice:</strong> Upon your first login, a security setup wizard will guide you to update your permanent password and configure your private 4-digit Security PIN.
                     </div>
                     ";
                 }
@@ -134,29 +136,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                 }
                 
                 $html_body = "
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;'>
-                    <div style='background: #1f1b1c; padding: 24px; text-align: center; border-bottom: 3px solid #fecc56;'>
-                        <h2 style='color: #fecc56; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px;'>IFW Global Intelligence</h2>
-                        <p style='color: #cbd5e1; margin: 6px 0 0 0; font-size: 13px;'>Confidential Case Dossier &amp; Asset Recovery Command</p>
-                    </div>
-                    <div style='padding: 24px 28px; color: #334155; font-size: 14px; line-height: 1.6;'>
-                        <p style='margin-top: 0;'>Dear <strong>{$client_full_name}</strong>,</p>
-                        <p>Thank you for reaching out to <strong>IFW Global</strong>. Your case enquiry has been processed, and a confidential file has been formally registered under Reference <strong>{$client_ref_id}</strong>.</p>
-                        
-                        {$custom_note_html}
-                        
-                        <p>You can access our 256-bit encrypted Client Portal 24/7 to keep track of the investigation progress, inspect court filings, e-sign legal documents, and communicate directly with your lead investigator.</p>
-                        
-                        {$creds_html}
-                        
-                        <p style='color: #64748b; font-size: 12px; margin-bottom: 0;'>
-                            Need urgent assistance? Reply directly to this email or reach our 24/7 Operations Desk at <a href='mailto:investigations@ifwglobalrecovery.site' style='color: #d97706;'>investigations@ifwglobalrecovery.site</a>.
-                        </p>
-                    </div>
-                    <div style='background: #f1f5f9; padding: 14px 28px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #e2e8f0;'>
-                        &copy; " . date('Y') . " IFW Global Intelligence. All rights reserved. 256-Bit Encrypted Portal.
-                    </div>
-                </div>
+                <p style='margin-top: 0; font-size: 15px;'>Dear <strong>{$client_full_name}</strong>,</p>
+                <p>Welcome to <strong>IFW Global</strong>. " . nl2br(htmlspecialchars($email_intro)) . "</p>
+                
+                {$custom_note_html}
+                
+                <p>" . nl2br(htmlspecialchars($email_portal_msg)) . "</p>
+                
+                {$creds_html}
+                
+                <p style='color: #64748b; font-size: 12px; margin-bottom: 0;'>
+                    Need urgent assistance? Reply directly to this email or reach our 24/7 Operations Desk at <a href='mailto:investigations@ifwglobalrecovery.site' style='color: #d97706;'>investigations@ifwglobalrecovery.site</a>.
+                </p>
                 ";
                 
                 send_html_email($email, $subject, $html_body);
@@ -384,21 +375,32 @@ if (!$is_agent || $has_all_access) {
                     </div>
 
                     <div class="form-group mb-3">
-                        <label class="font-weight-bold text-white small"><i class="fas fa-pen-nib mr-1 text-warning"></i> Optional Investigator Case Note</label>
-                        <textarea name="custom_note" id="modalLeadCustomNote" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="e.g. Thank you for your inquiry. Our forensic intelligence team has reviewed your claim and initiated trace protocols." oninput="updateLeadLiveEmailPreview()"></textarea>
-                        <small class="text-muted">Included as a highlighted briefing block inside the email.</small>
+                        <label class="font-weight-bold text-white small"><i class="fas fa-paragraph mr-1 text-warning"></i> Welcome Intro Message</label>
+                        <textarea name="email_intro" id="modalLeadEmailIntro" class="form-control bg-dark text-white border-secondary" rows="2" oninput="updateLeadLiveEmailPreview()"></textarea>
+                        <small class="text-muted">Opening paragraph shown immediately after greeting.</small>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-white small"><i class="fas fa-pen-nib mr-1 text-warning"></i> Investigator Case Note / Briefing</label>
+                        <textarea name="custom_note" id="modalLeadCustomNote" class="form-control bg-dark text-white border-secondary" rows="3" oninput="updateLeadLiveEmailPreview()">Your case has been formally assigned to our Senior Cyber Forensics & Asset Recovery Division. Preliminary on-chain trace protocols and cross-border intelligence filings are actively underway under strict chain-of-custody protocols.</textarea>
+                        <small class="text-muted">Prefilled default briefing — Edit, leave as is, or clear to omit.</small>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-white small"><i class="fas fa-shield-alt mr-1 text-warning"></i> Portal Access Description</label>
+                        <textarea name="email_portal_msg" id="modalLeadEmailPortalMsg" class="form-control bg-dark text-white border-secondary" rows="2" oninput="updateLeadLiveEmailPreview()">You can access our 256-bit encrypted Client Portal 24/7 to keep track of the investigation progress, inspect court filings, e-sign legal documents, and communicate directly with your lead investigator.</textarea>
                     </div>
 
                     <div class="custom-control custom-checkbox mb-3 p-2 rounded" style="background: rgba(254, 204, 86, 0.08); border: 1px solid rgba(254, 204, 86, 0.2);">
                         <input type="checkbox" class="custom-control-input" id="leadIncludeCredsCheckbox" name="include_credentials" value="1" checked onchange="updateLeadLiveEmailPreview()">
                         <label class="custom-control-label text-warning font-weight-bold small" for="leadIncludeCredsCheckbox">
-                            Generate &amp; Attach Portal Credentials (ID, Password, Default PIN 1234)
+                            Generate &amp; Attach Portal Credentials (Username &amp; Temp Password)
                         </label>
-                        <small class="text-light d-block mt-1" style="font-size: 11px;">Automatically creates client profile and provisions temporary password with default PIN <code>1234</code>.</small>
+                        <small class="text-light d-block mt-1" style="font-size: 11px;">Automatically creates client profile and provisions temporary password with mandatory first-login security setup.</small>
                     </div>
 
                     <div class="alert alert-info py-2 px-3 small mb-0">
-                        <i class="fas fa-info-circle mr-1"></i> The recipient will receive this 256-bit encrypted notification from <strong>notifications@ifwglobalrecovery.site</strong>.
+                        <i class="fas fa-info-circle mr-1"></i> The recipient will receive this 256-bit encrypted dispatch from <strong>notifications@ifwglobalrecovery.site</strong>.
                     </div>
                 </div>
 
@@ -410,47 +412,47 @@ if (!$is_agent || $has_all_access) {
                     </div>
 
                     <!-- Visual Email Canvas Container -->
-                    <div class="rounded border border-secondary p-3 shadow-inner" style="background: #0b0e14; max-height: 480px; overflow-y: auto;">
+                    <div class="rounded border border-secondary p-3 shadow-inner" style="background: #0b0e14; max-height: 520px; overflow-y: auto;">
                         <!-- Email Container -->
                         <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; border-top: 4px solid #fecc56; font-family: Arial, sans-serif; color: #1e293b;">
                             <!-- Email Header with Logo -->
                             <div style="background: #111827; padding: 20px 16px; text-align: center; border-bottom: 2px solid #fecc56;">
-                                <img src="/media/logos/logo.svg" alt="IFW Global" style="max-height: 38px; display: block; margin: 0 auto 6px auto;" onerror="this.style.display='none'; document.getElementById('leadPreviewFallbackLogo').style.display='block';">
-                                <div id="leadPreviewFallbackLogo" style="display:none; color:#fecc56; font-weight:bold; font-size:18px; letter-spacing:1px;">IFW GLOBAL</div>
-                                <div style="color: #cbd5e1; font-size: 9px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase;">Private Intelligence &amp; Asset Recovery</div>
+                                <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                                    <tr>
+                                        <td style="vertical-align: middle; padding-right: 10px;">
+                                            <div style="width: 32px; height: 32px; background-color: #fecc56; border-radius: 6px; text-align: center; line-height: 32px; font-size: 18px; font-weight: bold; color: #111827;">🛡️</div>
+                                        </td>
+                                        <td style="vertical-align: middle; text-align: left;">
+                                            <div style="color: #fecc56; font-size: 18px; font-weight: 900; letter-spacing: 1.5px; font-family: Arial, sans-serif; text-transform: uppercase; line-height: 1.1;">IFW GLOBAL</div>
+                                            <div style="color: #cbd5e1; font-size: 8.5px; font-weight: bold; letter-spacing: 1.2px; text-transform: uppercase;">Private Intelligence &amp; Asset Recovery</div>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
                             
                             <!-- Email Content Body -->
                             <div style="padding: 22px 20px; font-size: 13px; line-height: 1.6; color: #334155;">
                                 <p style="margin-top: 0; font-size: 14px;">Dear <strong id="leadPreviewClientName" style="color: #0f172a;">Client</strong>,</p>
-                                <p style="margin-bottom: 14px;">Thank you for reaching out to <strong>IFW Global</strong>. Your case enquiry has been processed, and a confidential file has been formally registered under Reference <strong id="leadPreviewCaseRef" style="color: #d97706;">#IFW-PORTAL</strong>.</p>
+                                <p style="margin-bottom: 14px;">Welcome to <strong>IFW Global</strong>. <span id="leadPreviewIntroText">Thank you for reaching out to IFW Global. Your case enquiry has been processed, and a confidential file has been formally registered.</span></p>
                                 
-                                <div id="leadPreviewCustomNoteBlock" style="background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 4px; padding: 10px 14px; margin: 14px 0; font-size: 12.5px; color: #1e3a8a; display: none;">
+                                <div id="leadPreviewCustomNoteBlock" style="background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 4px; padding: 10px 14px; margin: 14px 0; font-size: 12.5px; color: #1e3a8a;">
                                     <strong>Investigator Case Briefing:</strong><br>
-                                    <span id="leadPreviewCustomNoteText"></span>
+                                    <span id="leadPreviewCustomNoteText">Your case has been formally assigned to our Senior Cyber Forensics &amp; Asset Recovery Division. Preliminary on-chain trace protocols and cross-border intelligence filings are actively underway under strict chain-of-custody protocols.</span>
                                 </div>
                                 
-                                <p style="margin-bottom: 14px;">You can access our 256-bit encrypted Client Portal 24/7 to track live blockchain telemetry, inspect subpoena filings, e-sign legal documents, and communicate directly with your lead investigator.</p>
+                                <p id="leadPreviewPortalMsgText" style="margin-bottom: 14px;">You can access our 256-bit encrypted Client Portal 24/7 to keep track of the investigation progress, inspect court filings, e-sign legal documents, and communicate directly with your lead investigator.</p>
                                 
                                 <!-- Credentials Box -->
                                 <div id="leadPreviewCredsBlock" style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #fecc56; border-radius: 6px; padding: 14px 16px; margin: 16px 0;">
                                     <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: bold;">Your Portal Login Credentials</h4>
                                     <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
                                         <tr>
-                                            <td style="padding: 4px 0; color: #64748b; width: 140px;"><strong>User ID:</strong></td>
-                                            <td style="padding: 4px 0; color: #0f172a; font-weight: bold;" id="leadPreviewUserId">#IFW-AUTO</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 4px 0; color: #64748b;"><strong>Username / Email:</strong></td>
+                                            <td style="padding: 4px 0; color: #64748b; width: 140px;"><strong>Username / Email:</strong></td>
                                             <td style="padding: 4px 0; color: #0f172a; font-weight: bold;" id="leadPreviewEmail">lead@example.com</td>
                                         </tr>
                                         <tr>
                                             <td style="padding: 4px 0; color: #64748b;"><strong>Temporary Password:</strong></td>
                                             <td style="padding: 4px 0;"><span style="background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 13px; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block;">•••••••• (Auto-generated)</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding: 4px 0; color: #64748b;"><strong>Default Security PIN:</strong></td>
-                                            <td style="padding: 4px 0;"><span style="background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 13px; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block;">1234</span></td>
                                         </tr>
                                     </table>
                                 </div>
@@ -463,17 +465,18 @@ if (!$is_agent || $has_all_access) {
                                 </div>
                                 
                                 <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 10px 12px; margin: 14px 0; font-size: 11.5px; color: #92400e;">
-                                    <strong>Security Notice:</strong> Upon your first login, a security setup wizard will guide you to update your permanent password and set up your private 4-digit Security PIN (replacing default <code>1234</code>).
+                                    <strong>Security Notice:</strong> Upon your first login, a security setup wizard will guide you to update your permanent password and configure your private 4-digit Security PIN.
                                 </div>
                                 
                                 <p style="color: #64748b; font-size: 11px; margin-bottom: 0;">
-                                    Need assistance? Reply directly to this email or reach our 24/7 Operations Desk at <span style="color: #d97706;">investigations@ifwglobalrecovery.site</span>.
+                                    Need urgent assistance? Reply directly to this email or reach our 24/7 Operations Desk at <span style="color: #d97706;">investigations@ifwglobalrecovery.site</span>.
                                 </p>
                             </div>
                             
                             <!-- Email Footer -->
-                            <div style="background: #f1f5f9; padding: 12px 20px; text-align: center; color: #94a3b8; font-size: 10px; border-top: 1px solid #e2e8f0;">
-                                &copy; <?= date('Y') ?> IFW Global Intelligence. All rights reserved. 256-Bit Encrypted Portal.
+                            <div style="background: #f8fafc; padding: 14px 20px; text-align: center; font-size: 10.5px; color: #64748b; border-top: 1px solid #e2e8f0; line-height: 1.4;">
+                                <strong>IFW Global Cyber &amp; Financial Crime Investigation Division</strong><br>
+                                This is an automated encrypted dispatch from the IFW Global Client Recovery Portal. All contents confidential.
                             </div>
                         </div>
                     </div>
@@ -500,6 +503,8 @@ function openLeadWelcomeModal(leadData) {
     document.getElementById('modalLeadEmail').textContent = leadData.email || '';
     document.getElementById('modalLeadRef').textContent = '#LEAD-' + leadData.id;
     
+    document.getElementById('modalLeadEmailIntro').value = "Thank you for reaching out to IFW Global. Your case enquiry has been processed, and a confidential file has been formally registered under Reference #LEAD-" + leadData.id + ".";
+    
     document.getElementById('leadPreviewClientName').textContent = leadData.name || 'Lead';
     document.getElementById('leadPreviewEmail').textContent = leadData.email || '';
     
@@ -508,6 +513,9 @@ function openLeadWelcomeModal(leadData) {
 }
 
 function updateLeadLiveEmailPreview() {
+    var intro = document.getElementById('modalLeadEmailIntro').value.trim();
+    document.getElementById('leadPreviewIntroText').textContent = intro || "Thank you for reaching out to IFW Global. Your case enquiry has been processed, and a confidential file has been formally registered.";
+    
     var note = document.getElementById('modalLeadCustomNote').value.trim();
     var noteBlock = document.getElementById('leadPreviewCustomNoteBlock');
     var noteText = document.getElementById('leadPreviewCustomNoteText');
@@ -517,6 +525,9 @@ function updateLeadLiveEmailPreview() {
     } else {
         noteBlock.style.display = 'none';
     }
+    
+    var portalMsg = document.getElementById('modalLeadEmailPortalMsg').value.trim();
+    document.getElementById('leadPreviewPortalMsgText').textContent = portalMsg || "You can access our 256-bit encrypted Client Portal 24/7 to keep track of the investigation progress, inspect court filings, e-sign legal documents, and communicate directly with your lead investigator.";
     
     var credsChecked = document.getElementById('leadIncludeCredsCheckbox').checked;
     var credsBlock = document.getElementById('leadPreviewCredsBlock');

@@ -273,6 +273,15 @@ function send_notification_email($to, $subject, $body) {
 }
 
 /**
+ * Send custom HTML email wrapped in official branded header & confidential footer
+ */
+if (!function_exists('send_html_email')) {
+    function send_html_email($to, $subject, $body) {
+        return send_notification_email($to, $subject, $body);
+    }
+}
+
+/**
  * Send an official case milestone update email to client
  */
 function send_case_milestone_email($pdo, $client_email, $client_name, $case_number, $case_title, $milestone_title, $milestone_body, $milestone_date, $case_id) {

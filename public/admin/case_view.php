@@ -719,21 +719,62 @@ $_SESSION['user_name'] = $_SESSION['admin_username'] ?? 'Admin';
                                 </div>
 
                                 <h6 class="text-warning font-weight-bold small text-uppercase mb-2 mt-3"><i class="fas fa-satellite mr-1"></i>Stage 1-5 Custom Forensic Telemetry, Descriptions &amp; Authorities (Client View)</h6>
-                                <?php for ($s_idx = 1; $s_idx <= 5; $s_idx++): ?>
-                                    <div class="p-2 mb-3 rounded border border-secondary" style="background:#0b0e14;">
-                                        <span class="badge badge-warning text-dark font-weight-bold mb-2">Stage <?= $s_idx ?> Telemetry Details</span>
+                                <?php
+                                $def_titles = [
+                                    1 => '1. Case Intake & Dossier',
+                                    2 => '2. Blockchain & Asset Tracing',
+                                    3 => '3. Evidence & Subpoena Filing',
+                                    4 => '4. Asset Freezing & Injunction',
+                                    5 => '5. Repatriation & Settlement'
+                                ];
+                                $def_descs = [
+                                    1 => 'Initial dossier registration, victim statement logging, claim valuation, and KYC regulatory identification under international anti-money laundering (AML) frameworks.',
+                                    2 => 'Advanced heuristics and node cluster mapping tracking stolen assets across multi-chain hops, decentralized bridges, centralized exchanges (CEX), and peer-to-peer liquidity pools.',
+                                    3 => 'Compiling verified chain of custody evidence, forensic audit certificates, and issuing formal legal subpoenas to receiving exchanges and financial custodians.',
+                                    4 => 'Serving Mareva injunctions and judicial asset-freezing orders to lock fraudulent custodial wallets and hold rogue exchange accounts in strict escrow custody.',
+                                    5 => 'Formal liquidation, escrow release verification, and direct digital or bank settlement release into verified client beneficiary accounts.'
+                                ];
+                                $def_protos = [
+                                    1 => 'KYC-AML / 256-Bit Cryptographic Vault',
+                                    2 => 'On-Chain Heuristic Node Tracking (ETH/BTC/TRC20)',
+                                    3 => 'ISO/IEC 27037 Digital Forensics Admissibility',
+                                    4 => 'Judicial Asset Freezing Order & Custodial Escrow Lock',
+                                    5 => 'Multi-Signature Escrow Disbursement (USDT/EUR/USD)'
+                                ];
+                                $def_juris = [
+                                    1 => 'International Cross-Border Asset Recovery Desk',
+                                    2 => 'International Cyber Forensics Intelligence Network',
+                                    3 => 'United States Federal Court / High Court of Justice / Inter-State Injunctions',
+                                    4 => 'Financial Conduct Authority / SEC / Interpol Taskforce',
+                                    5 => 'Client Registered Settlement Account'
+                                ];
+                                for ($s_idx = 1; $s_idx <= 5; $s_idx++):
+                                    $curr_t = !empty($case['stage_'.$s_idx.'_title']) ? $case['stage_'.$s_idx.'_title'] : $def_titles[$s_idx];
+                                    $curr_d = !empty($case['stage_'.$s_idx.'_desc']) ? $case['stage_'.$s_idx.'_desc'] : $def_descs[$s_idx];
+                                    $curr_p = !empty($case['stage_'.$s_idx.'_protocol']) ? $case['stage_'.$s_idx.'_protocol'] : $def_protos[$s_idx];
+                                    $curr_j = !empty($case['stage_'.$s_idx.'_jurisdiction']) ? $case['stage_'.$s_idx.'_jurisdiction'] : $def_juris[$s_idx];
+                                ?>
+                                    <div class="p-3 mb-3 rounded border border-secondary" style="background:#0b0e14;">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="badge badge-warning text-dark font-weight-bold">Stage <?= $s_idx ?> Telemetry Details</span>
+                                            <small class="text-muted">Prefilled default — Edit or leave as is</small>
+                                        </div>
                                         <div class="row">
+                                            <div class="col-md-6 mb-2">
+                                                <label class="small text-muted font-weight-bold">Stage <?= $s_idx ?> Display Title</label>
+                                                <input type="text" name="stage_<?= $s_idx ?>_title" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($curr_t) ?>">
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <label class="small text-muted font-weight-bold">Cryptographic Protocol / Ledger Focus</label>
+                                                <input type="text" name="stage_<?= $s_idx ?>_protocol" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($curr_p) ?>" placeholder="e.g. On-Chain Heuristic Node Tracking (ETH/BTC/TRC20)">
+                                            </div>
                                             <div class="col-md-12 mb-2">
-                                                <label class="small text-muted">Operational Briefing / Description (Client View)</label>
-                                                <textarea name="stage_<?= $s_idx ?>_desc" class="form-control form-control-sm bg-dark text-white border-secondary" rows="2" placeholder="Briefing text shown to client when clicking Stage <?= $s_idx ?>"><?= htmlspecialchars($case['stage_'.$s_idx.'_desc'] ?? '') ?></textarea>
+                                                <label class="small text-muted font-weight-bold">Operational Briefing / Description (Client View)</label>
+                                                <textarea name="stage_<?= $s_idx ?>_desc" class="form-control form-control-sm bg-dark text-white border-secondary" rows="2" placeholder="Briefing text shown to client when clicking Stage <?= $s_idx ?>"><?= htmlspecialchars($curr_d) ?></textarea>
                                             </div>
-                                            <div class="col-md-6 mb-2">
-                                                <label class="small text-muted">Cryptographic Protocol / Ledger Focus</label>
-                                                <input type="text" name="stage_<?= $s_idx ?>_protocol" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['stage_'.$s_idx.'_protocol'] ?? '') ?>" placeholder="e.g. On-Chain Heuristic Node Tracking (ETH/BTC/TRC20)">
-                                            </div>
-                                            <div class="col-md-6 mb-2">
-                                                <label class="small text-muted">Jurisdiction Authority / Legal Filing</label>
-                                                <input type="text" name="stage_<?= $s_idx ?>_jurisdiction" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($case['stage_'.$s_idx.'_jurisdiction'] ?? '') ?>" placeholder="e.g. US Federal Court / INTERPOL ICPO Taskforce">
+                                            <div class="col-md-12 mb-1">
+                                                <label class="small text-muted font-weight-bold">Jurisdiction Authority / Legal Filing</label>
+                                                <input type="text" name="stage_<?= $s_idx ?>_jurisdiction" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= htmlspecialchars($curr_j) ?>" placeholder="e.g. US Federal Court / INTERPOL ICPO Taskforce">
                                             </div>
                                         </div>
                                     </div>
