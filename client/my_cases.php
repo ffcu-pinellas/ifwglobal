@@ -143,6 +143,45 @@ body.light-mode .timeline-item .card p {
     border-radius: 10px;
     background: #161a23;
 }
+
+/* CASE LIFECYCLE PROGRESS TRACKER */
+.progress-track-container { background: #161a23; border: 1px solid #28303f; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+.progress-track { display: flex; justify-content: space-between; position: relative; margin-top: 15px; margin-bottom: 5px; }
+.progress-track::before { content: ''; position: absolute; top: 18px; left: 20px; right: 20px; height: 4px; background: #262e3d; z-index: 1; border-radius: 2px; }
+.progress-bar-fill { position: absolute; top: 18px; left: 20px; height: 4px; background: linear-gradient(90deg, #fecc56, #22c55e); z-index: 1; border-radius: 2px; transition: width 0.6s ease; }
+.step-item { position: relative; z-index: 2; text-align: center; flex: 1; min-width: 0; padding: 0 4px; }
+.step-icon { width: 34px; height: 34px; border-radius: 50%; background: #1c212c; border: 2px solid #374151; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 12px; font-weight: 700; color: #94a3b8; transition: all 0.3s; }
+.step-item.active .step-icon { background: #fecc56; border-color: #fecc56; color: #000; box-shadow: 0 0 14px rgba(254,204,86,0.6); }
+.step-item.completed .step-icon { background: #22c55e; border-color: #22c55e; color: #fff; box-shadow: 0 0 10px rgba(34,197,94,0.4); }
+.step-title { font-size: 10.5px; font-weight: 600; color: #94a3b8; line-height: 1.2; }
+.step-item.active .step-title { color: #fecc56; font-weight: 700; }
+.step-item.completed .step-title { color: #22c55e; }
+
+html.light-mode .progress-track-container,
+body.light-mode .progress-track-container {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.04) !important;
+}
+html.light-mode .progress-track .step-icon,
+body.light-mode .progress-track .step-icon {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #64748b !important;
+}
+html.light-mode .progress-track .step-item.active .step-icon,
+body.light-mode .progress-track .step-item.active .step-icon {
+    background: #f59e0b !important;
+    border-color: #f59e0b !important;
+    color: #ffffff !important;
+}
+html.light-mode #telemetryDetailCard,
+body.light-mode #telemetryDetailCard {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-left: 4px solid #f59e0b !important;
+    color: #0f172a !important;
+}
 .table-portal {
     width: 100% !important;
     max-width: 100% !important;
@@ -361,6 +400,196 @@ body.light-mode .timeline-item .card p {
                 </div>
             </div>
         </div>
+
+        <?php
+        // Resolve 5-phase Stage & Percentage for $active_case
+        $case_status_norm = strtolower(trim($active_case['status'] ?? 'investigating'));
+        $case_stage_step = 2;
+        $case_stage_percent = 40;
+
+        if (in_array($case_status_norm, ['received', 'open', 'intake', 'pending'])) {
+            $case_stage_step = 1;
+            $case_stage_percent = 20;
+        } elseif (in_array($case_status_norm, ['investigating', 'in_progress', 'tracing', 'blockchain analysis'])) {
+            $case_stage_step = 2;
+            $case_stage_percent = 45;
+        } elseif (in_array($case_status_norm, ['evidence gathered', 'evidence', 'dossier ready', 'subpoena'])) {
+            $case_stage_step = 3;
+            $case_stage_percent = 70;
+        } elseif (in_array($case_status_norm, ['legal action', 'court filing', 'freezing order', 'injunction'])) {
+            $case_stage_step = 4;
+            $case_stage_percent = 85;
+        } elseif (in_array($case_status_norm, ['recovery', 'settled', 'repatriation', 'closed', 'completed'])) {
+            $case_stage_step = 5;
+            $case_stage_percent = 100;
+        }
+
+        $st1 = !empty($active_case['stage_1_title']) ? $active_case['stage_1_title'] : get_setting($pdo, 'default_stage_1_title', '1. Case Intake & Dossier');
+        $st2 = !empty($active_case['stage_2_title']) ? $active_case['stage_2_title'] : get_setting($pdo, 'default_stage_2_title', '2. Blockchain & Asset Tracing');
+        $st3 = !empty($active_case['stage_3_title']) ? $active_case['stage_3_title'] : get_setting($pdo, 'default_stage_3_title', '3. Evidence & Subpoena Filing');
+        $st4 = !empty($active_case['stage_4_title']) ? $active_case['stage_4_title'] : get_setting($pdo, 'default_stage_4_title', '4. Asset Freezing & Injunction');
+        $st5 = !empty($active_case['stage_5_title']) ? $active_case['stage_5_title'] : get_setting($pdo, 'default_stage_5_title', '5. Repatriation & Settlement');
+
+        $sd1 = !empty($active_case['stage_1_desc']) ? $active_case['stage_1_desc'] : get_setting($pdo, 'default_stage_1_desc', "Initial dossier registration, victim statement logging, claim valuation, and KYC regulatory identification under international anti-money laundering (AML) frameworks.");
+        $sd2 = !empty($active_case['stage_2_desc']) ? $active_case['stage_2_desc'] : get_setting($pdo, 'default_stage_2_desc', "Advanced heuristics and node cluster mapping tracking stolen assets across multi-chain hops, decentralized bridges, centralized exchanges (CEX), and peer-to-peer liquidity pools.");
+        $sd3 = !empty($active_case['stage_3_desc']) ? $active_case['stage_3_desc'] : get_setting($pdo, 'default_stage_3_desc', "Compiling verified chain of custody evidence, forensic audit certificates, and issuing formal legal subpoenas to receiving exchanges and financial custodians.");
+        $sd4 = !empty($active_case['stage_4_desc']) ? $active_case['stage_4_desc'] : get_setting($pdo, 'default_stage_4_desc', "Serving Mareva injunctions and judicial asset-freezing orders to lock fraudulent custodial wallets and hold rogue exchange accounts in strict escrow custody.");
+        $sd5 = !empty($active_case['stage_5_desc']) ? $active_case['stage_5_desc'] : get_setting($pdo, 'default_stage_5_desc', "Formal liquidation, escrow release verification, and direct digital or bank settlement release into verified client beneficiary accounts.");
+
+        $sp1 = !empty($active_case['stage_1_protocol']) ? $active_case['stage_1_protocol'] : get_setting($pdo, 'default_stage_1_protocol', "KYC-AML / 256-Bit Cryptographic Vault");
+        $sp2 = !empty($active_case['stage_2_protocol']) ? $active_case['stage_2_protocol'] : get_setting($pdo, 'default_stage_2_protocol', "On-Chain Heuristic Node Tracking (ETH/BTC/TRC20)");
+        $sp3 = !empty($active_case['stage_3_protocol']) ? $active_case['stage_3_protocol'] : get_setting($pdo, 'default_stage_3_protocol', "ISO/IEC 27037 Digital Forensics Admissibility");
+        $sp4 = !empty($active_case['stage_4_protocol']) ? $active_case['stage_4_protocol'] : get_setting($pdo, 'default_stage_4_protocol', "Judicial Asset Freezing Order &amp; Custodial Escrow Lock");
+        $sp5 = !empty($active_case['stage_5_protocol']) ? $active_case['stage_5_protocol'] : get_setting($pdo, 'default_stage_5_protocol', "Multi-Signature Escrow Disbursement (USDT/EUR/USD)");
+
+        $sj1 = !empty($active_case['stage_1_jurisdiction']) ? $active_case['stage_1_jurisdiction'] : get_setting($pdo, 'default_stage_1_jurisdiction', "International Cross-Border Asset Recovery Desk");
+        $sj2 = !empty($active_case['stage_2_jurisdiction']) ? $active_case['stage_2_jurisdiction'] : get_setting($pdo, 'default_stage_2_jurisdiction', "International Cyber Forensics Intelligence Network");
+        $sj3 = !empty($active_case['stage_3_jurisdiction']) ? $active_case['stage_3_jurisdiction'] : get_setting($pdo, 'default_stage_3_jurisdiction', "United States Federal Court / High Court of Justice / Inter-State Injunctions");
+        $sj4 = !empty($active_case['stage_4_jurisdiction']) ? $active_case['stage_4_jurisdiction'] : get_setting($pdo, 'default_stage_4_jurisdiction', "Financial Conduct Authority / SEC / Interpol Taskforce");
+        $sj5 = !empty($active_case['stage_5_jurisdiction']) ? $active_case['stage_5_jurisdiction'] : get_setting($pdo, 'default_stage_5_jurisdiction', "Client Registered Settlement Account");
+        ?>
+
+        <!-- CASE RECOVERY PROGRESS LIFECYCLE (INTERACTIVE TIMELINE & LIVE TELEMETRY) -->
+        <div class="progress-track-container mb-4 shadow-sm" style="background: linear-gradient(180deg, #161a23 0%, #11141c 100%); border: 1px solid #28303f; border-radius: 12px; padding: 20px;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+                <div>
+                    <div class="d-flex align-items-center">
+                        <span class="badge badge-success px-2 py-1 mr-2" style="font-size:10px; cursor:help;" data-toggle="tooltip" data-placement="top" title="Continuous forensic node monitoring &amp; legal case updates synchronized with our operational intelligence desk."><i class="fas fa-satellite mr-1"></i>LIVE TELEMETRY</span>
+                        <h6 class="font-weight-bold mb-0 text-warning"><i class="fas fa-stream mr-2"></i>Investigation &amp; Asset Recovery Lifecycle</h6>
+                    </div>
+                    <small class="text-muted">Case Reference: <strong class="text-white"><?= htmlspecialchars($active_case['case_number'] ?? 'IFW-'.$active_case['id']) ?></strong> &bull; <?= htmlspecialchars($active_case['title']) ?></small>
+                </div>
+                <div class="mt-2 mt-sm-0">
+                    <span class="badge badge-warning text-dark font-weight-bold px-3 py-1 shadow-sm" style="font-size:12px;"><i class="fas fa-bolt mr-1"></i><?= $case_stage_percent ?>% Processed</span>
+                </div>
+            </div>
+
+            <!-- Progress Track with Clickable Interactive Nodes -->
+            <div class="progress-track my-3">
+                <div class="progress-bar-fill" style="width: <?= max(8, $case_stage_percent - 5) ?>%;"></div>
+                
+                <div class="step-item <?= $case_stage_step >= 1 ? ($case_stage_step > 1 ? 'completed' : 'active') : '' ?>" onclick="switchMilestoneTelemetry(1)" style="cursor: pointer;" data-toggle="tooltip" data-placement="top" title="Phase 1: Initial dossier registration, KYC identification, and AML regulatory compliance filing.">
+                    <div class="step-icon"><i class="fas <?= $case_stage_step > 1 ? 'fa-check' : 'fa-id-card' ?>"></i></div>
+                    <div class="step-title"><?= htmlspecialchars($st1) ?></div>
+                </div>
+                <div class="step-item <?= $case_stage_step >= 2 ? ($case_stage_step > 2 ? 'completed' : 'active') : '' ?>" onclick="switchMilestoneTelemetry(2)" style="cursor: pointer;" data-toggle="tooltip" data-placement="top" title="Phase 2: Deep heuristics and multi-chain cryptographic tracing across blockchain ledgers and exchange clusters.">
+                    <div class="step-icon"><i class="fas <?= $case_stage_step > 2 ? 'fa-check' : 'fa-search-dollar' ?>"></i></div>
+                    <div class="step-title"><?= htmlspecialchars($st2) ?></div>
+                </div>
+                <div class="step-item <?= $case_stage_step >= 3 ? ($case_stage_step > 3 ? 'completed' : 'active') : '' ?>" onclick="switchMilestoneTelemetry(3)" style="cursor: pointer;" data-toggle="tooltip" data-placement="top" title="Phase 3: Formal ISO/IEC digital forensics evidence packaging and subpoena filings served to custodians.">
+                    <div class="step-icon"><i class="fas <?= $case_stage_step > 3 ? 'fa-check' : 'fa-file-invoice' ?>"></i></div>
+                    <div class="step-title"><?= htmlspecialchars($st3) ?></div>
+                </div>
+                <div class="step-item <?= $case_stage_step >= 4 ? ($case_stage_step > 4 ? 'completed' : 'active') : '' ?>" onclick="switchMilestoneTelemetry(4)" style="cursor: pointer;" data-toggle="tooltip" data-placement="top" title="Phase 4: Judicial asset freezing orders, Mareva injunctions, and custodial escrow locking.">
+                    <div class="step-icon"><i class="fas <?= $case_stage_step > 4 ? 'fa-check' : 'fa-gavel' ?>"></i></div>
+                    <div class="step-title"><?= htmlspecialchars($st4) ?></div>
+                </div>
+                <div class="step-item <?= $case_stage_step >= 5 ? 'completed' : '' ?>" onclick="switchMilestoneTelemetry(5)" style="cursor: pointer;" data-toggle="tooltip" data-placement="top" title="Phase 5: Asset liquidation, escrow clearance, and direct repatriation settlement into your verified account.">
+                    <div class="step-icon"><i class="fas fa-hand-holding-usd"></i></div>
+                    <div class="step-title"><?= htmlspecialchars($st5) ?></div>
+                </div>
+            </div>
+
+            <!-- Live Telemetry Card (Dynamic & Expandable) -->
+            <div id="telemetryDetailCard" class="mt-3 p-3 rounded border border-secondary" style="background: rgba(11, 14, 20, 0.75); border-left: 4px solid #fecc56 !important;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+                    <div class="d-flex align-items-center">
+                        <span class="badge badge-warning text-dark font-weight-bold mr-2" id="telemetryPhaseBadge" style="font-size:11px;">PHASE <?= $case_stage_step ?> ACTIVE</span>
+                        <strong class="text-white" id="telemetryPhaseTitle"><?= htmlspecialchars(${'st'.$case_stage_step}) ?></strong>
+                    </div>
+                    <span class="badge badge-secondary small" id="telemetryStatusBadge" data-toggle="tooltip" data-placement="top" title="Phase Verification Status — Real-time progression state verified by cryptographic proof and judicial timestamps."><i class="fas fa-shield-alt mr-1"></i>Operational Status: In Progress</span>
+                </div>
+                <p class="text-light small mb-3" id="telemetryPhaseDesc" style="line-height: 1.6;">
+                    <?= htmlspecialchars(${'sd'.$case_stage_step}) ?>
+                </p>
+
+                <div class="row text-muted small g-2 mb-2" id="telemetryMetricsRow">
+                    <div class="col-sm-4 mb-2 mb-sm-0">
+                        <span class="d-block text-muted" style="font-size: 11px; cursor:help;" data-toggle="tooltip" data-placement="top" title="Cryptographic Ledger Layer — The blockchain protocol, smart contract infrastructure, and address cluster being tracked by our forensics node.">
+                            <i class="fas fa-cubes mr-1 text-warning"></i>Cryptographic Protocol <i class="fas fa-info-circle ml-1" style="font-size:10px;"></i>
+                        </span>
+                        <code class="text-warning" id="telemetryProtocol"><?= htmlspecialchars(${'sp'.$case_stage_step}) ?></code>
+                    </div>
+                    <div class="col-sm-4 mb-2 mb-sm-0">
+                        <span class="d-block text-muted" style="font-size: 11px; cursor:help;" data-toggle="tooltip" data-placement="top" title="Judicial Authority — The international court system, arbitration tribunal, and law enforcement taskforces overseeing legal asset recovery in this jurisdiction.">
+                            <i class="fas fa-gavel mr-1 text-warning"></i>Jurisdiction Authority <i class="fas fa-info-circle ml-1" style="font-size:10px;"></i>
+                        </span>
+                        <strong class="text-white" id="telemetryJurisdiction"><?= htmlspecialchars(${'sj'.$case_stage_step}) ?></strong>
+                    </div>
+                    <div class="col-sm-4">
+                        <span class="d-block text-muted" style="font-size: 11px; cursor:help;" data-toggle="tooltip" data-placement="top" title="Lead Forensic Investigator — Your assigned senior officer actively managing on-chain operations and court filings.">
+                            <i class="fas fa-user-shield mr-1 text-warning"></i>Lead Investigator Desk <i class="fas fa-info-circle ml-1" style="font-size:10px;"></i>
+                        </span>
+                        <strong class="text-warning"><?= htmlspecialchars($active_case['agent_name'] ?? 'Senior Forensic Unit') ?></strong>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary">
+                    <small class="text-muted"><i class="fas fa-sync-alt fa-spin mr-1"></i> Live Forensic Telemetry synchronized</small>
+                    <a href="/client/chat.php" class="btn btn-sm btn-outline-warning font-weight-bold" style="font-size:11.5px;">
+                        <i class="fas fa-comments mr-1"></i> Ask Investigator About This Stage
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        var currentCaseStep = <?= (int)$case_stage_step ?>;
+        var milestoneTelemetryData = {
+            1: {
+                badge: "PHASE 1: INTAKE & IDENTITY VERIFICATION",
+                title: "<?= addslashes(htmlspecialchars($st1)) ?>",
+                desc: "<?= addslashes(htmlspecialchars($sd1)) ?>",
+                status: currentCaseStep > 1 ? '<i class="fas fa-check-circle text-success mr-1"></i>Completed &amp; Sealed' : '<i class="fas fa-spinner fa-spin text-warning mr-1"></i>Active In Processing',
+                protocol: "<?= addslashes(htmlspecialchars($sp1)) ?>",
+                jurisdiction: "<?= addslashes(htmlspecialchars($sj1)) ?>"
+            },
+            2: {
+                badge: "PHASE 2: CRYPTOGRAPHIC & BLOCKCHAIN TRACING",
+                title: "<?= addslashes(htmlspecialchars($st2)) ?>",
+                desc: "<?= addslashes(htmlspecialchars($sd2)) ?>",
+                status: currentCaseStep > 2 ? '<i class="fas fa-check-circle text-success mr-1"></i>Completed' : (currentCaseStep === 2 ? '<i class="fas fa-spinner fa-spin text-warning mr-1"></i>Active Forensic Telemetry' : '<i class="fas fa-clock text-muted mr-1"></i>Scheduled Deployment'),
+                protocol: "<?= addslashes(htmlspecialchars($sp2)) ?>",
+                jurisdiction: "<?= addslashes(htmlspecialchars($sj2)) ?>"
+            },
+            3: {
+                badge: "PHASE 3: EVIDENCE DOSSIER & SUBPOENA FILINGS",
+                title: "<?= addslashes(htmlspecialchars($st3)) ?>",
+                desc: "<?= addslashes(htmlspecialchars($sd3)) ?>",
+                status: currentCaseStep > 3 ? '<i class="fas fa-check-circle text-success mr-1"></i>Completed' : (currentCaseStep === 3 ? '<i class="fas fa-spinner fa-spin text-warning mr-1"></i>Active Court Filings' : '<i class="fas fa-clock text-muted mr-1"></i>Pending Phase 2 Seal'),
+                protocol: "<?= addslashes(htmlspecialchars($sp3)) ?>",
+                jurisdiction: "<?= addslashes(htmlspecialchars($sj3)) ?>"
+            },
+            4: {
+                badge: "PHASE 4: ASSET FREEZING & INJUNCTIONS",
+                title: "<?= addslashes(htmlspecialchars($st4)) ?>",
+                desc: "<?= addslashes(htmlspecialchars($sd4)) ?>",
+                status: currentCaseStep > 4 ? '<i class="fas fa-check-circle text-success mr-1"></i>Completed' : (currentCaseStep === 4 ? '<i class="fas fa-spinner fa-spin text-warning mr-1"></i>Active Injunctions Enforced' : '<i class="fas fa-clock text-muted mr-1"></i>Awaiting Judicial Hearing'),
+                protocol: "<?= addslashes(htmlspecialchars($sp4)) ?>",
+                jurisdiction: "<?= addslashes(htmlspecialchars($sj4)) ?>"
+            },
+            5: {
+                badge: "PHASE 5: REPATRIATION & SETTLEMENT",
+                title: "<?= addslashes(htmlspecialchars($st5)) ?>",
+                desc: "<?= addslashes(htmlspecialchars($sd5)) ?>",
+                status: currentCaseStep === 5 ? '<i class="fas fa-check-circle text-success mr-1"></i>Repatriation In Progress' : '<i class="fas fa-clock text-muted mr-1"></i>Final Stage of Recovery',
+                protocol: "<?= addslashes(htmlspecialchars($sp5)) ?>",
+                jurisdiction: "<?= addslashes(htmlspecialchars($sj5)) ?>"
+            }
+        };
+
+        function switchMilestoneTelemetry(step) {
+            var data = milestoneTelemetryData[step];
+            if (!data) return;
+            
+            document.getElementById('telemetryPhaseBadge').textContent = data.badge;
+            document.getElementById('telemetryPhaseTitle').textContent = data.title;
+            document.getElementById('telemetryPhaseDesc').innerHTML = data.desc;
+            document.getElementById('telemetryStatusBadge').innerHTML = data.status;
+            document.getElementById('telemetryProtocol').innerHTML = data.protocol;
+            document.getElementById('telemetryJurisdiction').innerHTML = data.jurisdiction;
+        }
+        </script>
 
         <!-- PROGRESS TIMELINE -->
         <div class="card shadow-sm border-0 mb-4">

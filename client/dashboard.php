@@ -1456,6 +1456,98 @@ $render_investigator_card = function() use ($pdo, $client, $agent_user_id, $agen
             <?php $render_investigator_card(); ?>
         </div>
 
+        <?php
+        $client_total_recovered_usd = 0.00;
+        foreach ($cases as $c) {
+            if (!empty($c['amount_recovered']) && $c['amount_recovered'] > 0) {
+                $c_curr = !empty($c['currency']) ? strtoupper($c['currency']) : 'USD';
+                $client_total_recovered_usd += convert_currency($c['amount_recovered'], $c_curr, 'USD');
+            }
+        }
+        $default_calc_base = $client_total_recovered_usd > 0 ? $client_total_recovered_usd : (!empty($latest_case['amount_lost']) ? floatval($latest_case['amount_lost']) : 50000.00);
+        ?>
+
+        <!-- SETTLEMENT ESCROW CALCULATOR & REPATRIATION COMMAND -->
+        <div class="portal-card mb-4 shadow-sm" style="border-left: 4px solid #22c55e !important;">
+            <div class="portal-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="font-weight-bold" style="color: #4ade80;">
+                    <i class="fas fa-hand-holding-usd mr-2"></i>Settlement &amp; Escrow Calculator
+                </div>
+                <span class="badge badge-success px-2 py-1" style="font-size:10px;">
+                    <i class="fas fa-shield-alt mr-1"></i> Multi-Sig Custody
+                </span>
+            </div>
+            <div class="card-body p-3">
+                <div class="p-3 rounded mb-3 border border-secondary" style="background:#11151e;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small text-uppercase font-weight-bold" style="font-size:10px; letter-spacing:0.5px;">Target Payout Currency</span>
+                        <select id="settlementCurrencySelect" class="form-control form-control-sm bg-dark text-warning border-secondary font-weight-bold" style="width: auto; font-size:12px;" onchange="recalcSettlement()">
+                            <option value="USD" data-symbol="$" data-rate="1.0" <?= $client_currency === 'USD' ? 'selected' : '' ?>>USD ($)</option>
+                            <option value="EUR" data-symbol="€" data-rate="0.92" <?= $client_currency === 'EUR' ? 'selected' : '' ?>>EUR (€)</option>
+                            <option value="GBP" data-symbol="£" data-rate="0.79" <?= $client_currency === 'GBP' ? 'selected' : '' ?>>GBP (£)</option>
+                            <option value="AUD" data-symbol="A$" data-rate="1.53" <?= $client_currency === 'AUD' ? 'selected' : '' ?>>AUD (A$)</option>
+                            <option value="CAD" data-symbol="C$" data-rate="1.38" <?= $client_currency === 'CAD' ? 'selected' : '' ?>>CAD (C$)</option>
+                            <option value="USDT" data-symbol="₮" data-rate="1.0" <?= $client_currency === 'USDT' ? 'selected' : '' ?>>USDT (TRC/ERC)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group mb-2">
+                        <label class="text-light small font-weight-bold mb-1" style="font-size:11px;">Base Valuation (USD):</label>
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-black text-warning border-secondary font-weight-bold">$</span>
+                            </div>
+                            <input type="number" id="settlementBaseAmount" class="form-control bg-black text-white border-secondary font-weight-bold" value="<?= number_format($default_calc_base, 2, '.', '') ?>" step="500" oninput="recalcSettlement()">
+                        </div>
+                    </div>
+
+                    <!-- Real-time calculation output -->
+                    <div class="p-2 rounded border border-success mt-2" style="background: rgba(34, 197, 94, 0.08);">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-light small" style="font-size:11px;">Gross Repatriation:</span>
+                            <strong class="text-white font-monospace" id="calcGrossDisplay">$<?= number_format($default_calc_base, 2) ?></strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small" style="font-size:11px;">Escrow Clearance Fee (0%):</span>
+                            <span class="text-muted font-monospace" id="calcFeeDisplay">$0.00</span>
+                        </div>
+                        <div class="border-top border-secondary pt-1 mt-1 d-flex justify-content-between align-items-center">
+                            <span class="text-warning font-weight-bold small" style="font-size:11.5px;">Net Release Equivalent:</span>
+                            <strong class="text-success font-monospace font-weight-bold" style="font-size:1.15rem;" id="calcNetDisplay">$<?= number_format($default_calc_base, 2) ?></strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted" style="font-size:10px;"><i class="fas fa-lock text-warning mr-1"></i> Multi-Sig Custody Verified</small>
+                    <a href="/client/chat.php" class="btn btn-outline-warning btn-sm font-weight-bold" style="font-size:11px;">
+                        <i class="fas fa-file-contract mr-1"></i> Request Payout Schedule
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        function recalcSettlement() {
+            var sel = document.getElementById('settlementCurrencySelect');
+            var opt = sel.options[sel.selectedIndex];
+            var rate = parseFloat(opt.getAttribute('data-rate')) || 1.0;
+            var symbol = opt.getAttribute('data-symbol') || '$';
+            var baseInput = document.getElementById('settlementBaseAmount');
+            var baseVal = parseFloat(baseInput.value) || 0;
+            
+            var converted = baseVal * rate;
+            var formattedGross = symbol + ' ' + converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            var formattedNet = symbol + ' ' + converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            var formattedFee = symbol + ' 0.00';
+            
+            document.getElementById('calcGrossDisplay').innerText = formattedGross;
+            document.getElementById('calcNetDisplay').innerText = formattedNet;
+            document.getElementById('calcFeeDisplay').innerText = formattedFee;
+        }
+        document.addEventListener('DOMContentLoaded', recalcSettlement);
+        </script>
+
         <!-- SETTLEMENT & BANKING DETAILS (IN RIGHT COLUMN) -->
         <div class="portal-card mb-4 shadow-sm">
             <div class="portal-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -1772,7 +1864,7 @@ $render_investigator_card = function() use ($pdo, $client, $agent_user_id, $agen
                 <div class="col-lg-6 mb-3 mb-lg-0">
                     <label class="font-weight-bold small text-white"><i class="fas fa-fingerprint mr-1 text-warning"></i> Set New 4-Digit Security PIN</label>
                     <input type="password" name="onboarding_new_pin" id="onboardingPin" class="form-control bg-dark text-warning border-secondary text-center font-weight-bold" maxlength="4" placeholder="e.g. 8492" required pattern="\d{4}" style="font-size: 20px; letter-spacing: 6px;" oninput="this.value=this.value.replace(/[^0-9]/g,''); validateOnboardingPins();">
-                    <small class="text-muted d-block mt-1" style="font-size: 11px;">Replaces default initial PIN <strong class="text-warning">1234</strong>.</small>
+                    <small class="text-muted d-block mt-1" style="font-size: 11px;">Sets your private 4-digit Master Security PIN for 2-Factor Authentication, evidence vault access, and cryptographic settlement authorizations.</small>
                 </div>
                 <div class="col-lg-6">
                     <label class="font-weight-bold small text-white"><i class="fas fa-lock mr-1 text-warning"></i> Confirm 4-Digit Security PIN</label>

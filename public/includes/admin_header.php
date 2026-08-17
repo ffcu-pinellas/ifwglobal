@@ -1084,6 +1084,42 @@ if (isset($pdo)) {
             </nav>
         </div>
 
+        <!-- INACTIVITY 60-SECOND WARNING COUNTDOWN MODAL -->
+        <div class="modal fade" id="sessionWarningModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 99998;">
+            <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 440px;">
+                <div class="modal-content bg-dark text-white border-warning shadow-2xl" style="border-radius: 14px;">
+                    <div class="modal-header border-secondary bg-black py-3">
+                        <h6 class="modal-title font-weight-bold text-warning mb-0">
+                            <i class="fas fa-shield-alt mr-2 text-warning"></i> High-Security Session Timeout
+                        </h6>
+                    </div>
+                    <div class="modal-body text-center p-4">
+                        <div style="width: 58px; height: 58px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); color: #ef4444; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; border: 2px solid rgba(239, 68, 68, 0.3);">
+                            <i class="fas fa-hourglass-half fa-2x"></i>
+                        </div>
+                        <h5 class="font-weight-bold text-white mb-2">Inactivity Auto-Lock Warning</h5>
+                        <p class="text-light small mb-3" style="line-height: 1.6;">
+                            For your protection and cryptographic evidence integrity, this portal session will automatically lock in:
+                        </p>
+                        <div class="p-2 mb-3 rounded border border-danger" style="background: rgba(239, 68, 68, 0.08);">
+                            <span id="sessionWarningCountdown" class="font-weight-bold text-danger" style="font-size: 2.2rem; font-family: monospace; letter-spacing: 2px;">60s</span>
+                        </div>
+                        <p class="text-muted small mb-0" style="font-size: 11px;">
+                            Click below to keep your confidential session active.
+                        </p>
+                    </div>
+                    <div class="modal-footer border-secondary bg-black d-flex justify-content-between p-3">
+                        <button type="button" class="btn btn-outline-danger btn-sm font-weight-bold" onclick="lockSessionImmediately()">
+                            <i class="fas fa-lock mr-1"></i> Lock Now
+                        </button>
+                        <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark px-4 shadow-sm" onclick="extendSession()">
+                            <i class="fas fa-undo-alt mr-1"></i> Stay Logged In
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- INACTIVITY SESSION MASK / PIN UNLOCK OVERLAY (WORLD CLASS BANK-GRADE SECURITY) -->
         <div id="sessionInactivityOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(10,14,23,0.92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); z-index:99999; align-items:center; justify-content:center;">
             <div class="card bg-dark text-white border-warning shadow-2xl p-4 text-center" style="max-width:380px; width:90%; border-radius:14px;">
@@ -1091,7 +1127,7 @@ if (isset($pdo)) {
                     <i class="fas fa-lock fa-2x text-warning"></i>
                 </div>
                 <h5 class="font-weight-bold text-warning mb-1">Session Inactive & Secured</h5>
-                <p class="text-muted small mb-3">Your workspace has been locked due to 10 minutes of inactivity. Enter your 4-digit Security PIN to unlock.</p>
+                <p class="text-muted small mb-3">Your workspace has been locked due to inactivity. Enter your 4-digit Security PIN to unlock.</p>
                 <div class="form-group mb-3">
                     <input type="password" id="sessionUnlockPin" class="form-control bg-black text-warning border-secondary text-center font-weight-bold" maxlength="4" placeholder="••••" style="font-size:1.5rem; letter-spacing:4px;">
                     <div id="sessionUnlockError" class="text-danger small mt-1" style="display:none;">Invalid Security PIN.</div>
@@ -1279,18 +1315,66 @@ if (isset($pdo)) {
             }, { once: true });
         }
 
-        // 10-Minute Auto-Inactivity Lock
+        // 15-Minute Auto-Inactivity Security Timer with 60-Second Countdown Warning
         let idleTimer = null;
-        const IDLE_LIMIT = 10 * 60 * 1000; // 10 minutes
+        let countdownTimer = null;
+        let countdownSeconds = 60;
+        const IDLE_LIMIT = 14 * 60 * 1000; // 14 minutes before warning
+
         function resetIdleTimer() {
-            if (document.getElementById('sessionInactivityOverlay').style.display === 'flex') return;
+            var overlay = document.getElementById('sessionInactivityOverlay');
+            var warningModal = $('#sessionWarningModal');
+            if ((overlay && overlay.style.display === 'flex') || (warningModal.length && (warningModal.data('bs.modal') || {})._isShown)) {
+                return;
+            }
             clearTimeout(idleTimer);
-            idleTimer = setTimeout(() => {
-                document.getElementById('sessionInactivityOverlay').style.display = 'flex';
-                document.getElementById('sessionUnlockPin').value = '';
-                document.getElementById('sessionUnlockPin').focus();
-            }, IDLE_LIMIT);
+            idleTimer = setTimeout(showInactivityWarning, IDLE_LIMIT);
         }
+
+        function showInactivityWarning() {
+            countdownSeconds = 60;
+            var countdownEl = document.getElementById('sessionWarningCountdown');
+            if (countdownEl) countdownEl.innerText = '60s';
+            
+            $('#sessionWarningModal').modal({ backdrop: 'static', keyboard: false });
+            
+            clearInterval(countdownTimer);
+            countdownTimer = setInterval(function() {
+                countdownSeconds--;
+                if (countdownEl) countdownEl.innerText = countdownSeconds + 's';
+                if (countdownSeconds <= 0) {
+                    clearInterval(countdownTimer);
+                    $('#sessionWarningModal').modal('hide');
+                    lockSessionImmediately();
+                }
+            }, 1000);
+        }
+
+        function extendSession() {
+            clearInterval(countdownTimer);
+            $('#sessionWarningModal').modal('hide');
+            // Keep PHP session alive with lightweight ping
+            fetch('/api/chat_ping.php').catch(function(){});
+            if (typeof toastr !== 'undefined') {
+                toastr.success('Session extended successfully.', '🛡️ Security Active');
+            }
+            resetIdleTimer();
+        }
+
+        function lockSessionImmediately() {
+            clearInterval(countdownTimer);
+            $('#sessionWarningModal').modal('hide');
+            var overlay = document.getElementById('sessionInactivityOverlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+                var pinInput = document.getElementById('sessionUnlockPin');
+                if (pinInput) {
+                    pinInput.value = '';
+                    pinInput.focus();
+                }
+            }
+        }
+
         ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
             document.addEventListener(evt, resetIdleTimer, true);
         });
@@ -1328,6 +1412,106 @@ if (isset($pdo)) {
                 resetIdleTimer();
             });
         }
+
+        // Global Pre-Flight File Upload Size (20MB) & MIME Validation
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.type === 'file') {
+                var input = e.target;
+                if (!input.files || !input.files[0]) return;
+                var file = input.files[0];
+                var maxBytes = 20 * 1024 * 1024; // 20 MB
+                var allowedExts = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'txt', 'csv', 'zip', 'rtf', 'webp'];
+                var ext = (file.name.split('.').pop() || '').toLowerCase();
+                
+                if (file.size > maxBytes) {
+                    var sizeMb = (file.size / (1024*1024)).toFixed(1);
+                    var msg = "File size (" + sizeMb + " MB) exceeds 20MB maximum limit. Please select a smaller or compressed file.";
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error(msg, 'Upload Size Exceeded');
+                    } else {
+                        alert(msg);
+                    }
+                    input.value = '';
+                    return false;
+                }
+                
+                if (allowedExts.indexOf(ext) === -1) {
+                    var msg = "Unsupported file type (." + ext + "). Allowed formats: PDF, JPG, PNG, DOC, DOCX, ZIP.";
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error(msg, 'Invalid File Type');
+                    } else {
+                        alert(msg);
+                    }
+                    input.value = '';
+                    return false;
+                }
+            }
+        });
+
+        // Global Cryptographic Blockchain Explorer Deep-Links & 1-Click Copy
+        function copyCryptoHash(str, btn) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(str).then(function() {
+                    var orig = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check text-success" style="font-size:10px;"></i>';
+                    if (typeof toastr !== 'undefined') toastr.success('Address / Hash copied to clipboard', '📋 Copied');
+                    setTimeout(function() { btn.innerHTML = orig; }, 2000);
+                });
+            } else {
+                var temp = document.createElement('textarea');
+                temp.value = str;
+                document.body.appendChild(temp);
+                temp.select();
+                document.execCommand('copy');
+                document.body.removeChild(temp);
+                if (typeof toastr !== 'undefined') toastr.success('Address / Hash copied to clipboard', '📋 Copied');
+            }
+        }
+
+        function formatCryptoHashesInPage() {
+            var selectors = '.timeline-item p, #paymentInfoBlock, .case-card-item p, .case-meta-row, .crypto-hash-format';
+            document.querySelectorAll(selectors).forEach(function(el) {
+                if (el.getAttribute('data-crypto-parsed')) return;
+                if (el.querySelector('input, button, select, textarea, a')) return;
+                
+                var originalHtml = el.innerHTML;
+                var parsedHtml = originalHtml;
+                
+                // Ethereum / ERC-20 Address (0x + 40 hex)
+                parsedHtml = parsedHtml.replace(/\b(0x[a-fA-F0-9]{40})\b/g, function(m) {
+                    return '<span class="d-inline-flex align-items-center bg-black text-warning px-2 py-1 rounded border border-warning my-1 font-monospace" style="font-size:11px; letter-spacing:0.5px;">' +
+                           '<i class="fab fa-ethereum mr-1"></i> ' + m.substring(0, 6) + '...' + m.substring(m.length - 4) +
+                           ' <a href="https://etherscan.io/address/' + m + '" target="_blank" class="text-warning ml-1" title="View on Etherscan Explorer"><i class="fas fa-external-link-alt" style="font-size:10px;"></i></a>' +
+                           ' <button type="button" class="btn btn-link p-0 ml-1 text-light copy-hash-btn" onclick="copyCryptoHash(\'' + m + '\', this)" title="Copy Address"><i class="fas fa-copy" style="font-size:10px;"></i></button>' +
+                           '</span>';
+                });
+                
+                // 64-char Hex TXID
+                parsedHtml = parsedHtml.replace(/\b(0x[a-fA-F0-9]{64}|[a-fA-F0-9]{64})\b/g, function(m) {
+                    var url = m.startsWith('0x') ? 'https://etherscan.io/tx/' + m : 'https://www.blockchain.com/explorer/transactions/btc/' + m;
+                    return '<span class="d-inline-flex align-items-center bg-black text-warning px-2 py-1 rounded border border-warning my-1 font-monospace" style="font-size:11px; letter-spacing:0.5px;">' +
+                           '<i class="fas fa-link mr-1"></i> TXID: ' + m.substring(0, 8) + '...' + m.substring(m.length - 6) +
+                           ' <a href="' + url + '" target="_blank" class="text-warning ml-1" title="Inspect Blockchain TXID"><i class="fas fa-external-link-alt" style="font-size:10px;"></i></a>' +
+                           ' <button type="button" class="btn btn-link p-0 ml-1 text-light copy-hash-btn" onclick="copyCryptoHash(\'' + m + '\', this)" title="Copy TXID"><i class="fas fa-copy" style="font-size:10px;"></i></button>' +
+                           '</span>';
+                });
+
+                // TRON Address (T + 33 chars)
+                parsedHtml = parsedHtml.replace(/\b(T[A-Za-z1-9]{33})\b/g, function(m) {
+                    return '<span class="d-inline-flex align-items-center bg-black text-warning px-2 py-1 rounded border border-warning my-1 font-monospace" style="font-size:11px; letter-spacing:0.5px;">' +
+                           '<i class="fas fa-shield-alt mr-1"></i> TRON: ' + m.substring(0, 6) + '...' + m.substring(m.length - 4) +
+                           ' <a href="https://tronscan.org/#/address/' + m + '" target="_blank" class="text-warning ml-1" title="View on Tronscan"><i class="fas fa-external-link-alt" style="font-size:10px;"></i></a>' +
+                           ' <button type="button" class="btn btn-link p-0 ml-1 text-light copy-hash-btn" onclick="copyCryptoHash(\'' + m + '\', this)" title="Copy TRON Address"><i class="fas fa-copy" style="font-size:10px;"></i></button>' +
+                           '</span>';
+                });
+                
+                if (parsedHtml !== originalHtml) {
+                    el.innerHTML = parsedHtml;
+                    el.setAttribute('data-crypto-parsed', '1');
+                }
+            });
+        }
+        document.addEventListener('DOMContentLoaded', formatCryptoHashesInPage);
 
         function changePortalCurrency(curr) {
             fetch('/api/set_currency.php?currency=' + encodeURIComponent(curr))
