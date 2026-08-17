@@ -63,57 +63,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                 $client_user_id = sprintf('#IFW-%05d', $client_id);
                 
                 $html_body = "
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;'>
-                    <div style='background: #1f1b1c; padding: 24px; text-align: center; border-bottom: 3px solid #fecc56;'>
-                        <h2 style='color: #fecc56; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px;'>IFW Global Client Portal</h2>
-                        <p style='color: #cbd5e1; margin: 6px 0 0 0; font-size: 13px;'>Confidential Case Intelligence &amp; Asset Recovery</p>
-                    </div>
-                    <div style='padding: 24px 28px; color: #334155; font-size: 14px; line-height: 1.6;'>
-                        <p style='margin-top: 0;'>Hello <strong>{$client_name}</strong>,</p>
-                        <p>Your secure IFW Global client portal account has been provisioned. You can use this private portal to monitor real-time forensic progress, review evidence dossiers, communicate securely with assigned investigators, and manage settlement accounts.</p>
-                        
-                        <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #fecc56; border-radius: 6px; padding: 18px 20px; margin: 24px 0;'>
-                            <h4 style='margin: 0 0 12px 0; color: #1e293b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;'>Your Portal Login Credentials</h4>
-                            <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
-                                <tr>
-                                    <td style='padding: 6px 0; color: #64748b; width: 160px;'><strong>Client / User ID:</strong></td>
-                                    <td style='padding: 6px 0; color: #0f172a; font-weight: bold;'>{$client_user_id}</td>
-                                </tr>
-                                <tr>
-                                    <td style='padding: 6px 0; color: #64748b;'><strong>Username / Email:</strong></td>
-                                    <td style='padding: 6px 0; color: #0f172a; font-weight: bold;'>{$client_email}</td>
-                                </tr>
-                                <tr>
-                                    <td style='padding: 6px 0; color: #64748b;'><strong>Temporary Password:</strong></td>
-                                    <td style='padding: 6px 0;'><span style='background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 4px; display: inline-block;'>{$raw_password}</span></td>
-                                </tr>
-                                <tr>
-                                    <td style='padding: 6px 0; color: #64748b;'><strong>Default Security PIN:</strong></td>
-                                    <td style='padding: 6px 0;'><span style='background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 4px; display: inline-block;'>{$default_pin}</span></td>
-                                </tr>
-                            </table>
-                        </div>
-                        
-                        <div style='text-align: center; margin: 30px 0;'>
-                            <a href='{$portal_url}' style='background: #fecc56; color: #1f1b1c; text-decoration: none; font-weight: bold; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 32px; border-radius: 4px; display: inline-block; box-shadow: 0 4px 12px rgba(254, 204, 86, 0.4);'>
-                                LOGIN
-                            </a>
-                        </div>
-                        
-                        <div style='background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 12px 16px; margin: 20px 0; font-size: 12px; color: #92400e;'>
-                            <strong>Security Notice:</strong> Upon your first login, a security wizard will guide you to update your permanent password and set up your private 4-digit Security PIN (replacing default <code>1234</code>). Do not share your login credentials with anyone.
-                        </div>
-                        
-                        <p style='color: #64748b; font-size: 12px; margin-bottom: 0;'>
-                            Need assistance? Reply directly to this email or reach our 24/7 Operations Desk at <a href='mailto:investigations@ifwglobalrecovery.site' style='color: #d97706;'>investigations@ifwglobalrecovery.site</a>.
-                        </p>
-                    </div>
-                    <div style='background: #f1f5f9; padding: 14px 28px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #e2e8f0;'>
-                        &copy; " . date('Y') . " IFW Global Intelligence. All rights reserved. 256-Bit Encrypted Portal.
-                    </div>
+                <p style='margin-top: 0;'>Hello <strong>{$client_name}</strong>,</p>
+                <p>Your confidential case dossier has been formally opened with our cyber forensics and international asset recovery team under Case Reference <strong>{$client_user_id}</strong>.</p>
+                <p>You can access our 256-bit encrypted Client Portal 24/7 to keep track of the investigation progress, inspect court filings, e-sign legal documents, and communicate directly with your lead investigator.</p>
+                
+                <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #fecc56; border-radius: 6px; padding: 18px 20px; margin: 24px 0;'>
+                    <h4 style='margin: 0 0 12px 0; color: #1e293b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;'>Your Portal Login Credentials</h4>
+                    <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
+                        <tr>
+                            <td style='padding: 6px 0; color: #64748b; width: 160px;'><strong>Username / Email:</strong></td>
+                            <td style='padding: 6px 0; color: #0f172a; font-weight: bold;'>{$client_email}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 6px 0; color: #64748b;'><strong>Temporary Password:</strong></td>
+                            <td style='padding: 6px 0;'><span style='background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 4px; display: inline-block;'>{$raw_password}</span></td>
+                        </tr>
+                    </table>
                 </div>
+                
+                <div style='text-align: center; margin: 30px 0;'>
+                    <a href='{$portal_url}' style='background: #fecc56; color: #1f1b1c; text-decoration: none; font-weight: bold; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 32px; border-radius: 4px; display: inline-block; box-shadow: 0 4px 12px rgba(254, 204, 86, 0.4);'>
+                        LOGIN
+                    </a>
+                </div>
+                
+                <div style='background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 12px 16px; margin: 20px 0; font-size: 12px; color: #92400e;'>
+                    <strong>Security Notice:</strong> Upon your first login, a security setup wizard will guide you to update your permanent password and configure your private 4-digit Security PIN.
+                </div>
+                
+                <p style='color: #64748b; font-size: 12px; margin-bottom: 0;'>
+                    Need assistance? Reply directly to this email or reach our 24/7 Operations Desk at <a href='mailto:investigations@ifwglobalrecovery.site' style='color: #d97706;'>investigations@ifwglobalrecovery.site</a>.
+                </p>
                 ";
-                send_html_email($client['email'], "Your IFW Global Portal Access", $html_body);
+                send_html_email($client['email'], "Welcome to IFW Global — Confidential Case Portal Access", $html_body);
             }
             header("Location: client_manager.php?invited=" . $client_id . "&pwd=" . urlencode($raw_password) . "&pin=" . urlencode($default_pin));
             exit;
