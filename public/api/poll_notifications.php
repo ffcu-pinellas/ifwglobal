@@ -23,9 +23,12 @@ if (!$is_admin && !$is_client) {
 }
 
 $last_msg_id = isset($_GET['last_msg_id']) ? (int)$_GET['last_msg_id'] : 0;
+$last_notif_id = isset($_GET['last_notif_id']) ? (int)$_GET['last_notif_id'] : 0;
+
 $unread_messages = 0;
 $latest_message = null;
 $unread_notifs = 0;
+$latest_notification = null;
 
 try {
     if ($is_client) {
@@ -47,6 +50,18 @@ try {
         $stmtN = $pdo->prepare("SELECT COUNT(*) FROM IFW_notifications WHERE client_id = ? AND is_read = 0");
         $stmtN->execute([$client_id]);
         $unread_notifs = (int)$stmtN->fetchColumn();
+        
+        // New case event / notification
+        if ($last_notif_id > 0) {
+            $stmtNotif = $pdo->prepare("SELECT * FROM IFW_notifications WHERE client_id = ? AND id > ? ORDER BY id DESC LIMIT 1");
+            $stmtNotif->execute([$client_id, $last_notif_id]);
+            $latest_notification = $stmtNotif->fetch();
+        } else {
+            // First load or query latest ID for tracker synchronization
+            $stmtNotifMax = $pdo->prepare("SELECT MAX(id) as max_id FROM IFW_notifications WHERE client_id = ?");
+            $stmtNotifMax->execute([$client_id]);
+            $max_notif_id = (int)$stmtNotifMax->fetchColumn();
+        }
         
     } else {
         // Admin
@@ -80,11 +95,19 @@ echo json_encode([
     'status' => 'success',
     'unread_messages' => $unread_messages,
     'unread_notifs' => $unread_notifs,
+    'max_notif_id' => $max_notif_id ?? 0,
     'latest_message' => $latest_message ? [
         'id' => (int)$latest_message['id'],
         'sender_name' => $latest_message['sender_name'],
         'message' => substr($latest_message['message'] ?? 'Sent an attachment', 0, 80),
         'created_at' => $latest_message['created_at'],
         'url' => $is_client ? '/client/chat.php' : ('/admin/chat.php?client_id=' . $latest_message['client_id'])
+    ] : null,
+    'latest_notification' => $latest_notification ? [
+        'id' => (int)$latest_notification['id'],
+        'title' => $latest_notification['title'] ?? 'Case Update',
+        'message' => $latest_notification['message'] ?? '',
+        'link' => !empty($latest_notification['link']) ? $latest_notification['link'] : '/client/dashboard.php',
+        'created_at' => $latest_notification['created_at']
     ] : null
 ]);

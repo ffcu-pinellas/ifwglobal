@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                         <h4 style='margin: 0 0 12px 0; color: #1e293b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;'>Your Portal Login Credentials</h4>
                         <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
                             <tr>
-                                <td style='padding: 6px 0; color: #64748b; width: 160px;'><strong>Client / User ID:</strong></td>
+                                <td style='padding: 6px 0; color: #64748b; width: 160px;'><strong>User ID:</strong></td>
                                 <td style='padding: 6px 0; color: #0f172a; font-weight: bold;'>{$client_ref_id}</td>
                             </tr>
                             <tr>
@@ -170,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                     
                     <div style='text-align: center; margin: 30px 0;'>
                         <a href='{$portal_url}' style='background: #fecc56; color: #1f1b1c; text-decoration: none; font-weight: bold; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 32px; border-radius: 4px; display: inline-block; box-shadow: 0 4px 12px rgba(254, 204, 86, 0.4);'>
-                            LOGIN TO CLIENT PORTAL
+                            LOGIN
                         </a>
                     </div>
                     
@@ -202,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                         
                         {$custom_note_html}
                         
-                        <p>You can access our 256-bit encrypted Client Portal 24/7 to track live blockchain telemetry, inspect subpoena filings, e-sign legal documents, and communicate directly with your lead investigator.</p>
+                        <p>You can access our 256-bit encrypted Client Portal 24/7 to keep track of investigations, inspect legal filings, e-sign legal documents, and communicate directly with your lead investigator.</p>
                         
                         {$creds_html}
                         
@@ -423,7 +423,7 @@ require_once '../includes/admin_sidebar.php';
                                                 'name' => trim($client['first_name'] . ' ' . $client['last_name']),
                                                 'email' => $client['email'],
                                                 'phone' => $client['phone'] ?? '',
-                                                'agent_name' => $client['agent_name'] ?? 'Senior Cyber Investigator'
+                                                'agent_name' => $client['agent_name'] ?? 'Senior Forensic Agent'
                                             ])) ?>)">
                                                 <i class="fas fa-paper-plane"></i><span class="d-none d-xl-inline ml-1">Email</span>
                                             </button>
@@ -575,7 +575,7 @@ require_once '../includes/admin_sidebar.php';
                                 <!-- CTA Button -->
                                 <div style="text-align: center; margin: 20px 0;">
                                     <span style="background: #fecc56; color: #1f1b1c; text-decoration: none; font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 28px; border-radius: 4px; display: inline-block; box-shadow: 0 4px 12px rgba(254, 204, 86, 0.4);">
-                                        LOGIN TO CLIENT PORTAL
+                                        LOGIN
                                     </span>
                                 </div>
                                 

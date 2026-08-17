@@ -1199,13 +1199,28 @@ if (isset($pdo)) {
             }
         }
 
-        // Real-Time Notification & Live Chat Poller
+        // Real-Time Notification & Live Case Event Poller
         let trackedLastMsgId = 0;
+        let trackedLastNotifId = 0;
+        let hasInitializedNotifTracker = false;
+
         function pollRealtimeUpdates() {
-            fetch('/api/poll_notifications.php?last_msg_id=' + trackedLastMsgId)
+            fetch('/api/poll_notifications.php?last_msg_id=' + trackedLastMsgId + '&last_notif_id=' + trackedLastNotifId)
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
+                    // Update header bell counter if element exists
+                    var notifBadge = document.getElementById('headerNotifBadge');
+                    if (notifBadge && typeof data.unread_notifs === 'number') {
+                        if (data.unread_notifs > 0) {
+                            notifBadge.textContent = data.unread_notifs;
+                            notifBadge.style.display = 'inline-block';
+                        } else {
+                            notifBadge.style.display = 'none';
+                        }
+                    }
+
+                    // 1. Live Chat Message Alert
                     if (data.latest_message && data.latest_message.id > trackedLastMsgId) {
                         trackedLastMsgId = data.latest_message.id;
                         playNotificationChime();
@@ -1226,6 +1241,31 @@ if (isset($pdo)) {
                         showDesktopNotification(toastTitle, toastMsg, data.latest_message.url);
                     } else if (data.latest_message) {
                         trackedLastMsgId = Math.max(trackedLastMsgId, data.latest_message.id);
+                    }
+
+                    // 2. Real-Time Case Event / Telemetry / Report Alert
+                    if (!hasInitializedNotifTracker) {
+                        trackedLastNotifId = data.max_notif_id || (data.latest_notification ? data.latest_notification.id : 0);
+                        hasInitializedNotifTracker = true;
+                    } else if (data.latest_notification && data.latest_notification.id > trackedLastNotifId) {
+                        trackedLastNotifId = data.latest_notification.id;
+                        playNotificationChime();
+                        
+                        var caseTitle = '🛡️ ' + (data.latest_notification.title || 'Case Event Update');
+                        var caseMsg = data.latest_notification.message || 'New investigation telemetry available.';
+                        var caseLink = data.latest_notification.link || '/client/dashboard.php';
+                        
+                        if (typeof toastr !== 'undefined') {
+                            toastr.options = {
+                                "closeButton": true,
+                                "progressBar": true,
+                                "positionClass": "toast-top-right",
+                                "timeOut": "10000",
+                                "onclick": function() { window.location.href = caseLink; }
+                            };
+                            toastr.success(caseMsg, caseTitle);
+                        }
+                        showDesktopNotification(caseTitle, caseMsg, caseLink);
                     }
                 }
             })
