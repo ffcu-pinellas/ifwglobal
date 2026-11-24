@@ -79,12 +79,22 @@ function log_audit_action($pdo, $user_id, $action, $details = '', $user_type = '
  * @return string
  */
 function get_setting($pdo, $key, $default = '') {
-    $stmt = $pdo->prepare("SELECT setting_value FROM IFW_site_settings WHERE setting_key = ?");
-    $stmt->execute([$key]);
-    if ($row = $stmt->fetch()) {
-        return $row['setting_value'];
+    static $cache = null;
+    static $cachePdo = null;
+    // Reload cache if PDO instance changed or cache not yet populated
+    if ($cache === null || $cachePdo !== $pdo) {
+        $cache = [];
+        $cachePdo = $pdo;
+        try {
+            $rows = $pdo->query("SELECT setting_key, setting_value FROM IFW_site_settings")->fetchAll();
+            foreach ($rows as $row) {
+                $cache[$row['setting_key']] = $row['setting_value'];
+            }
+        } catch (Exception $e) {
+            // If table doesn't exist yet, leave cache empty and fall through to default
+        }
     }
-    return $default;
+    return array_key_exists($key, $cache) ? $cache[$key] : $default;
 }
 
 /**
