@@ -47,8 +47,10 @@ $client_email = $client_data['email'] ?? '';
 $client_phone = $client_data['phone'] ?? '';
 $client_avatar = get_portal_avatar_url($pdo, 'client', $client_id);
 if (!empty($client_avatar) && strpos($client_avatar, 'http') !== 0) {
-    $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'ifwglobalrecovery.site';
+    $isHttps = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+        || (strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    $scheme = $isHttps ? 'https' : 'http';
+    $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? ($_SERVER['HTTP_HOST'] ?? 'ifwglobalrecovery.site');
     $client_avatar = $scheme . '://' . $host . $client_avatar;
 }
 

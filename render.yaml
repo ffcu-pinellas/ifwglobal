@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: ifwglobal
+    env: docker
+    plan: free
+    region: ohio
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: APP_NAME
+        value: "IFW Global Recovery"
+      - key: APP_URL
+        value: https://ifwglobal.onrender.com
+      - key: DB_HOST
+        value: gateway01.us-east-1.prod.aws.tidbcloud.com
+      - key: DB_PORT
+        value: "4000"
+      - key: DB_NAME
+        value: ifwglobal
+      - key: DB_USER
+        value: 3khU18GFDCdjg3j.root
+      - key: DB_PASS
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: DB_SSL_CA
+        value: /var/www/html/isrgrootx1.pem
+      - key: DB_SSL_VERIFY
+        value: "true"
+      - key: MAIL_HOST
+        value: smtp.hostinger.com
+      - key: MAIL_PORT
+        value: "465"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_ENCRYPTION
+        value: ssl
+      - key: MAIL_FROM_ADDRESS
+        value: notifications@ifwglobalrecovery.site
+      - key: MAIL_FROM_NAME
+        value: "IFW Global Recovery"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: CRON_SECRET
+        generateValue: true

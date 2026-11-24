@@ -5,21 +5,25 @@ require_once '../includes/functions.php';
 
 require_admin_login();
 
-// Ensure audit log schema
-try {
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS IFW_audit_logs (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            user_type VARCHAR(50) DEFAULT 'client',
-            action VARCHAR(100) NOT NULL,
-            details TEXT,
-            ip_address VARCHAR(100),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ");
-    $pdo->exec("ALTER TABLE IFW_audit_logs ADD COLUMN IF NOT EXISTS user_type VARCHAR(50) DEFAULT 'client' AFTER user_id");
-} catch(Exception $e) {}
+// Ensure audit log schema (gated)
+if (function_exists('ifw_run_schema_once')) {
+    ifw_run_schema_once($pdo, 'audit_logs', 'v1', function ($db) {
+        try {
+            $db->exec("
+                CREATE TABLE IF NOT EXISTS IFW_audit_logs (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NULL,
+                    user_type VARCHAR(50) DEFAULT 'client',
+                    action VARCHAR(100) NOT NULL,
+                    details TEXT,
+                    ip_address VARCHAR(100),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ");
+            $db->exec("ALTER TABLE IFW_audit_logs ADD COLUMN IF NOT EXISTS user_type VARCHAR(50) DEFAULT 'client' AFTER user_id");
+        } catch(Exception $e) {}
+    });
+}
 
 // Fetch System Audit Logs
 $logs = [];

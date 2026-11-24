@@ -15,13 +15,30 @@ if (file_exists($dir . '/includes/mailer.php')) {
 }
 
 $is_cli = (php_sapi_name() === 'cli' || defined('STDIN'));
+if (!$is_cli) {
+    $cronSecret = trim((string)(function_exists('env_val') ? env_val('CRON_SECRET', '') : ''));
+    $provided = (string)($_GET['token'] ?? ($_SERVER['HTTP_X_CRON_SECRET'] ?? ''));
+    if ($cronSecret === '' || !hash_equals($cronSecret, $provided)) {
+        http_response_code(403);
+        die("Access denied");
+    }
+}
+
 $app_name = get_setting($pdo, 'app_name', 'IFW Global');
 $reminder_minutes = 15;
 $reminders_sent = 0;
 
-try {
-    $pdo->exec("ALTER TABLE IFW_chat_messages ADD COLUMN IF NOT EXISTS email_reminder_sent TINYINT(1) DEFAULT 0");
-} catch (Exception $e) {}
+if (function_exists('ifw_run_schema_once')) {
+    ifw_run_schema_once($pdo, 'cron_chat_reminders', 'v1', function ($db) {
+        try {
+            $db->exec("ALTER TABLE IFW_chat_messages ADD COLUMN IF NOT EXISTS email_reminder_sent TINYINT(1) DEFAULT 0");
+        } catch (Exception $e) {}
+    });
+} else {
+    try {
+        $pdo->exec("ALTER TABLE IFW_chat_messages ADD COLUMN IF NOT EXISTS email_reminder_sent TINYINT(1) DEFAULT 0");
+    } catch (Exception $e) {}
+}
 
 if ($is_cli) {
     echo "====================================================\n";
@@ -32,12 +49,12 @@ if ($is_cli) {
 
 try {
     $sql = "
-        SELECT m.id, m.client_id, m.admin_id, m.sender_type, m.created_at,
+        SELECT m.id, m.client_id, m.sender_id, m.sender_type, m.created_at,
                c.first_name AS client_first, c.last_name AS client_last, c.email AS client_email,
                u.full_name AS admin_name, u.username AS admin_username, u.email AS admin_email
         FROM IFW_chat_messages m
         JOIN IFW_clients c ON m.client_id = c.id
-        LEFT JOIN IFW_users u ON m.admin_id = u.id
+        LEFT JOIN IFW_users u ON m.sender_id = u.id AND m.sender_type = 'admin'
         WHERE m.is_read = 0
           AND COALESCE(m.email_reminder_sent, 0) = 0
           AND m.created_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
@@ -117,7 +134,7 @@ try {
         if (function_exists('send_html_email')) {
             $sent = (bool)@send_html_email($recipient_email, $subject, $html);
         } elseif (function_exists('send_notification_email')) {
-            $sent = (bool)@send_notification_email($pdo, $recipient_email, $subject, $html);
+            $sent = (bool)@send_notification_email($recipient_email, $subject, $html);
         }
 
         if ($sent) {

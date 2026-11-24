@@ -1,0 +1,15 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+*.sql
+*.sql.gz
+*.zip
+*.ps1
+*.py
+*.out
+node_modules
+uploads
+public/uploads
+admin/backups

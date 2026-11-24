@@ -7,12 +7,14 @@ require_admin_login();
 $admin_id = (int)$_SESSION['admin_id'];
 $msg = $err = '';
 
-// Ensure custom columns exist in IFW_users
-try {
-    $pdo->exec("ALTER TABLE IFW_users ADD COLUMN IF NOT EXISTS phone VARCHAR(50) NULL AFTER email");
-    $pdo->exec("ALTER TABLE IFW_users ADD COLUMN IF NOT EXISTS custom_role_title VARCHAR(100) NULL AFTER role");
-    $pdo->exec("ALTER TABLE IFW_users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL AFTER custom_role_title");
-} catch(Exception $e) {}
+// Ensure custom columns exist in IFW_users (gated)
+if (function_exists('ifw_run_schema_once')) {
+    ifw_run_schema_once($pdo, 'admin_profile', 'v1', function ($db) {
+        try { $db->exec("ALTER TABLE IFW_users ADD COLUMN IF NOT EXISTS phone VARCHAR(50) NULL AFTER email"); } catch (Exception $e) {}
+        try { $db->exec("ALTER TABLE IFW_users ADD COLUMN IF NOT EXISTS custom_role_title VARCHAR(100) NULL AFTER role"); } catch (Exception $e) {}
+        try { $db->exec("ALTER TABLE IFW_users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL AFTER custom_role_title"); } catch (Exception $e) {}
+    });
+}
 
 // Handle Profile Updates
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {

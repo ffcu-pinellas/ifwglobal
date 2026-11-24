@@ -51,13 +51,12 @@ if (isset($_GET['action']) && $_GET['action'] == 'download') {
     $backup_name = 'backup_' . DB_NAME . '_' . date("Y-m-d-H-i-s") . '.sql';
     
     // Log the backup
-    $stmt = $pdo->prepare("INSERT INTO IFW_backups (filename) VALUES (?)");
-    // Assuming IFW_backups table exists (added in our schema logic conceptually, though wasn't fully detailed in database.sql)
     try {
-        $pdo->exec("CREATE TABLE IFW_backups (id INT AUTO_INCREMENT PRIMARY KEY, filename VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS IFW_backups (id INT AUTO_INCREMENT PRIMARY KEY, filename VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+        $stmt = $pdo->prepare("INSERT INTO IFW_backups (filename) VALUES (?)");
         $stmt->execute([$backup_name]);
     } catch (Exception $e) {
-        // Table exists or error, ignore for this simple implementation
+        // Ignore logging failure so backup download still succeeds
     }
     
     header('Content-Type: application/octet-stream');

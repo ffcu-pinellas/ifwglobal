@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------
-# IFW Global - Hostinger Apache & LiteSpeed Optimized Configuration
+# IFW Global - Hostinger Apache & Render Docker Security Configuration
 # ----------------------------------------------------------------------
 
 # Ensure symbolic links are followed and directory browsing is disabled
@@ -16,6 +16,12 @@ DirectoryIndex index.php index.html
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
+
+    # Block direct web access to Git repository metadata
+    RewriteRule ^\.git(?:/|$) - [F,L,NC]
+
+    # Block PHP/script execution inside uploads directories
+    RewriteRule ^(?:public/)?uploads/.*\.(?:php[0-9]?|phtml|pht|phps|phar|sh|py|pl|cgi)$ - [F,L,NC]
 
     # Redirect legacy consultation URL
     RewriteRule ^book-a-consultation(?:/.*|\.php)?$ /contact/ [R=301,L]
@@ -45,5 +51,19 @@ DirectoryIndex index.php index.html
 <IfModule mod_authz_core.c>
     <FilesMatch "\.(php|html|css|js|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot|pdf|json)$">
         Require all granted
+    </FilesMatch>
+</IfModule>
+
+# Block web access to sensitive configuration, database dumps, certs, scripts, and deployment files
+# (Placed last so it takes precedence over general extension grants such as .json)
+<IfModule mod_authz_core.c>
+    <FilesMatch "(?i)^(\.(env|git|htaccess|dockerignore).*|composer\.(json|lock)|Dockerfile|docker-entrypoint\.sh|render\.yaml|RENDER_SETUP\.md)$|\.(sql|pem|ps1|py|log|bak|sh|ya?ml)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "(?i)^(\.(env|git|htaccess|dockerignore).*|composer\.(json|lock)|Dockerfile|docker-entrypoint\.sh|render\.yaml|RENDER_SETUP\.md)$|\.(sql|pem|ps1|py|log|bak|sh|ya?ml)$">
+        Order allow,deny
+        Deny from all
     </FilesMatch>
 </IfModule>

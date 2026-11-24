@@ -9,13 +9,26 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
+if (file_exists($dir . '/includes/mailer.php')) {
+    require_once $dir . '/includes/mailer.php';
+}
+
+$is_cli = (php_sapi_name() === 'cli' || defined('STDIN'));
+if (!$is_cli) {
+    $cronSecret = trim((string)(function_exists('env_val') ? env_val('CRON_SECRET', '') : ''));
+    $provided = (string)($_GET['token'] ?? ($_SERVER['HTTP_X_CRON_SECRET'] ?? ''));
+    if ($cronSecret === '' || !hash_equals($cronSecret, $provided)) {
+        http_response_code(403);
+        die("Access denied");
+    }
+}
 
 echo "Starting Chat SLA Monitor...\n";
 
-// Get SLA timeout setting (default: 30 minutes)
+// Get SLA timeout setting (default: 30 minutes) — align cutoff to UTC to match DB NOW()
 $sla_minutes = (int)get_setting($pdo, 'sla_response_time_minutes', '30');
 $sla_seconds = $sla_minutes * 60;
-$cutoff_time = date('Y-m-d H:i:s', time() - $sla_seconds);
+$cutoff_time = gmdate('Y-m-d H:i:s', time() - $sla_seconds);
 
 echo "Cutoff time is: $cutoff_time (SLA: $sla_minutes minutes)\n";
 
@@ -69,17 +82,20 @@ try {
         }
 
         foreach ($recipients as $recip) {
+            $safeRecipName = htmlspecialchars($recip['name']);
+            $safeClientName = htmlspecialchars($client_name);
+            $safeSnippet = htmlspecialchars($message_snippet);
             $subject = "Unresolved Client Message Alert: {$client_name}";
             $body = "
-                <p>Hello <strong>{$recip['name']}</strong>,</p>
+                <p>Hello <strong>{$safeRecipName}</strong>,</p>
                 <p>This is an automated alert that a client message has remained unanswered for more than <strong>{$sla_minutes} minutes</strong>.</p>
                 <div style='background-color:#f9f9f9; padding: 15px; border-left: 4px solid #fecc56; margin: 15px 0;'>
-                    <strong>Client:</strong> {$client_name}<br>
-                    <strong>Sent At:</strong> {$msg['created_at']}<br><br>
+                    <strong>Client:</strong> {$safeClientName}<br>
+                    <strong>Sent At:</strong> " . htmlspecialchars($msg['created_at']) . "<br><br>
                     <strong>Message:</strong><br>
-                    <em>\"{$message_snippet}\"</em>
+                    <em>\"{$safeSnippet}\"</em>
                 </div>
-                <p><a href='" . BASE_URL . "/admin/chat.php' class='button' style='color:#000;'>Open Chat Console & Respond</a></p>
+                <p><a href='" . htmlspecialchars(BASE_URL) . "/admin/chat.php' class='button' style='color:#000;'>Open Chat Console & Respond</a></p>
             ";
             
             $sent = false;
@@ -117,17 +133,19 @@ try {
             $client_name = $msg['first_name'] . ' ' . $msg['last_name'];
             $message_snippet = strlen($msg['message']) > 80 ? substr($msg['message'], 0, 80) . '...' : $msg['message'];
             
+            $safeClientName = htmlspecialchars($client_name);
+            $safeSnippet = htmlspecialchars($message_snippet);
             $subject = "New Secure Message from IFW Global Support";
             $body = "
-                <p>Dear <strong>{$client_name}</strong>,</p>
+                <p>Dear <strong>{$safeClientName}</strong>,</p>
                 <p>You have an unread secure message waiting for you in your IFW Global client portal.</p>
                 <div style='background-color:#f9f9f9; padding: 15px; border-left: 4px solid #fecc56; margin: 15px 0;'>
                     <strong>From:</strong> Case Recovery Team<br>
-                    <strong>Sent At:</strong> {$msg['created_at']}<br><br>
+                    <strong>Sent At:</strong> " . htmlspecialchars($msg['created_at']) . "<br><br>
                     <strong>Message Preview:</strong><br>
-                    <em>\"{$message_snippet}\"</em>
+                    <em>\"{$safeSnippet}\"</em>
                 </div>
-                <p><a href='" . BASE_URL . "/client/chat.php' class='button' style='color:#000;'>Login & View Message</a></p>
+                <p><a href='" . htmlspecialchars(BASE_URL) . "/client/chat.php' class='button' style='color:#000;'>Login & View Message</a></p>
             ";
             
             $sent = false;

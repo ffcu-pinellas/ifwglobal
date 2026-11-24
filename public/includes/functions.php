@@ -22,29 +22,50 @@ function log_audit_action($pdo, $user_id, $action, $details = '', $user_type = '
         }
     }
     try {
-        // Ensure table exists & has user_type column
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS IFW_audit_logs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                user_type VARCHAR(50) DEFAULT 'client',
-                action VARCHAR(100) NOT NULL,
-                details TEXT,
-                ip_address VARCHAR(100),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        ");
-        $pdo->exec("ALTER TABLE IFW_audit_logs ADD COLUMN IF NOT EXISTS user_type VARCHAR(50) DEFAULT 'client' AFTER user_id");
-        
+        // Gate audit table schema check once per process/session
+        $ensureAuditSchema = function ($db) {
+            $db->exec("
+                CREATE TABLE IF NOT EXISTS IFW_audit_logs (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NULL,
+                    user_type VARCHAR(50) DEFAULT 'client',
+                    action VARCHAR(100) NOT NULL,
+                    details TEXT,
+                    ip_address VARCHAR(100),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ");
+            $db->exec("ALTER TABLE IFW_audit_logs ADD COLUMN IF NOT EXISTS user_type VARCHAR(50) DEFAULT 'client' AFTER user_id");
+        };
+        if (function_exists('ifw_run_schema_once')) {
+            ifw_run_schema_once($pdo, 'audit_logs', 'v1', $ensureAuditSchema);
+        } else {
+            static $auditSchemaChecked = false;
+            if (!$auditSchemaChecked) {
+                $ensureAuditSchema($pdo);
+                $auditSchemaChecked = true;
+            }
+        }
+
         $stmt = $pdo->prepare("INSERT INTO IFW_audit_logs (user_id, user_type, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
         return $stmt->execute([$user_id, $user_type, $action, $details, $ip]);
     } catch (Exception $e) {
+        // IFW_audit_logs.user_id may carry FK to IFW_users(id) when logging client actions;
+        // preserve the client audit record safely with user_id = NULL if FK fails.
         try {
-            // Fallback for older schemas without user_type
-            $stmt_fb = $pdo->prepare("INSERT INTO IFW_audit_logs (user_id, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, NOW())");
-            return $stmt_fb->execute([$user_id, $action, $details, $ip]);
+            $taggedDetails = ($user_type === 'client' && $user_id)
+                ? "[Client #{$user_id}] " . $details
+                : $details;
+            $stmt_null = $pdo->prepare("INSERT INTO IFW_audit_logs (user_id, user_type, action, details, ip_address, created_at) VALUES (NULL, ?, ?, ?, ?, NOW())");
+            return $stmt_null->execute([$user_type, $action, $taggedDetails, $ip]);
         } catch (Exception $ex) {
-            return false;
+            try {
+                // Fallback for older schemas without user_type
+                $stmt_fb = $pdo->prepare("INSERT INTO IFW_audit_logs (user_id, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, NOW())");
+                return $stmt_fb->execute([$user_id, $action, $details, $ip]);
+            } catch (Exception $ex2) {
+                return false;
+            }
         }
     }
 }
@@ -221,7 +242,18 @@ function require_permission($permission_name) {
  * @param string $body Body text (or HTML)
  * @return bool
  */
-function send_notification_email($to, $subject, $body) {
+function send_notification_email($to, $subject, $body, $fourth = null) {
+    // Backwards-compatible support for legacy 4-arg callers: ($pdo, $to, $subject, $body)
+    if ($to instanceof PDO && $fourth !== null) {
+        $to = $subject;
+        $subject = $body;
+        $body = $fourth;
+    }
+
+    if (function_exists('send_html_email')) {
+        return send_html_email($to, $subject, $body);
+    }
+
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
     $headers .= "From: IFW Global Support <noreply@ifwglobal.com>\r\n";
@@ -312,6 +344,9 @@ function send_case_milestone_email($pdo, $client_email, $client_name, $case_numb
         </div>
     ";
 
+    if (function_exists('send_html_email')) {
+        return send_html_email($client_email, $subject, $body_content);
+    }
     return send_notification_email($client_email, $subject, $body_content);
 }
 
@@ -346,12 +381,29 @@ function send_telegram_notification($pdo, $message) {
     $token = get_setting($pdo, 'telegram_bot_token', '');
     $chat_id = get_setting($pdo, 'telegram_chat_id', '');
     
-    // Fallback to .env configuration if DB setting is empty
+    // Fallback to .env / OS environment configuration if DB setting is empty
     if (empty($token)) {
-        $token = $env['TELEGRAM_BOT_TOKEN'] ?? getenv('TELEGRAM_BOT_TOKEN') ?? $_ENV['TELEGRAM_BOT_TOKEN'] ?? $_SERVER['TELEGRAM_BOT_TOKEN'] ?? '';
+        if (function_exists('env_val')) {
+            $token = (string)env_val('TELEGRAM_BOT_TOKEN', '');
+        } else {
+            $gToken = getenv('TELEGRAM_BOT_TOKEN');
+            $token = $env['TELEGRAM_BOT_TOKEN'] ?? ($gToken !== false && $gToken !== '' ? $gToken : ($_ENV['TELEGRAM_BOT_TOKEN'] ?? $_SERVER['TELEGRAM_BOT_TOKEN'] ?? ''));
+        }
     }
     if (empty($chat_id)) {
-        $chat_id = $env['TELEGRAM_CHAT_ID'] ?? getenv('TELEGRAM_CHAT_ID') ?? $_ENV['TELEGRAM_CHAT_ID'] ?? $_SERVER['TELEGRAM_CHAT_ID'] ?? '';
+        if (function_exists('env_val')) {
+            $chat_id = (string)env_val('TELEGRAM_CHAT_ID', '');
+        } else {
+            $gChat = getenv('TELEGRAM_CHAT_ID');
+            $chat_id = $env['TELEGRAM_CHAT_ID'] ?? ($gChat !== false && $gChat !== '' ? $gChat : ($_ENV['TELEGRAM_CHAT_ID'] ?? $_SERVER['TELEGRAM_CHAT_ID'] ?? ''));
+        }
+    }
+
+    if ($token === 'your_telegram_bot_token' || $token === 'your_telegram_bot_token_here') {
+        $token = '';
+    }
+    if ($chat_id === 'your_telegram_chat_id') {
+        $chat_id = '';
     }
     
     if (empty($token) || empty($chat_id)) {
@@ -610,7 +662,7 @@ function send_security_login_alert($pdo, $email, $user_id, $role, $info) {
     if (function_exists('send_html_email')) {
         @send_html_email($email, $subject, $html);
     } elseif (function_exists('send_notification_email')) {
-        @send_notification_email($pdo, $email, $subject, $html);
+        @send_notification_email($email, $subject, $html);
     }
 }
 
@@ -624,16 +676,20 @@ function get_portal_avatar_url($pdo, $role, $user_id) {
     }
     $user_id = (int)$user_id;
     try {
+        if (function_exists('ifw_run_schema_once')) {
+            ifw_run_schema_once($pdo, 'avatar_url_cols', 'v1', function ($db) {
+                try { $db->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL"); } catch (Exception $e) {}
+                try { $db->exec("ALTER TABLE IFW_users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL"); } catch (Exception $e) {}
+            });
+        }
         $url = null;
         if ($role === 'client') {
-            $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL");
             if ($user_id > 0) {
                 $stmt = $pdo->prepare("SELECT avatar_url FROM IFW_clients WHERE id = ?");
                 $stmt->execute([$user_id]);
                 $url = $stmt->fetchColumn();
             }
         } else {
-            $pdo->exec("ALTER TABLE IFW_users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL");
             if ($user_id > 0) {
                 $stmt = $pdo->prepare("SELECT avatar_url FROM IFW_users WHERE id = ?");
                 $stmt->execute([$user_id]);
@@ -774,12 +830,19 @@ function get_brand_logo_url($pdo = null, $absolute = false) {
  */
 function ensure_case_status_varchar($pdo) {
     if (!$pdo) return;
-    try {
-        $col = $pdo->query("SHOW COLUMNS FROM IFW_cases LIKE 'status'")->fetch();
-        if ($col && stripos($col['Type'], 'enum') !== false) {
-            $pdo->exec("ALTER TABLE IFW_cases MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Received'");
-        }
-    } catch (Exception $e) {}
+    $fn = function ($db) {
+        try {
+            $col = $db->query("SHOW COLUMNS FROM IFW_cases LIKE 'status'")->fetch();
+            if ($col && stripos($col['Type'], 'enum') !== false) {
+                $db->exec("ALTER TABLE IFW_cases MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Received'");
+            }
+        } catch (Exception $e) {}
+    };
+    if (function_exists('ifw_run_schema_once')) {
+        ifw_run_schema_once($pdo, 'case_status_varchar', 'v1', $fn);
+    } else {
+        $fn($pdo);
+    }
 }
 
 /**

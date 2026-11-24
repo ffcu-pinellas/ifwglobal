@@ -50,12 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                     exit;
                 }
                 
-                // Self-healing check
-                try {
-                    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS pin_hash VARCHAR(255) NULL");
-                    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS is_temp_password TINYINT(1) DEFAULT 0");
-                    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS is_first_login TINYINT(1) DEFAULT 0");
-                } catch (Exception $e) {}
+                // Self-healing check (gated)
+                if (function_exists('ifw_run_schema_once')) {
+                    ifw_run_schema_once($pdo, 'submissions_clients', 'v1', function ($db) {
+                        try { $db->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS pin_hash VARCHAR(255) NULL"); } catch (Exception $e) {}
+                        try { $db->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS is_temp_password TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+                        try { $db->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS is_first_login TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+                    });
+                }
                 
                 $raw_password = bin2hex(random_bytes(4));
                 $hashed_pwd = password_hash($raw_password, PASSWORD_DEFAULT);

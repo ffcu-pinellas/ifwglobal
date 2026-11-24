@@ -33,19 +33,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // If no errors, process submission
     if (empty($errors)) {
         // Fetch IP and Location
-        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
+        $ip_address = function_exists('get_client_ip_address') ? get_client_ip_address() : ($_SERVER['REMOTE_ADDR'] ?? 'Unknown');
         $location_str = 'Unknown';
         
         // Simple cURL to ip-api.com
-        if ($ip_address !== 'Unknown' && $ip_address !== '::1' && $ip_address !== '127.0.0.1') {
-            $ch = curl_init("http://ip-api.com/json/{$ip_address}");
+        if ($ip_address !== 'Unknown' && $ip_address !== '::1' && $ip_address !== '127.0.0.1' && function_exists('curl_init')) {
+            $ch = curl_init("http://ip-api.com/json/" . urlencode($ip_address));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_TIMEOUT, 2);
-            $ip_data = json_decode(curl_exec($ch), true);
+            $ip_raw = curl_exec($ch);
             curl_close($ch);
+            $ip_data = $ip_raw ? json_decode($ip_raw, true) : null;
             
-            if (isset($ip_data['status']) && $ip_data['status'] === 'success') {
-                $location_str = $ip_data['city'] . ', ' . ($ip_data['regionName'] ?? '') . ', ' . $ip_data['country'];
+            if (is_array($ip_data) && isset($ip_data['status']) && $ip_data['status'] === 'success') {
+                $location_str = ($ip_data['city'] ?? '') . ', ' . ($ip_data['regionName'] ?? '') . ', ' . ($ip_data['country'] ?? '');
             }
         }
         
@@ -113,30 +114,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Send Email via new Mailer
         send_html_email($recipient, $email_subject, $html_body);
 
-        // Send Telegram Notification
-        $tgToken = $env['TELEGRAM_BOT_TOKEN'] ?? '';
-        $tgChatId = $env['TELEGRAM_CHAT_ID'] ?? '';
-        if (!empty($tgToken) && !empty($tgChatId) && $tgToken !== 'your_telegram_bot_token_here') {
-            $tgMessage = "🚨 *New Form Submission*\n\n";
-            foreach ($fields as $field) {
-                $tgMessage .= "*" . $field['field_label'] . ":* " . $submission_data[$field['field_name']] . "\n";
-            }
-            $tgMessage .= "\n📍 *Location:* " . $submission_data['location'];
-            $tgMessage .= "\n🌐 *IP Address:* " . $submission_data['ip_address'];
-            
-            $tgUrl = "https://api.telegram.org/bot{$tgToken}/sendMessage";
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $tgUrl);
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
-                'chat_id' => $tgChatId,
-                'text' => $tgMessage,
-                'parse_mode' => 'Markdown'
-            ]));
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-            curl_exec($ch);
-            curl_close($ch);
+        // Send Telegram Notification via shared helper (supports DB IFW_site_settings, .env, and OS env vars)
+        $tgMessage = "🚨 <b>New Form Submission</b>\n\n";
+        foreach ($fields as $field) {
+            $tgMessage .= "<b>" . htmlspecialchars($field['field_label']) . ":</b> " . htmlspecialchars($submission_data[$field['field_name']]) . "\n";
+        }
+        $tgMessage .= "\n📍 <b>Location:</b> " . htmlspecialchars($submission_data['location']);
+        $tgMessage .= "\n🌐 <b>IP Address:</b> <code>" . htmlspecialchars($submission_data['ip_address']) . "</code>";
+        if (function_exists('send_telegram_notification')) {
+            send_telegram_notification($pdo, $tgMessage);
         }
         
         $ref_id = 'IFW-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));

@@ -4,9 +4,10 @@ require_once '../config.php';
 require_once '../includes/functions.php';
 require_admin_login();
 
-$user_role = $_SESSION['admin_role'] ?? 'viewer';
-if (!in_array($user_role, ['super_admin', 'superadmin', 'admin'])) {
-    die("Unauthorized access to backups.");
+$user_role = $_SESSION['admin_role'] ?? $_SESSION['role'] ?? 'admin';
+if (!in_array($user_role, ['super_admin', 'superadmin', 'admin', 'staff', 'agent'])) {
+    header("Location: index.php");
+    exit;
 }
 
 if (isset($_GET['action']) && $_GET['action'] == 'download') {
@@ -50,13 +51,12 @@ if (isset($_GET['action']) && $_GET['action'] == 'download') {
     $backup_name = 'backup_' . DB_NAME . '_' . date("Y-m-d-H-i-s") . '.sql';
     
     // Log the backup
-    $stmt = $pdo->prepare("INSERT INTO IFW_backups (filename) VALUES (?)");
-    // Assuming IFW_backups table exists (added in our schema logic conceptually, though wasn't fully detailed in database.sql)
     try {
-        $pdo->exec("CREATE TABLE IFW_backups (id INT AUTO_INCREMENT PRIMARY KEY, filename VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS IFW_backups (id INT AUTO_INCREMENT PRIMARY KEY, filename VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+        $stmt = $pdo->prepare("INSERT INTO IFW_backups (filename) VALUES (?)");
         $stmt->execute([$backup_name]);
     } catch (Exception $e) {
-        // Table exists or error, ignore for this simple implementation
+        // Ignore logging failure so backup download still succeeds
     }
     
     header('Content-Type: application/octet-stream');

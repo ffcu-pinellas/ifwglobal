@@ -17,6 +17,15 @@ if (file_exists($dir . '/includes/mailer.php')) {
 }
 
 $is_cli = (php_sapi_name() === 'cli' || defined('STDIN'));
+$is_direct_http = (!$is_cli && isset($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME']));
+if ($is_direct_http) {
+    $cronSecret = trim((string)(function_exists('env_val') ? env_val('CRON_SECRET', '') : ''));
+    $provided = (string)($_GET['token'] ?? ($_SERVER['HTTP_X_CRON_SECRET'] ?? ''));
+    if ($cronSecret === '' || !hash_equals($cronSecret, $provided)) {
+        http_response_code(403);
+        die("Access denied");
+    }
+}
 $app_name = get_setting($pdo, 'app_name', 'IFW Global');
 $app_url = rtrim(BASE_URL, '/');
 
@@ -288,7 +297,7 @@ if ($is_cli) {
     echo "====================================================\n";
     echo "  Processed completed. Total sent: {$reminders_sent}\n";
     echo "====================================================\n";
-} else {
+} elseif (!empty($is_direct_http)) {
     header('Content-Type: application/json');
-    echo json_encode(['status' => 'success', 'reminders_sent' => $reminders_sent, 'timestamp' => date('Y-m-d H:i:s')]);
+    echo json_encode(['status' => 'success', 'reminders_sent' => $reminders_sent, 'timestamp' => gmdate('Y-m-d H:i:s')]);
 }

@@ -6,8 +6,11 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
+if (file_exists($dir . '/includes/mailer.php')) {
+    require_once $dir . '/includes/mailer.php';
+}
 
-if (session_status() === PHP_SESSION_NONE) {
+if (php_sapi_name() !== 'cli' && session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
@@ -62,42 +65,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $_SESSION['client_otp_lockout_until_' . $client['id']]
             );
 
-            // Send OTP via Email
-            if (file_exists('../vendor/autoload.php')) {
-                require_once '../vendor/autoload.php';
-            }
-            if (class_exists('PHPMailer\PHPMailer\PHPMailer')) {
-                $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-                try {
-                    $envPath = '../.env';
-                    if (file_exists($envPath)) {
-                        $env = parse_ini_file($envPath);
-                        if (!empty($env['MAIL_HOST'])) {
-                            $mail->isSMTP();
-                            $mail->Host       = $env['MAIL_HOST'];
-                            $mail->SMTPAuth   = true;
-                            $mail->Username   = $env['MAIL_USERNAME'];
-                            $mail->Password   = $env['MAIL_PASSWORD'];
-                            $mail->SMTPSecure = $env['MAIL_ENCRYPTION'] == 'ssl' ? PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-                            $mail->Port       = $env['MAIL_PORT'];
-                        }
-                        $fromAddress = !empty($env['MAIL_FROM_ADDRESS']) ? $env['MAIL_FROM_ADDRESS'] : 'notifications@ifwglobalrecovery.site';
-                        $fromName = !empty($env['MAIL_FROM_NAME']) ? $env['MAIL_FROM_NAME'] : 'IFW Global Security';
-                    } else {
-                        $fromAddress = 'notifications@ifwglobalrecovery.site';
-                        $fromName = 'IFW Global Security';
-                    }
-
-                    $mail->setFrom($fromAddress, $fromName);
-                    $mail->addAddress($client['email']);
-                    $mail->Subject = "Your Secure IFW Portal Login Verification Code";
-                    $mail->Body    = "Your secure login code is: {$otp}\nThis code will expire in 10 minutes.";
-                    $mail->send();
-                } catch (Exception $e) {
-                    @mail($client['email'], "Your Secure IFW Portal Login Verification Code", "Your secure login code is: {$otp}\nThis code will expire in 10 minutes.", "From: notifications@ifwglobalrecovery.site");
-                }
+            // Send OTP via Email using unified mailer (PHPMailer SMTP / HTTPS fallback)
+            $otpSubject = "Your Secure IFW Portal Login Verification Code";
+            $otpBody = "
+                <h2>Secure Login Verification</h2>
+                <p>Hello <strong>" . htmlspecialchars(trim($client['first_name'] . ' ' . $client['last_name'])) . "</strong>,</p>
+                <p>Use the 6-digit verification code below to complete your sign-in to the IFW Global Client Portal:</p>
+                <div style='background:#0f172a;color:#fecc56;padding:18px;border-radius:8px;font-size:28px;font-weight:bold;letter-spacing:6px;text-align:center;margin:20px 0;'>
+                    {$otp}
+                </div>
+                <p style='color:#64748b;font-size:13px;'>This code will expire in 10 minutes. If you did not attempt to log in, please ignore this notice or contact your case officer.</p>
+            ";
+            if (function_exists('send_html_email')) {
+                @send_html_email($client['email'], $otpSubject, $otpBody);
             } else {
-                @mail($client['email'], "Your Secure IFW Portal Login Verification Code", "Your secure login code is: {$otp}\nThis code will expire in 10 minutes.", "From: notifications@ifwglobalrecovery.site");
+                @mail($client['email'], $otpSubject, "Your secure login code is: {$otp}\nThis code will expire in 10 minutes.", "From: notifications@ifwglobalrecovery.site");
             }
 
             header("Location: verify_otp.php");

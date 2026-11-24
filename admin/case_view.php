@@ -34,62 +34,80 @@ if (!in_array($_SESSION['admin_role'], ['super_admin', 'superadmin', 'admin']) &
     }
 }
 
-// Ensure columns in IFW_cases & multi-agent case assignment table
-try {
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS lifecycle_stage INT DEFAULT 1");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS progress_percent INT DEFAULT 20");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS amount_lost DECIMAL(15,2) DEFAULT 0.00");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS amount_recovered DECIMAL(15,2) DEFAULT 0.00");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS forensic_analyst_id INT NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS legal_counsel_id INT NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_1_title VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_2_title VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_3_title VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_4_title VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_5_title VARCHAR(255) NULL");
-    
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_1_desc TEXT NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_2_desc TEXT NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_3_desc TEXT NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_4_desc TEXT NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_5_desc TEXT NULL");
-
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_1_protocol VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_2_protocol VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_3_protocol VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_4_protocol VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_5_protocol VARCHAR(255) NULL");
-
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_1_jurisdiction VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_2_jurisdiction VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_3_jurisdiction VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_4_jurisdiction VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS stage_5_jurisdiction VARCHAR(255) NULL");
-
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS flow_node_1 VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS flow_node_2 VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS flow_node_3 VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS flow_node_4 VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_lifecycle_bar INT DEFAULT 1");
-    $pdo->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS show_flow_visualizer INT DEFAULT 1");
+// Ensure columns in IFW_cases & multi-agent case assignment table (gated behind schema version flag)
+$ensureCaseViewSchema = function ($db) {
+    $caseColumns = [
+        'lifecycle_stage'       => "INT DEFAULT 1",
+        'progress_percent'      => "INT DEFAULT 20",
+        'amount_lost'           => "DECIMAL(15,2) DEFAULT 0.00",
+        'amount_recovered'      => "DECIMAL(15,2) DEFAULT 0.00",
+        'forensic_analyst_id'   => "INT NULL",
+        'legal_counsel_id'      => "INT NULL",
+        'stage_1_title'         => "VARCHAR(255) NULL",
+        'stage_2_title'         => "VARCHAR(255) NULL",
+        'stage_3_title'         => "VARCHAR(255) NULL",
+        'stage_4_title'         => "VARCHAR(255) NULL",
+        'stage_5_title'         => "VARCHAR(255) NULL",
+        'stage_1_desc'          => "TEXT NULL",
+        'stage_2_desc'          => "TEXT NULL",
+        'stage_3_desc'          => "TEXT NULL",
+        'stage_4_desc'          => "TEXT NULL",
+        'stage_5_desc'          => "TEXT NULL",
+        'stage_1_protocol'      => "VARCHAR(255) NULL",
+        'stage_2_protocol'      => "VARCHAR(255) NULL",
+        'stage_3_protocol'      => "VARCHAR(255) NULL",
+        'stage_4_protocol'      => "VARCHAR(255) NULL",
+        'stage_5_protocol'      => "VARCHAR(255) NULL",
+        'stage_1_jurisdiction'  => "VARCHAR(255) NULL",
+        'stage_2_jurisdiction'  => "VARCHAR(255) NULL",
+        'stage_3_jurisdiction'  => "VARCHAR(255) NULL",
+        'stage_4_jurisdiction'  => "VARCHAR(255) NULL",
+        'stage_5_jurisdiction'  => "VARCHAR(255) NULL",
+        'flow_node_1'           => "VARCHAR(255) NULL",
+        'flow_node_2'           => "VARCHAR(255) NULL",
+        'flow_node_3'           => "VARCHAR(255) NULL",
+        'flow_node_4'           => "VARCHAR(255) NULL",
+        'show_lifecycle_bar'    => "INT DEFAULT 1",
+        'show_flow_visualizer'  => "INT DEFAULT 1",
+    ];
+    try {
+        $existingCols = array_flip($db->query("SHOW COLUMNS FROM IFW_cases")->fetchAll(PDO::FETCH_COLUMN));
+        foreach ($caseColumns as $colName => $colDef) {
+            if (!isset($existingCols[$colName])) {
+                try { $db->exec("ALTER TABLE IFW_cases ADD COLUMN IF NOT EXISTS `{$colName}` {$colDef}"); } catch (Exception $e) {}
+            }
+        }
+    } catch (Exception $e) {}
 
     // Multi-Staff Case Assignment & Capability Matrix
-    $pdo->exec("CREATE TABLE IF NOT EXISTS IFW_case_agents (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        case_id INT NOT NULL,
-        user_id INT NOT NULL,
-        case_role VARCHAR(100) DEFAULT 'Senior Investigator',
-        can_view_financials TINYINT(1) DEFAULT 1,
-        can_edit_timeline TINYINT(1) DEFAULT 1,
-        can_chat_client TINYINT(1) DEFAULT 1,
-        can_manage_wallets TINYINT(1) DEFAULT 1,
-        can_upload_docs TINYINT(1) DEFAULT 1,
-        assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY uk_case_user (case_id, user_id),
-        KEY idx_case (case_id),
-        KEY idx_user (user_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    try {
+        $tblExists = $db->query("SHOW TABLES LIKE 'IFW_case_agents'")->fetchColumn();
+        if (!$tblExists) {
+            $db->exec("CREATE TABLE IF NOT EXISTS IFW_case_agents (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                case_id INT NOT NULL,
+                user_id INT NOT NULL,
+                case_role VARCHAR(100) DEFAULT 'Senior Investigator',
+                can_view_financials TINYINT(1) DEFAULT 1,
+                can_edit_timeline TINYINT(1) DEFAULT 1,
+                can_chat_client TINYINT(1) DEFAULT 1,
+                can_manage_wallets TINYINT(1) DEFAULT 1,
+                can_upload_docs TINYINT(1) DEFAULT 1,
+                assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uk_case_user (case_id, user_id),
+                KEY idx_case (case_id),
+                KEY idx_user (user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        }
+    } catch (Exception $e) {}
+};
+if (function_exists('ifw_run_schema_once')) {
+    ifw_run_schema_once($pdo, 'case_view', 'v1', $ensureCaseViewSchema);
+} else {
+    $ensureCaseViewSchema($pdo);
+}
 
+try {
     // Auto-seed attorney_id if not yet in IFW_case_agents
     if (!empty($case['attorney_id'])) {
         $chk_ca = $pdo->prepare("SELECT id FROM IFW_case_agents WHERE case_id = ? AND user_id = ?");

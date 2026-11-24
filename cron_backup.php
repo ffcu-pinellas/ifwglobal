@@ -1,4 +1,8 @@
 <?php
+// cron_backup.php
+// This script should be run via a cron job on the server (e.g., weekly)
+// 0 0 * * 0 php /path/to/public_html/cron_backup.php
+
 $dir = __DIR__;
 while (!file_exists($dir . '/config.php')) {
     $dir = dirname($dir);
@@ -6,17 +10,16 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-?>
-// cron_backup.php
-// This script should be run via a cron job on the server (e.g., weekly)
-// 0 0 * * 0 php /path/to/public_html/cron_backup.php
 
-require_once __DIR__ . '/config.php';
-
-// Only allow CLI execution or secure token access to prevent unauthorized backups
-if (php_sapi_name() !== 'cli' && (!isset($_GET['token']) || $_GET['token'] !== 'super_secret_cron_token_123')) {
-    http_response_code(403);
-    die("Access denied");
+// Only allow CLI execution or secure CRON_SECRET token access
+$is_cli = (php_sapi_name() === 'cli' || defined('STDIN'));
+if (!$is_cli) {
+    $cronSecret = trim((string)(function_exists('env_val') ? env_val('CRON_SECRET', '') : ''));
+    $provided = (string)($_GET['token'] ?? ($_SERVER['HTTP_X_CRON_SECRET'] ?? ''));
+    if ($cronSecret === '' || !hash_equals($cronSecret, $provided)) {
+        http_response_code(403);
+        die("Access denied");
+    }
 }
 
 $tables = [];

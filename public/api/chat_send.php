@@ -6,15 +6,7 @@ while (!file_exists($dir . '/config.php')) {
 }
 require_once $dir . '/config.php';
 require_once $dir . '/includes/functions.php';
-?>
-require_once '../config.php';
-require_once '../includes/mailer.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Support both frontend widget (frontend_client_id) and Client Portal (client_portal_id)
+require_once $dir . '/includes/mailer.php';
 $client_id = $_SESSION['client_portal_id'] ?? $_SESSION['frontend_client_id'] ?? null;
 
 if (!$client_id) {
@@ -68,11 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare("SELECT email, username FROM IFW_users WHERE id = ?");
                 $stmt->execute([$agent_id]);
                 $agent = $stmt->fetch();
+                $appUrl = rtrim((string)(function_exists('env_val') ? env_val('APP_URL', defined('BASE_URL') ? BASE_URL : '/') : ($env['APP_URL'] ?? '/')), '/');
                 if ($agent && $agent['email']) {
                     $html_body = "<h2>New Message Received</h2>
-                                  <p>Hello {$agent['username']},</p>
+                                  <p>Hello " . htmlspecialchars($agent['username']) . ",</p>
                                   <p>Client <strong>#$client_id</strong> has sent you a new message on the IFW Global Portal while you were offline.</p>
-                                  <a href=\"" . rtrim($env['APP_URL'] ?? '/', '/') . "/admin/chat.php?client_id={$client_id}\" class=\"btn\">Log in to reply</a>";
+                                  <a href=\"{$appUrl}/admin/chat.php?client_id={$client_id}\" class=\"btn\">Log in to reply</a>";
                     send_html_email($agent['email'], "New Message from Client #$client_id", $html_body);
                 }
             }
@@ -82,9 +75,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute();
             $admin_email = $stmt->fetchColumn();
             if ($admin_email) {
+                $appUrl = rtrim((string)(function_exists('env_val') ? env_val('APP_URL', defined('BASE_URL') ? BASE_URL : '/') : ($env['APP_URL'] ?? '/')), '/');
                 $html_body = "<h2>New Message from Unassigned Client</h2>
                               <p>An unassigned client (<strong>#$client_id</strong>) has sent a new message on the IFW Global Portal.</p>
-                              <a href=\"" . rtrim($env['APP_URL'] ?? '/', '/') . "/admin/chat.php?client_id={$client_id}\" class=\"btn\">Log in to reply</a>";
+                              <a href=\"{$appUrl}/admin/chat.php?client_id={$client_id}\" class=\"btn\">Log in to reply</a>";
                 send_html_email($admin_email, "New Message from Unassigned Client #$client_id", $html_body);
             }
         }

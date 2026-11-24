@@ -5,6 +5,16 @@
 *.wmv
 *.mkv
 
-# Ignore node modules if any
+# Ignore node modules and environment secrets
 node_modules/
 .env
+.env.*
+!.env.example
+
+# Ignore database dumps, runtime uploads, backups, and helper scripts
+*.sql
+*.ps1
+*.out
+uploads/
+public/uploads/
+admin/backups/

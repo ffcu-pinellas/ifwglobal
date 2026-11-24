@@ -16,7 +16,7 @@ try {
     $pdo->exec("
         UPDATE IFW_clients c 
         JOIN (
-            SELECT client_id, attorney_id 
+            SELECT client_id, MAX(attorney_id) AS attorney_id 
             FROM IFW_cases 
             WHERE attorney_id IS NOT NULL AND attorney_id > 0 
             GROUP BY client_id

@@ -110,19 +110,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'setup
     }
 }
 
-// Self-healing database check
+// Self-healing database check (DDL gated behind schema version flag)
 try {
     $pdo->exec("UPDATE IFW_invoices SET amount = total_amount WHERE (amount IS NULL OR amount = 0) AND total_amount > 0");
     $pdo->exec("UPDATE IFW_invoices SET total_amount = amount WHERE (total_amount IS NULL OR total_amount = 0) AND amount > 0");
-    $pdo->exec("ALTER TABLE IFW_users ADD COLUMN full_name VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_users ADD COLUMN phone VARCHAR(50) NULL");
-    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN preferred_currency VARCHAR(10) DEFAULT 'USD'");
-    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS pin_hash VARCHAR(255) NULL");
-    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS is_temp_password TINYINT(1) DEFAULT 0");
-    $pdo->exec("ALTER TABLE IFW_clients ADD COLUMN IF NOT EXISTS is_first_login TINYINT(1) DEFAULT 0");
-    $pdo->exec("ALTER TABLE IFW_chat_messages ADD COLUMN IF NOT EXISTS email_reminder_sent TINYINT(1) DEFAULT 0");
-} catch(Exception $e) {}
+} catch (Exception $e) {}
+
+if (function_exists('ifw_run_schema_once')) {
+    ifw_run_schema_once($pdo, 'client_dashboard', 'v1', function ($db) {
+        $checks = [
+            'IFW_users' => [
+                'full_name' => 'VARCHAR(255) NULL',
+                'phone'     => 'VARCHAR(50) NULL',
+            ],
+            'IFW_clients' => [
+                'preferred_currency' => "VARCHAR(10) DEFAULT 'USD'",
+                'avatar_url'         => 'VARCHAR(255) NULL',
+                'pin_hash'           => 'VARCHAR(255) NULL',
+                'is_temp_password'   => 'TINYINT(1) DEFAULT 0',
+                'is_first_login'     => 'TINYINT(1) DEFAULT 0',
+            ],
+            'IFW_chat_messages' => [
+                'email_reminder_sent' => 'TINYINT(1) DEFAULT 0',
+            ],
+        ];
+        foreach ($checks as $tbl => $cols) {
+            try {
+                $existing = array_flip($db->query("SHOW COLUMNS FROM `{$tbl}`")->fetchAll(PDO::FETCH_COLUMN));
+                foreach ($cols as $colName => $colDef) {
+                    if (!isset($existing[$colName])) {
+                        try { $db->exec("ALTER TABLE `{$tbl}` ADD COLUMN IF NOT EXISTS `{$colName}` {$colDef}"); } catch (Exception $e) {}
+                    }
+                }
+            } catch (Exception $e) {}
+        }
+    });
+}
 
 // Fetch client directly (fail-safe)
 $client = null;

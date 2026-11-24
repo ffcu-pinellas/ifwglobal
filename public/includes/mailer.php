@@ -9,6 +9,120 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+if (!function_exists('ifw_mailer_env')) {
+    function ifw_mailer_env($key, $default = null) {
+        if (function_exists('env_val')) {
+            return env_val($key, $default);
+        }
+        static $iniCache = null;
+        if ($iniCache === null) {
+            $iniCache = [];
+            foreach ([__DIR__ . '/../.env', __DIR__ . '/../../.env'] as $envPath) {
+                if (is_file($envPath) && is_readable($envPath)) {
+                    $parsed = @parse_ini_file($envPath, false, INI_SCANNER_RAW);
+                    if (is_array($parsed)) {
+                        foreach ($parsed as $k => $v) {
+                            $v = trim((string)$v);
+                            if (strlen($v) >= 2 && (($v[0] === '"' && $v[strlen($v) - 1] === '"') || ($v[0] === "'" && $v[strlen($v) - 1] === "'"))) {
+                                $v = substr($v, 1, -1);
+                            }
+                            $iniCache[$k] = $v;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        if (array_key_exists($key, $iniCache)) {
+            return $iniCache[$key];
+        }
+        $val = getenv($key);
+        if ($val !== false && $val !== '') {
+            return $val;
+        }
+        if (isset($_ENV[$key]) && $_ENV[$key] !== '') {
+            return $_ENV[$key];
+        }
+        if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') {
+            return $_SERVER[$key];
+        }
+        return $default;
+    }
+}
+
+if (!function_exists('ifw_send_https_mail_fallback')) {
+    /**
+     * Optional HTTPS email API fallback (Resend or Brevo) for container environments
+     * such as Render Free Tier where outbound SMTP ports may be blocked or time out.
+     */
+    function ifw_send_https_mail_fallback($to, $subject, $htmlBody, $textBody, $fromAddress, $fromName) {
+        if (!function_exists('curl_init')) {
+            return false;
+        }
+
+        $resendKey = trim((string)ifw_mailer_env('RESEND_API_KEY', ''));
+        if ($resendKey !== '') {
+            $payload = json_encode([
+                'from'    => $fromName . ' <' . $fromAddress . '>',
+                'to'      => [$to],
+                'subject' => $subject,
+                'html'    => $htmlBody,
+                'text'    => $textBody,
+            ]);
+            $ch = curl_init('https://api.resend.com/emails');
+            curl_setopt_array($ch, [
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $payload,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 8,
+                CURLOPT_HTTPHEADER     => [
+                    'Authorization: Bearer ' . $resendKey,
+                    'Content-Type: application/json',
+                ],
+            ]);
+            $resp = curl_exec($ch);
+            $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ($code >= 200 && $code < 300 && $resp !== false) {
+                return true;
+            }
+            error_log("Resend API fallback failed (HTTP $code): " . (string)$resp);
+        }
+
+        $brevoKey = trim((string)ifw_mailer_env('BREVO_API_KEY', ''));
+        if ($brevoKey !== '') {
+            $payload = json_encode([
+                'sender'      => ['name' => $fromName, 'email' => $fromAddress],
+                'to'          => [['email' => $to]],
+                'subject'     => $subject,
+                'htmlContent' => $htmlBody,
+                'textContent' => $textBody,
+            ]);
+            $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+            curl_setopt_array($ch, [
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $payload,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 8,
+                CURLOPT_HTTPHEADER     => [
+                    'api-key: ' . $brevoKey,
+                    'Content-Type: application/json',
+                    'Accept: application/json',
+                ],
+            ]);
+            $resp = curl_exec($ch);
+            $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ($code >= 200 && $code < 300 && $resp !== false) {
+                return true;
+            }
+            error_log("Brevo API fallback failed (HTTP $code): " . (string)$resp);
+        }
+
+        return false;
+    }
+}
+
 /**
  * Send a professionally styled HTML email
  * 
@@ -19,18 +133,13 @@ use PHPMailer\PHPMailer\Exception;
  */
 function send_html_email($to, $subject, $body_html) {
     global $env;
-    
-    if (!isset($env) || !is_array($env)) {
-        $envPath = __DIR__ . '/../.env';
-        if (file_exists($envPath)) {
-            $env = parse_ini_file($envPath);
-        } else {
-            $env = [];
-        }
+    if ((!isset($env) || !is_array($env)) && function_exists('ifw_load_env_array')) {
+        $env = ifw_load_env_array();
     }
-    
-    $app_name = $env['APP_NAME'] ?? 'IFW Global';
-    $app_url = rtrim($env['APP_URL'] ?? (defined('BASE_URL') ? BASE_URL : '/'), '/');
+
+    $app_name = (string)ifw_mailer_env('APP_NAME', 'IFW Global');
+    $fallbackBase = defined('BASE_URL') ? BASE_URL : '/';
+    $app_url = rtrim((string)ifw_mailer_env('APP_URL', $fallbackBase), '/');
     $current_year = date('Y');
     $logo_url = $app_url . '/media/logos/logo.svg';
     
@@ -70,17 +179,45 @@ function send_html_email($to, $subject, $body_html) {
 </html>
 HTML;
 
+    $mailHost   = trim((string)ifw_mailer_env('MAIL_HOST', ''));
+    $mailUser   = (string)ifw_mailer_env('MAIL_USERNAME', '');
+    $mailPass   = (string)ifw_mailer_env('MAIL_PASSWORD', '');
+    $mailPort   = (int)ifw_mailer_env('MAIL_PORT', 465);
+    $mailEnc    = strtolower(trim((string)ifw_mailer_env('MAIL_ENCRYPTION', '')));
+    $fromEnv    = trim((string)ifw_mailer_env('MAIL_FROM_ADDRESS', ''));
+    $fromNameEnv = trim((string)ifw_mailer_env('MAIL_FROM_NAME', ''));
+
+    $parsed_host = parse_url($app_url, PHP_URL_HOST);
+    if ($fromEnv !== '') {
+        $fromAddress = $fromEnv;
+    } elseif (!empty($parsed_host) && filter_var('no-reply@' . $parsed_host, FILTER_VALIDATE_EMAIL)) {
+        $fromAddress = 'no-reply@' . $parsed_host;
+    } else {
+        $fromAddress = 'no-reply@ifwglobalrecovery.site';
+    }
+    $fromName = $fromNameEnv !== '' ? $fromNameEnv : $app_name;
+    $altBody = strip_tags($body_html);
+
+    $hasHttpsApi = trim((string)ifw_mailer_env('RESEND_API_KEY', '')) !== ''
+        || trim((string)ifw_mailer_env('BREVO_API_KEY', '')) !== '';
+
+    if ($mailHost === '' && $hasHttpsApi) {
+        return ifw_send_https_mail_fallback($to, $subject, $full_html, $altBody, $fromAddress, $fromName);
+    }
+
     $mail = new PHPMailer(true);
-    
+
     try {
-        if (!empty($env['MAIL_HOST'])) {
+        if ($mailHost !== '') {
             $mail->isSMTP();
-            $mail->Host       = $env['MAIL_HOST'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $env['MAIL_USERNAME'];
-            $mail->Password   = $env['MAIL_PASSWORD'];
-            $mail->SMTPSecure = (strtolower($env['MAIL_ENCRYPTION'] ?? '') === 'ssl' || ($env['MAIL_PORT'] ?? 0) == 465) ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = $env['MAIL_PORT'] ?? 465;
+            $mail->Host       = $mailHost;
+            $mail->SMTPAuth   = ($mailUser !== '' || $mailPass !== '');
+            $mail->Username   = $mailUser;
+            $mail->Password   = $mailPass;
+            $mail->SMTPSecure = ($mailEnc === 'ssl' || $mailPort === 465) ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = $mailPort ?: 465;
+            $mail->Timeout    = 5;
+            $mail->getSMTPInstance()->Timelimit = 5;
             $mail->SMTPOptions = [
                 'ssl' => [
                     'verify_peer' => false,
@@ -89,29 +226,22 @@ HTML;
                 ]
             ];
         }
-        
-        $parsed_host = parse_url($app_url, PHP_URL_HOST);
-        if (!empty($env['MAIL_FROM_ADDRESS'])) {
-            $fromAddress = $env['MAIL_FROM_ADDRESS'];
-        } elseif (!empty($parsed_host) && filter_var('no-reply@' . $parsed_host, FILTER_VALIDATE_EMAIL)) {
-            $fromAddress = 'no-reply@' . $parsed_host;
-        } else {
-            $fromAddress = 'no-reply@ifwglobalrecovery.site';
-        }
-        $fromName = !empty($env['MAIL_FROM_NAME']) ? $env['MAIL_FROM_NAME'] : $app_name;
-        
+
         $mail->setFrom($fromAddress, $fromName);
         $mail->addAddress($to);
-        
+
         $mail->isHTML(true);
         $mail->Subject = $subject;
         $mail->Body    = $full_html;
-        $mail->AltBody = strip_tags($body_html);
-        
+        $mail->AltBody = $altBody;
+
         $mail->send();
         return true;
     } catch (Exception $e) {
-        error_log("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+        error_log("Message could not be sent via PHPMailer. Mailer Error: {$mail->ErrorInfo}");
+        if ($hasHttpsApi) {
+            return ifw_send_https_mail_fallback($to, $subject, $full_html, $altBody, $fromAddress, $fromName);
+        }
         return false;
     }
 }
