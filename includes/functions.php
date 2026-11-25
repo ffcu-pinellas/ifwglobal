@@ -71,6 +71,16 @@ function log_audit_action($pdo, $user_id, $action, $details = '', $user_type = '
 }
 
 /**
+ * Per-request site settings cache store keyed by PDO object id.
+ *
+ * @return array<int, array{ref: WeakReference, data: array<string, mixed>}>
+ */
+function &_ifw_settings_cache_store() {
+    static $store = [];
+    return $store;
+}
+
+/**
  * Fetch a site setting by key
  *
  * @param PDO $pdo
@@ -79,22 +89,31 @@ function log_audit_action($pdo, $user_id, $action, $details = '', $user_type = '
  * @return string
  */
 function get_setting($pdo, $key, $default = '') {
-    static $cache = null;
-    static $cachePdo = null;
-    // Reload cache if PDO instance changed or cache not yet populated
-    if ($cache === null || $cachePdo !== $pdo) {
-        $cache = [];
-        $cachePdo = $pdo;
+    if (!is_object($pdo)) {
+        return $default;
+    }
+    $store = &_ifw_settings_cache_store();
+    $pdoId = spl_object_id($pdo);
+    // Preload all settings once per PDO connection/request
+    if (!isset($store[$pdoId]) || $store[$pdoId]['ref']->get() !== $pdo) {
+        $data = [];
         try {
-            $rows = $pdo->query("SELECT setting_key, setting_value FROM IFW_site_settings")->fetchAll();
-            foreach ($rows as $row) {
-                $cache[$row['setting_key']] = $row['setting_value'];
+            $stmt = $pdo->query("SELECT setting_key, setting_value FROM IFW_site_settings");
+            if ($stmt !== false) {
+                $rows = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+                if (is_array($rows)) {
+                    $data = $rows;
+                }
             }
         } catch (Exception $e) {
-            // If table doesn't exist yet, leave cache empty and fall through to default
+            // If table doesn't exist yet or query fails, leave cache empty and fall through to default
         }
+        $store[$pdoId] = [
+            'ref'  => WeakReference::create($pdo),
+            'data' => $data,
+        ];
     }
-    return array_key_exists($key, $cache) ? $cache[$key] : $default;
+    return array_key_exists($key, $store[$pdoId]['data']) ? $store[$pdoId]['data'][$key] : $default;
 }
 
 /**
@@ -106,8 +125,19 @@ function get_setting($pdo, $key, $default = '') {
  * @return bool
  */
 function set_setting($pdo, $key, $value) {
+    if (!is_object($pdo)) {
+        return false;
+    }
     $stmt = $pdo->prepare("INSERT INTO IFW_site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
-    return $stmt->execute([$key, $value]);
+    $ok = $stmt->execute([$key, $value]);
+    if ($ok) {
+        $store = &_ifw_settings_cache_store();
+        $pdoId = spl_object_id($pdo);
+        if (isset($store[$pdoId]) && $store[$pdoId]['ref']->get() === $pdo) {
+            $store[$pdoId]['data'][$key] = $value;
+        }
+    }
+    return $ok;
 }
 
 /**
