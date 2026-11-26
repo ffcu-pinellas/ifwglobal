@@ -383,4 +383,4 @@ if (!defined('BASE_URL')) {
         define('BASE_URL', $protocol . $host . $script_dirname);
     }
 }
-?>
+

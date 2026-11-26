@@ -923,8 +923,4 @@ function normalize_case_status($status) {
     ];
     return $map[$key] ?? (trim((string)$status) ?: 'Received');
 }
-?>
-
-
-
 
