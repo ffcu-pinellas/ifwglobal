@@ -17,6 +17,9 @@ RUN apt-get update && apt-get install -y \
 # Enable Apache mod_rewrite and mod_headers
 RUN a2enmod rewrite headers
 
+# Use production php.ini settings (turns off display_errors to prevent header issues)
+RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
 # Configure Apache DocumentRoot, AllowOverride All, and security deny rules
 RUN { \
     echo '<Directory /var/www/html>'; \

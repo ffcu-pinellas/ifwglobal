@@ -1,6 +1,13 @@
 <?php
 // config.php
 
+// Prevent inline display of notices/warnings from breaking HTTP headers in web requests
+if (php_sapi_name() !== 'cli') {
+    @ini_set('display_errors', '0');
+    @ini_set('log_errors', '1');
+    @error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT);
+}
+
 if (!function_exists('env_val')) {
     /**
      * Unified environment variable lookup supporting both .env (Hostinger/cPanel)
